@@ -11,6 +11,7 @@ node_modules
 openspec
 bin/*.test.js
 src/*.test.js
+!src/testfcm.js
 web/app.legacy.js
 web/styles.legacy.css
 *.log
