@@ -13,7 +13,6 @@ bin/*.test.js
 src/*.test.js
 web/app.legacy.js
 web/styles.legacy.css
-web/index.html
 *.log
 .DS_Store
 Thumbs.db
