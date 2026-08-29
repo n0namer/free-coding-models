@@ -12,7 +12,6 @@ openspec
 bin/*.test.js
 src/*.test.js
 web/src
-web/server.js
 web/app.legacy.js
 web/styles.legacy.css
 web/index.html
