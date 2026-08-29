@@ -9,7 +9,6 @@ node_modules
 .github
 .archive
 openspec
-test
 bin/*.test.js
 src/*.test.js
 web/src
