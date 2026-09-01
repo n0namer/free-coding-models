@@ -719,6 +719,17 @@ export const sources = {
     quotaCode: 'free',
     models: ollamaCloud,
   },
+  gonka: {
+    name: 'Gonka Proxy',
+    url: 'https://proxy.gonka.gg/v1/chat/completions',
+    quota: 'Account-dependent · Gonka proxy',
+    quotaCode: 'limited',
+    models: [
+      ['MiniMaxAI/MiniMax-M2.7', 'MiniMax M2.7', 'S', '—', '180K'],
+      ['moonshotai/Kimi-K2.6', 'Kimi K2.6', 'S', '—', '240K'],
+      ['deepseek-ai/DeepSeek-V4-Flash-0731', 'DeepSeek V4 Flash', 'S', '—', '400K'],
+    ],
+  },
 }
 
 // 📖 Flatten all models from all sources — each entry includes providerKey as 6th element
