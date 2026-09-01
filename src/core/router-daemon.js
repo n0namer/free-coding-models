@@ -3709,7 +3709,7 @@ async function ensureRouterConfigForDaemon(config, skipSave = false) {
     try {
       activeSet = favSet || await buildDefaultRouterSet(config, 5, {
         probeFn: createDefaultProbeFn(config.apiKeys || {}),
-        probeTimeoutMs: 1500,
+        probeTimeoutMs: 10000,
         probeBudget: 24,
       })
     } catch {
