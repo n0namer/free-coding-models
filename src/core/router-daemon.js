@@ -2367,7 +2367,8 @@ class RouterRuntime {
     if (upstreamBody.continue_final_message !== undefined) delete upstreamBody.continue_final_message
     if (upstreamBody.tools?.length === 0) delete upstreamBody.tools
 
-    const timeout = setTimeout(() => controller.abort(), this.routerConfig().failover.requestTimeoutMs)
+    const attemptTimeoutMs = Math.min(this.routerConfig().failover.requestTimeoutMs, 30000)
+    const timeout = setTimeout(() => controller.abort(), attemptTimeoutMs)
     let sentToClient = false
     const clientAbort = attachClientAbort(req, res, controller)
     try {
