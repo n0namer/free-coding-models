@@ -97,7 +97,7 @@ For a server-hosted FCM used by multiple applications, keep clients on one stabl
 | `GET /v1/models` | Return virtual models (`fcm`) |
 | `GET /health` | Daemon status JSON |
 | `GET /stats` | Routing, health, request log, and token stats |
-| `GET /stream/events` | Live SSE endpoints |
+| `GET /stream/events` | Live SSE events |
 | `POST /daemon/probe-mode` | Set health check speed: `{ "probeMode": "eco" | "balanced" | "aggressive" }` |
 | `GET /` | Web dashboard (same port) |
 | `GET /api/models` | Model data with latency stats |
