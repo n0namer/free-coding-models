@@ -2873,6 +2873,25 @@ class RouterRuntime {
         sendJson(res, 200, this.statusPayload(), { 'x-request-id': requestId })
         return
       }
+      const expectedClientToken = typeof process.env.FCM_CLIENT_TOKEN === 'string'
+        ? process.env.FCM_CLIENT_TOKEN.trim()
+        : ''
+      if (expectedClientToken && url.pathname.startsWith('/v1/')) {
+        const authorization = typeof req.headers.authorization === 'string' ? req.headers.authorization : ''
+        const suppliedToken = authorization.startsWith('Bearer ') ? authorization.slice('Bearer '.length) : ''
+        const expectedBytes = Buffer.from(expectedClientToken)
+        const suppliedBytes = Buffer.from(suppliedToken)
+        const authorized = expectedBytes.length === suppliedBytes.length && timingSafeEqual(expectedBytes, suppliedBytes)
+        if (!authorized) {
+          sendJson(
+            res,
+            401,
+            formatOpenAiError('Invalid or missing broker client token', 'authentication_error', 'invalid_api_key', requestId),
+            { 'WWW-Authenticate': 'Bearer', 'x-request-id': requestId },
+          )
+          return
+        }
+      }
       if (req.method === 'GET' && url.pathname === '/stats') {
         sendJson(res, 200, this.statsPayload(), { 'x-request-id': requestId })
         return
