@@ -41,6 +41,63 @@ Every tool writes the selected provider + model into its native config (or sets 
 
 ---
 
+## Shared server broker contract
+
+When several server applications use one FCM deployment, downstream projects should depend on the broker contract, not on individual providers.
+
+Use the same three logical variables in every project:
+
+```env
+FCM_BASE_URL=http://fcm-dev-internal:19280/v1
+FCM_API_KEY=<broker-client-token>
+FCM_MODEL=fcm
+```
+
+Applications that expect OpenAI-style environment names should map the shared values at their boundary:
+
+```env
+OPENAI_BASE_URL=${FCM_BASE_URL}
+OPENAI_API_KEY=${FCM_API_KEY}
+OPENAI_MODEL=${FCM_MODEL}
+```
+
+Rules:
+
+- `FCM_BASE_URL` is the stable internal service address; do not pin a container IP.
+- `FCM_API_KEY` authenticates the client to FCM. It is not a Gonka/OpenRouter/LLM7/Kilo provider key.
+- Provider API keys stay only in the FCM deployment.
+- `FCM_MODEL=fcm` keeps provider/model selection centralized in the router.
+- Do not copy provider-specific model IDs into SWE, PR-AF, or later clients unless a project has a documented exception.
+- Rollback for a migrated client is only its previous LLM base URL/token/model mapping; the broker and unrelated clients are not changed.
+
+### Coolify shared-variable pattern
+
+Coolify shared variables can be defined at team, project, or environment scope and referenced from a resource. They are references, not automatic inheritance: each application must explicitly reference the shared variable, then restart or redeploy as required for the new value to materialize.
+
+Recommended shared names:
+
+```env
+FCM_BASE_URL=http://fcm-dev-internal:19280/v1
+FCM_API_KEY=<secret>
+FCM_MODEL=fcm
+```
+
+Then each client resource references those values using its native environment-variable mapping. This gives one control-plane value for rotation while keeping the application contract stable.
+
+### Migration acceptance
+
+For each project, migrate one at a time and require:
+
+1. DNS/connectivity from the client container to `FCM_BASE_URL`.
+2. Missing/invalid broker token is rejected once broker-side auth is enabled.
+3. Non-streaming chat succeeds.
+4. Streaming succeeds if the client uses it.
+5. Tool calling succeeds if the client uses tools.
+6. The client receives a valid answer through `model=fcm`.
+7. Rollback to the previous LLM configuration is known and bounded.
+
+---
+
 ## OpenCode
 
 ```bash
