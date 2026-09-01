@@ -45,7 +45,7 @@ import {
   hasConfiguredKey,
   pickTestfcmSelectionIndex,
   resolveTestfcmToolSpec,
-} from '../src/testfcm.js'
+} from '../src/core/testfcm.js'
 
 const DEFAULTS = {
   tool: 'crush',
