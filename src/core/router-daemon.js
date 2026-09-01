@@ -3257,6 +3257,19 @@ class RouterRuntime {
             this.config.providers[key].enabled = value.enabled !== false
           }
         }
+        const incomingFailover = body.router?.failover
+        if (incomingFailover && typeof incomingFailover === 'object' && !Array.isArray(incomingFailover)) {
+          const currentRouter = this.routerConfig()
+          this.setRouterConfig({
+            ...currentRouter,
+            failover: {
+              ...currentRouter.failover,
+              ...(incomingFailover.maxRetries !== undefined ? { maxRetries: incomingFailover.maxRetries } : {}),
+              ...(incomingFailover.requestTimeoutMs !== undefined ? { requestTimeoutMs: incomingFailover.requestTimeoutMs } : {}),
+              ...(incomingFailover.streamStallTimeoutMs !== undefined ? { streamStallTimeoutMs: incomingFailover.streamStallTimeoutMs } : {}),
+            },
+          })
+        }
         try {
           saveConfig(this.config)
         } catch (err) {
