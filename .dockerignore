@@ -9,14 +9,10 @@ node_modules
 .github
 .archive
 openspec
-test
 bin/*.test.js
 src/*.test.js
-web/src
-web/server.js
 web/app.legacy.js
 web/styles.legacy.css
-web/index.html
 *.log
 .DS_Store
 Thumbs.db
