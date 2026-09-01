@@ -3424,7 +3424,10 @@ const PREFERRED_DEFAULT_MODELS = [
  */
 export async function buildDefaultRouterSet(config = {}, maxModels, options = {}) {
   const probeFn = typeof options.probeFn === 'function' ? options.probeFn : null
-  const probeTimeoutMs = typeof options.probeTimeoutMs === 'number' ? options.probeTimeoutMs : 1500
+  // Provider gateways can legitimately take several seconds for a cold-start
+  // 1-token request (notably Gonka). Keep timeout failures meaningful without
+  // classifying a slow, valid model as broken during default-set discovery.
+  const probeTimeoutMs = typeof options.probeTimeoutMs === 'number' ? options.probeTimeoutMs : 10000
   const probeBudget = typeof options.probeBudget === 'number' ? options.probeBudget : 24
 
   const keyedProviders = new Set(Object.entries(config.apiKeys || {})
