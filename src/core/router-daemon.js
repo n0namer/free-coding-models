@@ -2169,7 +2169,12 @@ class RouterRuntime {
       return { done: false, failoverToNext: true, reason: 'provider_url_unresolvable' }
     }
     const controller = new AbortController()
-    const timeout = setTimeout(() => controller.abort(), this.routerConfig().failover.requestTimeoutMs)
+    // Keep one upstream attempt shorter than the downstream client deadline so
+    // the router still has time to fail over to another provider. Persisted
+    // configs may intentionally allow longer requests, but a single provider
+    // must not consume the full shared-broker request budget.
+    const attemptTimeoutMs = Math.min(this.routerConfig().failover.requestTimeoutMs, 30000)
+    const timeout = setTimeout(() => controller.abort(), attemptTimeoutMs)
     const started = performance.now()
     // 📖 Pre-prompt is injected server-side so every client (OpenAI SDK,
     // 📖 curl, custom Playground) gets the FCM persona without any client
