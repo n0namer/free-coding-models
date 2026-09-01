@@ -186,6 +186,7 @@ const ENV_VARS = {
   pollinations: ['POLLINATIONS_API_KEY', 'POLLINATIONS_TOKEN'],
   siliconflow: 'SILICONFLOW_API_KEY',
   requesty:   'REQUESTY_API_KEY',
+  gonka:      'GONKA_API_KEY',
 }
 
 // 📖 Smart Router defaults are intentionally conservative: balanced probing,
@@ -210,8 +211,10 @@ export const DEFAULT_ROUTER_SETTINGS = Object.freeze({
   }),
   failover: Object.freeze({
     maxRetries: 3,
-    streamStallTimeoutMs: 8000,
-    requestTimeoutMs: 15000,
+    // Coding agents may spend several seconds before their first streamed
+    // token, especially on a cold Gonka route with a large system prompt.
+    streamStallTimeoutMs: 30000,
+    requestTimeoutMs: 60000,
   }),
   scoring: Object.freeze({
     latencyWeight: 0.5,
