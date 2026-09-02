@@ -2548,6 +2548,19 @@ class RouterRuntime {
         if (!res.writableEnded) res.end()
         return { done: true }
       }
+      if (atomicStream && !sentToClient) {
+        if (!res.headersSent) {
+          res.writeHead(response.status, {
+            ...headerEntries(response.headers),
+            'x-fcm-router-model': key,
+            'x-request-id': requestId,
+          })
+        }
+        sentToClient = true
+        for (const buffered of bufferedChunks) res.write(buffered)
+        bufferedChunks.length = 0
+        bufferedBytes = 0
+      }
       this.markSuccess(key, latencyMs)
       this.totalRequestsRouted += 1
       this.addRequestLog({
