@@ -401,8 +401,9 @@ This is the real-time safety net when routing an actual user request:
 2. Forwards to highest-scoring healthy model
 3. **Non-streaming**: If response is error (429/5xx) or timeout (15s) → immediately retry on next model
 4. **Streaming**:
-   - If the initial connection fails, or the upstream stalls **before any bytes reach the client** → retry on the next model transparently.
-   - Once any stream bytes have reached the client, the selected model owns that SSE response. A stall, transport error, or EOF without a terminal marker is terminal for the request: log/telemetry the failure, update the circuit breaker, close the partial response, and **do not append another model's output**.
+   - If the initial connection fails, or the upstream stalls **before any client-visible bytes** → retry on the next model transparently.
+   - Requests carrying tools/tool_choice or structured `response_format` use **atomic streaming**: buffer upstream SSE until a terminal signal. A stalled/truncated attempt is discarded and the next model is tried; the client only sees the successful attempt. Buffering is capped at 16 MiB, after which routing degrades to ordinary direct streaming.
+   - Plain-text streams remain direct/low-latency. Once bytes are client-visible, the selected model owns that SSE response. A later stall/error/truncated EOF is terminal for the request; FCM records it and closes the partial response without splicing another model into the same stream.
    - A stream is successful only after an OpenAI-compatible terminal signal (`data: [DONE]` or a non-null `finish_reason`) has been observed. HTTP 200 or first-byte receipt alone is not completion evidence.
 5. **Max retries**: Try up to 3 different models per request. After 3 failures → return `503` with clear error message.
 
