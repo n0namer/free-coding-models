@@ -1334,22 +1334,18 @@ class RouterRuntime {
   // 📖 getRoutingCandidates - the ordered list of models the router will try,
   // 📖 in EXACT attempt order. This is the heart of routing.
   // 📖
-  // 📖 Strategy (priority-first): the user's priority order is authoritative.
-  // 📖 A model ranked #1 is always tried first while it is healthy, even if a
-  // 📖 lower-priority model has a better health score. The health score is only
-  // 📖 used to break ties between models that share the same priority - which
-  // 📖 happens in practice when multiple models tie because they have no probe
-  // 📖 data yet (cold start) or identical stats.
+  // 📖 Strategy (health-state first, then priority): known-good CLOSED routes
+  // 📖 are always attempted before HALF_OPEN recovery probes. Within the same
+  // 📖 circuit state, the user's explicit priority remains authoritative and
+  // 📖 health score is only a final tiebreaker.
   // 📖
-  // 📖 Why: before this, priority was only 20% of the score and a fast
-  // 📖 low-priority model could steal traffic from a deliberately higher-ranked
-  // 📖 one (see issue #120 - GPT-OSS 120B served despite higher-priority models
-  // 📖 being healthy). Users set the fallback chain on purpose; routing must
-  // 📖 respect it.
-  // 📖
-  // 📖 Circuit-breaker safety is preserved: CLOSED (healthy) models always come
-  // 📖 before HALF_OPEN (probing after cooldown) models, so a recovering model
-  // 📖 never pre-empts a known-good one.
+  // 📖 Why: priority-first ordering allowed high-priority HALF_OPEN providers to
+  // 📖 consume the bounded retry budget while a lower-priority CLOSED fallback
+  // 📖 was still healthy. That exact pattern produced intermittent
+  // 📖 `All routed models failed for set: keyless-dev` in live agent workloads.
+  // 📖 The ordering below preserves issue #120's explicit-priority semantics
+  // 📖 among equally healthy models while keeping circuit-breaker recovery
+  // 📖 probes behind known-good routes.
   getRoutingCandidates(set) {
     const scored = this.scoreCandidates(set)
     const usable = scored.filter((candidate) => {
