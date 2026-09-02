@@ -2485,7 +2485,7 @@ class RouterRuntime {
           'x-fcm-router-model': key,
           'x-request-id': requestId,
         })
-      } else {
+      } else if (!atomicStream) {
         // 📖 Reflect the new model in trailer-ish debug headers. Node won't let
         // 📖 us add new headers after send, but we still update x-fcm-router-model
         // 📖 semantics via a leading SSE comment so clients can see the switch.
