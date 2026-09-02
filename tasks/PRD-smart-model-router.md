@@ -396,10 +396,10 @@ This is the real-time safety net when routing an actual user request:
 1. Daemon receives request from coding tool
 2. Forwards to highest-scoring healthy model
 3. **Non-streaming**: If response is error (429/5xx) or timeout (15s) → immediately retry on next model
-4. **Streaming**: 
-   - If initial connection fails → retry on next model (transparent)
-   - If stream starts but **stalls** (no chunk received for 8s) → abort, retry on next model
-   - If stream has already sent data to the client → cannot transparently retry (partial response). Log the failure, update circuit breaker, but let the partial response through. The next request will route to the healthier model.
+4. **Streaming**:
+   - If the initial connection fails, or the upstream stalls **before any bytes reach the client** → retry on the next model transparently.
+   - Once any stream bytes have reached the client, the selected model owns that SSE response. A stall, transport error, or EOF without a terminal marker is terminal for the request: log/telemetry the failure, update the circuit breaker, close the partial response, and **do not append another model's output**.
+   - A stream is successful only after an OpenAI-compatible terminal signal (`data: [DONE]` or a non-null `finish_reason`) has been observed. HTTP 200 or first-byte receipt alone is not completion evidence.
 5. **Max retries**: Try up to 3 different models per request. After 3 failures → return `503` with clear error message.
 
 **Transparency guarantee**: For non-streaming and for streaming before first byte — the coding tool never sees the failure. It just experiences slightly higher latency from the retry.
