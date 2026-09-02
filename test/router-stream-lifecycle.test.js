@@ -105,7 +105,7 @@ async function withRouter(routerConfig, fn) {
   }
 }
 
-function post(baseUrl) {
+function post(baseUrl, extra = {}) {
   return fetch(`${baseUrl}/v1/chat/completions`, {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
@@ -113,6 +113,7 @@ function post(baseUrl) {
       model: 'fcm',
       stream: true,
       messages: [{ role: 'user', content: 'continue a long answer' }],
+      ...extra,
     }),
   })
 }
