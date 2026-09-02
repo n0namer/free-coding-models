@@ -2508,7 +2508,25 @@ class RouterRuntime {
         // 📖 Guard: ensure chunk value is safe for Buffer conversion
         const buf = Buffer.isBuffer(chunk.value) ? chunk.value : Buffer.from(chunk.value)
         observeStreamChunk(buf)
-        res.write(buf)
+        if (atomicStream && !sentToClient) {
+          bufferedChunks.push(buf)
+          bufferedBytes += buf.length
+          if (bufferedBytes > MAX_ATOMIC_STREAM_BYTES) {
+            if (!res.headersSent) {
+              res.writeHead(response.status, {
+                ...headerEntries(response.headers),
+                'x-fcm-router-model': key,
+                'x-request-id': requestId,
+              })
+            }
+            sentToClient = true
+            for (const buffered of bufferedChunks) res.write(buffered)
+            bufferedChunks.length = 0
+            bufferedBytes = 0
+          }
+        } else {
+          res.write(buf)
+        }
         if (activeReq) {
           if (activeReq.last_activity_at) activeReq.last_activity_at = Date.now()
           activeReq.tokens += 1 // Increment a counter to show progress
