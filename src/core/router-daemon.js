@@ -2474,6 +2474,7 @@ class RouterRuntime {
         if (chunk.done || !chunk.value) break
         // 📖 Guard: ensure chunk value is safe for Buffer conversion
         const buf = Buffer.isBuffer(chunk.value) ? chunk.value : Buffer.from(chunk.value)
+        observeStreamChunk(buf)
         res.write(buf)
         if (activeReq) {
           if (activeReq.last_activity_at) activeReq.last_activity_at = Date.now()
