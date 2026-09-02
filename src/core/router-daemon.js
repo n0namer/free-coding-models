@@ -2365,15 +2365,30 @@ class RouterRuntime {
     const timeout = setTimeout(() => controller.abort(), this.routerConfig().failover.requestTimeoutMs)
     let sentToClient = false
     let streamTerminalSeen = false
-    let streamTerminalTail = ''
+    let streamFrameBuffer = ''
     const observeStreamChunk = (buffer) => {
-      // OpenAI-compatible streams terminate with `data: [DONE]`. Some providers
-      // omit that sentinel but still emit a final choice with finish_reason.
-      // Keep a small rolling tail so terminal markers split across TCP chunks
-      // are still detected without retaining response content.
-      streamTerminalTail = (streamTerminalTail + buffer.toString('utf8')).slice(-8192)
-      if (/data:\s*\[DONE\](?:\r?\n|$)/.test(streamTerminalTail)) streamTerminalSeen = true
-      if (/"finish_reason"\s*:\s*"[^"]+"/.test(streamTerminalTail)) streamTerminalSeen = true
+      // Parse complete SSE data frames instead of scanning arbitrary model text;
+      // this avoids false terminal matches when generated content mentions
+      // `[DONE]` or `finish_reason` literally. Keep only the incomplete tail.
+      streamFrameBuffer = (streamFrameBuffer + buffer.toString('utf8')).replace(/\r\n/g, '\n')
+      let boundary = streamFrameBuffer.indexOf('\n\n')
+      while (boundary >= 0) {
+        const frame = streamFrameBuffer.slice(0, boundary)
+        streamFrameBuffer = streamFrameBuffer.slice(boundary + 2)
+        const data = frame.split('\n')
+          .filter((line) => line.startsWith('data:'))
+          .map((line) => line.slice(5).trim())
+          .join('\n')
+        if (data === '[DONE]') streamTerminalSeen = true
+        else if (data) {
+          try {
+            const payload = JSON.parse(data)
+            if (payload.choices?.some((choice) => choice?.finish_reason != null)) streamTerminalSeen = true
+          } catch { /* malformed frames remain transport data; routing handles lifecycle separately */ }
+        }
+        boundary = streamFrameBuffer.indexOf('\n\n')
+      }
+      if (streamFrameBuffer.length > 8192) streamFrameBuffer = streamFrameBuffer.slice(-8192)
     }
     const clientAbort = attachClientAbort(req, res, controller)
     try {
