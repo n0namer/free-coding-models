@@ -195,4 +195,37 @@ describe('router long-stream lifecycle', () => {
       })
     })
   })
+
+  it('atomically retries tool streams that stall after upstream partial output', async () => {
+    await withProvider(async (_req, res) => {
+      res.writeHead(200, { 'content-type': 'text/event-stream' })
+      res.write('data: {"choices":[{"delta":{"tool_calls":[{"index":0,"id":"call_1","type":"function","function":{"name":"read_file","arguments":"{\\\"path\\\":\\\"a"}}]},"finish_reason":null}]}\n\n')
+      setTimeout(() => res.destroy(), 250).unref?.()
+    }, async (groq) => {
+      await withProvider(async (_req, res) => {
+        res.writeHead(200, { 'content-type': 'text/event-stream' })
+        res.end('data: {"choices":[{"delta":{"content":"fallback-ok"},"finish_reason":"stop"}]}\n\ndata: [DONE]\n\n')
+      }, async (nvidia) => {
+        await withSourceUrls({ groq: groq.url, nvidia: nvidia.url }, async () => {
+          await withRouter(config(40), async ({ runtime, baseUrl }) => {
+            const response = await post(baseUrl, {
+              tools: [{ type: 'function', function: { name: 'read_file', parameters: { type: 'object', properties: { path: { type: 'string' } } } } }],
+              tool_choice: 'auto',
+            })
+            const text = await response.text()
+            assert.equal(response.status, 200)
+            assert.doesNotMatch(text, /call_1/)
+            assert.match(text, /fallback-ok/)
+            assert.equal(groq.requests.length, 1)
+            assert.equal(nvidia.requests.length, 1)
+            const failed = runtime.requestLog.find((item) => item.model === `groq/${GROQ_MODEL}` && item.error === 'stream_stall_timeout')
+            assert.ok(failed)
+            assert.equal(failed.stream_outcome, 'idle_timeout')
+            const completed = runtime.requestLog.find((item) => item.model === `nvidia/${NVIDIA_MODEL}` && item.stream_outcome === 'completed')
+            assert.ok(completed)
+          })
+        })
+      })
+    })
+  })
 })
