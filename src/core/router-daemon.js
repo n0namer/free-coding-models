@@ -2514,12 +2514,10 @@ class RouterRuntime {
         return { done: true }
       }
       const reason = error.name === 'AbortError' ? 'timeout' : (error.message || String(error))
-      // 📖 Issue #137: stream-stall timeouts get a special tag so we can
-      // 📖 distinguish them from generic upstream errors below. Only stalls
-      // 📖 should trigger failover after a partial response — generic errors
-      // 📖 (malformed JSON, network reset, etc.) usually mean the partial
-      // 📖 data is invalid anyway, so closing cleanly is safer.
-      const isStall = reason === 'stream_stall_timeout' || reason === 'timeout'
+      const durationMs = Math.round(performance.now() - started)
+      const streamOutcome = reason === 'stream_stall_timeout' || reason === 'timeout'
+        ? 'idle_timeout'
+        : 'upstream_error'
       this.markFailure(key, reason)
       if (reason !== 'timeout') {
         this.recordRouterError('upstream_stream_error', requestId, { model: key, reason, partial: sentToClient })
