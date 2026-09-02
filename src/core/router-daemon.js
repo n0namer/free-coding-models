@@ -2364,6 +2364,17 @@ class RouterRuntime {
 
     const timeout = setTimeout(() => controller.abort(), this.routerConfig().failover.requestTimeoutMs)
     let sentToClient = false
+    let streamTerminalSeen = false
+    let streamTerminalTail = ''
+    const observeStreamChunk = (buffer) => {
+      // OpenAI-compatible streams terminate with `data: [DONE]`. Some providers
+      // omit that sentinel but still emit a final choice with finish_reason.
+      // Keep a small rolling tail so terminal markers split across TCP chunks
+      // are still detected without retaining response content.
+      streamTerminalTail = (streamTerminalTail + buffer.toString('utf8')).slice(-8192)
+      if (/data:\s*\[DONE\](?:\r?\n|$)/.test(streamTerminalTail)) streamTerminalSeen = true
+      if (/"finish_reason"\s*:\s*"[^"]+"/.test(streamTerminalTail)) streamTerminalSeen = true
+    }
     const clientAbort = attachClientAbort(req, res, controller)
     try {
       const response = await fetch(providerUrl, {
