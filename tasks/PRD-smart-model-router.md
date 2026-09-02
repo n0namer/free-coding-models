@@ -78,6 +78,21 @@ This PRD is now split between **implemented backend foundation** and **remaining
 | `app_router_install` telemetry | ✅ Done | Fires when user successfully enables router from onboarding. |
 | `app_router_use` telemetry | ✅ Done | Fires every 10th routed request with total_requests + active_set. |
 
+### Current Hardening Incident — Long-Running Stream Lifecycle (2026-09-02)
+
+**Status:** In Progress  
+**Baseline commit:** `4e51bf9ce44456fd93814e7ca23333527d094b13`
+
+Live agent workloads exposed a stream-lifecycle defect that short router smokes did not catch: a provider can return HTTP 200 and begin an SSE response, then stall or end before an OpenAI terminal marker. The router must not treat that as a successful completed request, and it must never splice a second model's continuation into a stream after bytes from the first model have reached the client.
+
+**Required behavior / acceptance criteria:**
+- Given a streaming request with no client-visible bytes yet, when the selected upstream fails or stalls, then normal request-level failover may try the next eligible model within the configured retry budget.
+- Given any streaming bytes have already reached the client, when the upstream stalls/errors/ends without a terminal marker, then the router records a terminal stream failure, updates model health, closes the partial response, and does **not** append another model's output to that SSE stream.
+- A successful streaming request is recorded as completed only after observing an OpenAI-compatible terminal signal (`data: [DONE]` or a non-null `finish_reason`).
+- Request telemetry records `stream_outcome` and full `duration_ms` for completed and failed streaming requests without persisting prompt/response bodies.
+- Regression tests cover partial-stream stall, clean EOF without a terminal marker, and preserve pre-first-byte failover.
+- Canonical tests must pass before this incident is closed; live deployment is a separate gate and requires deployed-source identity evidence.
+
 ### Current Usable Slice
 
 Users can manually start the router and configure tools by hand:
