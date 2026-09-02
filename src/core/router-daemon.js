@@ -2466,6 +2466,7 @@ class RouterRuntime {
         } catch { /* best-effort */ }
       }
       sentToClient = true
+      observeStreamChunk(firstChunkBuffer)
       res.write(firstChunkBuffer)
 
       while (!res.writableEnded) {
