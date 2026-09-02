@@ -2499,9 +2499,11 @@ class RouterRuntime {
         model: key,
         status: response.status,
         latency_ms: latencyMs,
+        duration_ms: durationMs,
         tokens: 0,
         failover: attemptIndex > 0,
         stream: true,
+        stream_outcome: 'completed',
       })
       if (!res.writableEnded) res.end()
       return { done: true }
