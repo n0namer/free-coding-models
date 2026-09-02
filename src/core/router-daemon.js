@@ -2497,6 +2497,10 @@ class RouterRuntime {
         }
       }
 
+      // A standards-compliant SSE event is normally terminated by a blank line,
+      // but some upstreams close immediately after their final data line. Flush
+      // any buffered tail at EOF before deciding that the stream was truncated.
+      if (!streamTerminalSeen && streamFrameBuffer.trim()) observeStreamChunk(Buffer.from('\n\n'))
       const durationMs = Math.round(performance.now() - started)
       if (!streamTerminalSeen) {
         const reason = 'upstream_stream_ended_without_terminal'
