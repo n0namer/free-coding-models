@@ -80,8 +80,10 @@ This PRD is now split between **implemented backend foundation** and **remaining
 
 ### Current Hardening Incident — Long-Running Stream Lifecycle (2026-09-02)
 
-**Status:** In Progress  
-**Baseline commit:** `4e51bf9ce44456fd93814e7ca23333527d094b13`
+**Status:** In Progress — source fix implemented; regression validation pending  
+**Baseline commit:** `4e51bf9ce44456fd93814e7ca23333527d094b13`  
+**Current implementation branch:** `fix/fcm-long-stream-lifecycle`  
+**Regression artifact:** `test/router-stream-lifecycle.test.js`
 
 Live agent workloads exposed a stream-lifecycle defect that short router smokes did not catch: a provider can return HTTP 200 and begin an SSE response, then stall or end before an OpenAI terminal marker. The router must not treat that as a successful completed request, and it must never splice a second model's continuation into a stream after bytes from the first model have reached the client.
 
