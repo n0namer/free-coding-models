@@ -2479,7 +2479,7 @@ class RouterRuntime {
       // 📖 Issue #137: when the previous model sent partial data, headers are
       // 📖 already on the wire — re-calling writeHead throws ERR_HTTP_HEADERS_SENT.
       // 📖 On a mid-stream failover we just append chunks to the existing response.
-      if (!res.headersSent) {
+      if (!atomicStream && !res.headersSent) {
         res.writeHead(response.status, {
           ...headerEntries(response.headers),
           'x-fcm-router-model': key,
