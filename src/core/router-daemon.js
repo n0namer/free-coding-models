@@ -1365,7 +1365,11 @@ class RouterRuntime {
     // 📖 in HALF_OPEN while a lower‑priority CLOSED model is available.
     const stateOrder = { CLOSED: 0, HALF_OPEN: 1 }
     const comparator = (a, b) => {
-      if (a.priority !== b.priority) return a.priority - b.priority
+      // Runtime health must outrank static preference. A HALF_OPEN model is a
+      // recovery probe, not a primary candidate while any known-good CLOSED
+      // model exists. Keeping priority first here previously let several
+      // HALF_OPEN providers consume the entire retry budget before a healthy
+      // fallback (observed as `All routed models failed for set: keyless-dev`).
       const aState = a.circuit?.state || 'UNKNOWN'
       const bState = b.circuit?.state || 'UNKNOWN'
       if (aState !== bState) {
@@ -1373,7 +1377,8 @@ class RouterRuntime {
         const bRank = stateOrder[bState] ?? 2
         return aRank - bRank
       }
-      // higher score first
+      if (a.priority !== b.priority) return a.priority - b.priority
+      // higher score first only among equal state and priority
       return b.score - a.score
     }
     return usable.sort(comparator)
