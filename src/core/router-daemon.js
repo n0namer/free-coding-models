@@ -2493,9 +2493,14 @@ class RouterRuntime {
           res.write(`: fcm-router-failover-from=${key}\n\n`)
         } catch { /* best-effort */ }
       }
-      sentToClient = true
+      if (!atomicStream) sentToClient = true
       observeStreamChunk(firstChunkBuffer)
-      res.write(firstChunkBuffer)
+      if (atomicStream) {
+        bufferedChunks.push(firstChunkBuffer)
+        bufferedBytes += firstChunkBuffer.length
+      } else {
+        res.write(firstChunkBuffer)
+      }
 
       while (!res.writableEnded) {
         const chunk = await this.readStreamChunkWithTimeout(reader)
