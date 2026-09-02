@@ -2482,6 +2482,16 @@ class RouterRuntime {
         }
       }
 
+      const durationMs = Math.round(performance.now() - started)
+      if (!streamTerminalSeen) {
+        const reason = 'upstream_stream_ended_without_terminal'
+        this.markFailure(key, reason)
+        this.recordRouterError(reason, requestId, { model: key, partial: true, duration_ms: durationMs })
+        this.addRequestLog({ request_id: requestId, model: key, status: 'ERR', latency_ms: latencyMs, duration_ms: durationMs, tokens: 0, failover: attemptIndex > 0, error: reason, stream: true, stream_outcome: 'truncated' })
+        this.logger.warn(`Streaming response from ${key} ended without a terminal marker`, { request_id: requestId, duration_ms: durationMs })
+        if (!res.writableEnded) res.end()
+        return { done: true }
+      }
       this.markSuccess(key, latencyMs)
       this.totalRequestsRouted += 1
       this.addRequestLog({
