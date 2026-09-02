@@ -119,6 +119,18 @@ function post(baseUrl, extra = {}) {
 }
 
 describe('router long-stream lifecycle', () => {
+  it('routes CLOSED healthy models before higher-priority HALF_OPEN probes', async () => {
+    await withRouter(config(), async ({ runtime }) => {
+      const primaryKey = `groq/${GROQ_MODEL}`
+      const fallbackKey = `nvidia/${NVIDIA_MODEL}`
+      runtime.circuit.get(primaryKey).state = 'HALF_OPEN'
+      runtime.circuit.get(fallbackKey).state = 'CLOSED'
+      const order = runtime.getRoutingCandidates(runtime.getSet('stream-test'))
+      assert.equal(order[0].key, fallbackKey)
+      assert.equal(order[1].key, primaryKey)
+    })
+  })
+
   it('records a partial-stream idle timeout and does not splice a second model', async () => {
     await withProvider(async (_req, res) => {
       res.writeHead(200, { 'content-type': 'text/event-stream' })
