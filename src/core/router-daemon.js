@@ -147,7 +147,17 @@ function normalizeToolCallsResponse(data) {
 const MAX_REQUEST_LOG = 200
 const MAX_SSE_CLIENTS = 10
 const MAX_CONCURRENT_REQUESTS = 50
+const MAX_ATOMIC_STREAM_BYTES = 16 * 1024 * 1024
 const MAX_PROBE_WINDOW = 20
+
+function requiresAtomicStream(body) {
+  const hasTools = Array.isArray(body?.tools) && body.tools.length > 0
+  const toolChoice = body?.tool_choice
+  const hasToolChoice = toolChoice !== undefined && toolChoice !== null && toolChoice !== 'none'
+  const responseType = body?.response_format?.type
+  const structured = responseType === 'json_object' || responseType === 'json_schema'
+  return hasTools || hasToolChoice || structured
+}
 const TOKEN_FLUSH_INTERVAL_MS = 60000
 const CONFIG_RELOAD_INTERVAL_MS = 10000
 const STATS_RETENTION_DAYS = 90
