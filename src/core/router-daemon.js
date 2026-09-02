@@ -2524,7 +2524,7 @@ class RouterRuntime {
       } else {
         this.recordRouterError('timeout', requestId, { model: key, reason, partial: sentToClient })
       }
-      this.addRequestLog({ request_id: requestId, model: key, status: 'ERR', latency_ms: null, tokens: 0, failover: attemptIndex > 0, error: reason, stream: true })
+      this.addRequestLog({ request_id: requestId, model: key, status: 'ERR', latency_ms: null, duration_ms: durationMs, tokens: 0, failover: attemptIndex > 0, error: reason, stream: true, stream_outcome: streamOutcome })
       if (sentToClient) {
         if (isStall) {
           // 📖 Issue #137: failover even after a partial response. Emit a
