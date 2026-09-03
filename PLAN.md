@@ -25,8 +25,9 @@ FCM Broker must be a generic, reusable, OpenAI-compatible LLM broker that keeps 
 - Coding Station exact-source session `csrepo_eaf4449cf2864348b6a7b1d0bf2c1e13` was created from `f889553f2a80141b8126cbe717123d0e3d75247a` and used for direct workspace edits/validation.
 - On that tested workspace: targeted stream lifecycle regressions PASS `6/6`; canonical `pnpm test` PASS `819/819`; `node --check src/core/router-daemon.js` PASS.
 - The tested workspace includes an uncommitted legacy-regression update in `test/test.js`; Coding Station publication is blocked because `free-coding-models` has no publication metadata/GitHub App credential in Station. Runtime code and `test/router-stream-lifecycle.test.js` have been canonicalized to PR #3; `test/test.js` write-back is still pending.
-- Live FCM reports version `0.5.81`, `activeSet=keyless-dev`; its hardened-source identity is still unproven.
-- Live routing order still places several `HALF_OPEN` llm7 routes before `CLOSED` Kilo routes. This differs from the branch fix that makes circuit health state outrank static priority, so the live runtime has not yet been proven to run the hardened source.
+- Canonical DEV runtime is now identified directly as container `krhkfc6xjtreidxxbf8xdia3-064735014541`, image `krhkfc6xjtreidxxbf8xdia3:cd64d76cb6e9c7ede9c7ce556b786e8732a4a81e`, Docker IP `172.16.1.26`, port `19280`, healthy with restart count `0`; it is exactly the address resolved by `fcm-dev-internal`.
+- Live FCM reports version `0.5.81`, `activeSet=keyless-dev`. Live `/app/src/core/router-daemon.js` SHA-256 is `9ee3681465c7c1be3658724c2c40e86da0aae9d3a85adfc762fb0f02d99efb1a`, while the accepted DEV Git source `574f300458249252a5616406184c7ef3395e4f3f` has router SHA-256 `4e28bb25880a5185a41a24b00123f2259703bebb2cd664500d2c647fb86b0180`; therefore exact live source != recorded accepted Git source.
+- Direct readback of the live router confirms pre-hardening behavior: priority is compared before circuit state, and streaming still performs client-visible partial-stream splicing/failover. This differs from the tested hardening source.
 - Recent live attempt log contains repeated `429` from `kilo/kilo-auto/free`; this is provider instability evidence, not proof that the broker daemon is down.
 - Root `ERRORS.md` is absent. `AGENTS.md` requires `pnpm test` and runtime verification before completion.
 
