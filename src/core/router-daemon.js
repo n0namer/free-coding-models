@@ -1355,10 +1355,9 @@ class RouterRuntime {
       if (!this.getApiKeyForProvider(candidate.provider)) return false
       return candidate.circuit?.state === 'CLOSED' || candidate.circuit?.state === 'HALF_OPEN'
     })
-    // 📖 New ordering: prioritize by explicit priority first, then by circuit state
-    // 📖 (CLOSED before HALF_OPEN), and finally by health score (higher is better).
-    // 📖 This ensures a higher‑priority model is never skipped just because it is
-    // 📖 in HALF_OPEN while a lower‑priority CLOSED model is available.
+    // 📖 Ordering: circuit state first (CLOSED before HALF_OPEN), then explicit
+    // 📖 priority, then health score. Recovery probes never pre-empt a known-good
+    // 📖 route merely because they have a stronger static priority.
     const stateOrder = { CLOSED: 0, HALF_OPEN: 1 }
     const comparator = (a, b) => {
       // Runtime health must outrank static preference. A HALF_OPEN model is a
