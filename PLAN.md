@@ -20,10 +20,12 @@ FCM Broker must be a generic, reusable, OpenAI-compatible LLM broker that keeps 
 
 - GitHub default `main` baseline: `4e51bf9ce44456fd93814e7ca23333527d094b13`.
 - Current implementation branch: `fix/fcm-long-stream-lifecycle`.
-- Current implementation branch head at verification: `f889553f2a80141b8126cbe717123d0e3d75247a`.
+- Current implementation branch head after canonicalizing the verified runtime-code + focused regression delta: `389f03b14e2d856074212c169b247152ec1faad8`.
 - Draft PR #3 remains open and unmerged.
-- Coding Station is healthy and an exact-source repo session was created at `f889553f2a80141b8126cbe717123d0e3d75247a`.
-- Live FCM reports version `0.5.81`, `activeSet=keyless-dev`, `requestsRouted=913`, `inFlight=0`, `activeModelCount=16`, `brokenModelCount=0`.
+- Coding Station exact-source session `csrepo_eaf4449cf2864348b6a7b1d0bf2c1e13` was created from `f889553f2a80141b8126cbe717123d0e3d75247a` and used for direct workspace edits/validation.
+- On that tested workspace: targeted stream lifecycle regressions PASS `6/6`; canonical `pnpm test` PASS `819/819`; `node --check src/core/router-daemon.js` PASS.
+- The tested workspace includes an uncommitted legacy-regression update in `test/test.js`; Coding Station publication is blocked because `free-coding-models` has no publication metadata/GitHub App credential in Station. Runtime code and `test/router-stream-lifecycle.test.js` have been canonicalized to PR #3; `test/test.js` write-back is still pending.
+- Live FCM reports version `0.5.81`, `activeSet=keyless-dev`; its hardened-source identity is still unproven.
 - Live routing order still places several `HALF_OPEN` llm7 routes before `CLOSED` Kilo routes. This differs from the branch fix that makes circuit health state outrank static priority, so the live runtime has not yet been proven to run the hardened source.
 - Recent live attempt log contains repeated `429` from `kilo/kilo-auto/free`; this is provider instability evidence, not proof that the broker daemon is down.
 - Root `ERRORS.md` is absent. `AGENTS.md` requires `pnpm test` and runtime verification before completion.
