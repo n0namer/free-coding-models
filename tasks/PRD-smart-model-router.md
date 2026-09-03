@@ -78,6 +78,26 @@ This PRD is now split between **implemented backend foundation** and **remaining
 | `app_router_install` telemetry | ✅ Done | Fires when user successfully enables router from onboarding. |
 | `app_router_use` telemetry | ✅ Done | Fires every 10th routed request with total_requests + active_set. |
 
+### Current Hardening Incident — Long-Running Stream Lifecycle (2026-09-02)
+
+**Status:** In Progress — source fix implemented; regression validation pending  
+**Baseline commit:** `4e51bf9ce44456fd93814e7ca23333527d094b13`  
+**Current implementation branch:** `fix/fcm-long-stream-lifecycle`  
+**Regression artifact:** `test/router-stream-lifecycle.test.js`
+
+Live agent workloads exposed a stream-lifecycle defect that short router smokes did not catch: a provider can return HTTP 200 and begin an SSE response, then stall or end before an OpenAI terminal marker. For agent/tool/structured requests this produced client-visible `Stream error occurred` after useful work had already happened upstream. The router must distinguish upstream bytes from **client-visible** bytes so it can retry safely without corrupting tool-call or JSON state.
+
+**Required behavior / acceptance criteria:**
+- Runtime route health outranks static priority across circuit states: known-good `CLOSED` models are attempted before `HALF_OPEN` recovery probes. Explicit priority remains authoritative among models in the same state. This prevents recovery probes from consuming the bounded retry budget while a healthy fallback remains untried.
+- Given a streaming request with no client-visible bytes yet, when the selected upstream fails or stalls, then normal request-level failover may try the next eligible model within the configured retry budget.
+- Tool-call or structured-output streams are handled atomically: FCM buffers upstream SSE until a terminal signal is observed, then releases it to the client. If the upstream stalls/errors/truncates before terminal, the buffered attempt is discarded and the next model is tried transparently.
+- Atomic buffering has a 16 MiB hard cap. If a response exceeds the cap, FCM degrades to ordinary streaming rather than growing memory without bound; after bytes become client-visible, model splicing is forbidden.
+- Plain-text streams remain low-latency and stream directly. If they fail after client-visible bytes, FCM records the terminal failure and closes the partial response; it does **not** append a different model's continuation into the same SSE stream.
+- A successful streaming request is recorded as completed only after observing an OpenAI-compatible terminal signal (`data: [DONE]` or a non-null `finish_reason`).
+- Request telemetry records `stream_outcome` and full `duration_ms` for completed and failed streaming requests without persisting prompt/response bodies.
+- Regression tests cover plain-text partial stall, clean EOF without a terminal marker, pre-first-byte failover, and atomic tool-stream failover after upstream partial output.
+- Canonical tests must pass before this incident is closed; live deployment is a separate gate and requires deployed-source identity evidence.
+
 ### Current Usable Slice
 
 Users can manually start the router and configure tools by hand:
@@ -381,10 +401,11 @@ This is the real-time safety net when routing an actual user request:
 1. Daemon receives request from coding tool
 2. Forwards to highest-scoring healthy model
 3. **Non-streaming**: If response is error (429/5xx) or timeout (15s) → immediately retry on next model
-4. **Streaming**: 
-   - If initial connection fails → retry on next model (transparent)
-   - If stream starts but **stalls** (no chunk received for 8s) → abort, retry on next model
-   - If stream has already sent data to the client → cannot transparently retry (partial response). Log the failure, update circuit breaker, but let the partial response through. The next request will route to the healthier model.
+4. **Streaming**:
+   - If the initial connection fails, or the upstream stalls **before any client-visible bytes** → retry on the next model transparently.
+   - Requests carrying tools/tool_choice or structured `response_format` use **atomic streaming**: buffer upstream SSE until a terminal signal. A stalled/truncated attempt is discarded and the next model is tried; the client only sees the successful attempt. Buffering is capped at 16 MiB, after which routing degrades to ordinary direct streaming.
+   - Plain-text streams remain direct/low-latency. Once bytes are client-visible, the selected model owns that SSE response. A later stall/error/truncated EOF is terminal for the request; FCM records it and closes the partial response without splicing another model into the same stream.
+   - A stream is successful only after an OpenAI-compatible terminal signal (`data: [DONE]` or a non-null `finish_reason`) has been observed. HTTP 200 or first-byte receipt alone is not completion evidence.
 5. **Max retries**: Try up to 3 different models per request. After 3 failures → return `503` with clear error message.
 
 **Transparency guarantee**: For non-streaming and for streaming before first byte — the coding tool never sees the failure. It just experiences slightly higher latency from the retry.

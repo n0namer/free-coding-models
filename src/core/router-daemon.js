@@ -147,7 +147,17 @@ function normalizeToolCallsResponse(data) {
 const MAX_REQUEST_LOG = 200
 const MAX_SSE_CLIENTS = 10
 const MAX_CONCURRENT_REQUESTS = 50
+const MAX_ATOMIC_STREAM_BYTES = 16 * 1024 * 1024
 const MAX_PROBE_WINDOW = 20
+
+function requiresAtomicStream(body) {
+  const hasTools = Array.isArray(body?.tools) && body.tools.length > 0
+  const toolChoice = body?.tool_choice
+  const hasToolChoice = toolChoice !== undefined && toolChoice !== null && toolChoice !== 'none'
+  const responseType = body?.response_format?.type
+  const structured = responseType === 'json_object' || responseType === 'json_schema'
+  return hasTools || hasToolChoice || structured
+}
 const TOKEN_FLUSH_INTERVAL_MS = 60000
 const CONFIG_RELOAD_INTERVAL_MS = 10000
 const STATS_RETENTION_DAYS = 90
@@ -1324,22 +1334,18 @@ class RouterRuntime {
   // 📖 getRoutingCandidates - the ordered list of models the router will try,
   // 📖 in EXACT attempt order. This is the heart of routing.
   // 📖
-  // 📖 Strategy (priority-first): the user's priority order is authoritative.
-  // 📖 A model ranked #1 is always tried first while it is healthy, even if a
-  // 📖 lower-priority model has a better health score. The health score is only
-  // 📖 used to break ties between models that share the same priority - which
-  // 📖 happens in practice when multiple models tie because they have no probe
-  // 📖 data yet (cold start) or identical stats.
+  // 📖 Strategy (health-state first, then priority): known-good CLOSED routes
+  // 📖 are always attempted before HALF_OPEN recovery probes. Within the same
+  // 📖 circuit state, the user's explicit priority remains authoritative and
+  // 📖 health score is only a final tiebreaker.
   // 📖
-  // 📖 Why: before this, priority was only 20% of the score and a fast
-  // 📖 low-priority model could steal traffic from a deliberately higher-ranked
-  // 📖 one (see issue #120 - GPT-OSS 120B served despite higher-priority models
-  // 📖 being healthy). Users set the fallback chain on purpose; routing must
-  // 📖 respect it.
-  // 📖
-  // 📖 Circuit-breaker safety is preserved: CLOSED (healthy) models always come
-  // 📖 before HALF_OPEN (probing after cooldown) models, so a recovering model
-  // 📖 never pre-empts a known-good one.
+  // 📖 Why: priority-first ordering allowed high-priority HALF_OPEN providers to
+  // 📖 consume the bounded retry budget while a lower-priority CLOSED fallback
+  // 📖 was still healthy. That exact pattern produced intermittent
+  // 📖 `All routed models failed for set: keyless-dev` in live agent workloads.
+  // 📖 The ordering below preserves issue #120's explicit-priority semantics
+  // 📖 among equally healthy models while keeping circuit-breaker recovery
+  // 📖 probes behind known-good routes.
   getRoutingCandidates(set) {
     const scored = this.scoreCandidates(set)
     const usable = scored.filter((candidate) => {
@@ -1349,13 +1355,16 @@ class RouterRuntime {
       if (!this.getApiKeyForProvider(candidate.provider)) return false
       return candidate.circuit?.state === 'CLOSED' || candidate.circuit?.state === 'HALF_OPEN'
     })
-    // 📖 New ordering: prioritize by explicit priority first, then by circuit state
-    // 📖 (CLOSED before HALF_OPEN), and finally by health score (higher is better).
-    // 📖 This ensures a higher‑priority model is never skipped just because it is
-    // 📖 in HALF_OPEN while a lower‑priority CLOSED model is available.
+    // 📖 Ordering: circuit state first (CLOSED before HALF_OPEN), then explicit
+    // 📖 priority, then health score. Recovery probes never pre-empt a known-good
+    // 📖 route merely because they have a stronger static priority.
     const stateOrder = { CLOSED: 0, HALF_OPEN: 1 }
     const comparator = (a, b) => {
-      if (a.priority !== b.priority) return a.priority - b.priority
+      // Runtime health must outrank static preference. A HALF_OPEN model is a
+      // recovery probe, not a primary candidate while any known-good CLOSED
+      // model exists. Keeping priority first here previously let several
+      // HALF_OPEN providers consume the entire retry budget before a healthy
+      // fallback (observed as `All routed models failed for set: keyless-dev`).
       const aState = a.circuit?.state || 'UNKNOWN'
       const bState = b.circuit?.state || 'UNKNOWN'
       if (aState !== bState) {
@@ -1363,7 +1372,8 @@ class RouterRuntime {
         const bRank = stateOrder[bState] ?? 2
         return aRank - bRank
       }
-      // higher score first
+      if (a.priority !== b.priority) return a.priority - b.priority
+      // higher score first only among equal state and priority
       return b.score - a.score
     }
     return usable.sort(comparator)
@@ -2364,6 +2374,35 @@ class RouterRuntime {
 
     const timeout = setTimeout(() => controller.abort(), this.routerConfig().failover.requestTimeoutMs)
     let sentToClient = false
+    const atomicStream = requiresAtomicStream(body)
+    const bufferedChunks = []
+    let bufferedBytes = 0
+    let streamTerminalSeen = false
+    let streamFrameBuffer = ''
+    const observeStreamChunk = (buffer) => {
+      // Parse complete SSE data frames instead of scanning arbitrary model text;
+      // this avoids false terminal matches when generated content mentions
+      // `[DONE]` or `finish_reason` literally. Keep only the incomplete tail.
+      streamFrameBuffer = (streamFrameBuffer + buffer.toString('utf8')).replace(/\r\n/g, '\n')
+      let boundary = streamFrameBuffer.indexOf('\n\n')
+      while (boundary >= 0) {
+        const frame = streamFrameBuffer.slice(0, boundary)
+        streamFrameBuffer = streamFrameBuffer.slice(boundary + 2)
+        const data = frame.split('\n')
+          .filter((line) => line.startsWith('data:'))
+          .map((line) => line.slice(5).trim())
+          .join('\n')
+        if (data === '[DONE]') streamTerminalSeen = true
+        else if (data) {
+          try {
+            const payload = JSON.parse(data)
+            if (payload.choices?.some((choice) => choice?.finish_reason != null)) streamTerminalSeen = true
+          } catch { /* malformed frames remain transport data; routing handles lifecycle separately */ }
+        }
+        boundary = streamFrameBuffer.indexOf('\n\n')
+      }
+      if (streamFrameBuffer.length > 8192) streamFrameBuffer = streamFrameBuffer.slice(-8192)
+    }
     const clientAbort = attachClientAbort(req, res, controller)
     try {
       const response = await fetch(providerUrl, {
@@ -2440,13 +2479,13 @@ class RouterRuntime {
       // 📖 Issue #137: when the previous model sent partial data, headers are
       // 📖 already on the wire — re-calling writeHead throws ERR_HTTP_HEADERS_SENT.
       // 📖 On a mid-stream failover we just append chunks to the existing response.
-      if (!res.headersSent) {
+      if (!atomicStream && !res.headersSent) {
         res.writeHead(response.status, {
           ...headerEntries(response.headers),
           'x-fcm-router-model': key,
           'x-request-id': requestId,
         })
-      } else {
+      } else if (!atomicStream) {
         // 📖 Reflect the new model in trailer-ish debug headers. Node won't let
         // 📖 us add new headers after send, but we still update x-fcm-router-model
         // 📖 semantics via a leading SSE comment so clients can see the switch.
@@ -2454,21 +2493,94 @@ class RouterRuntime {
           res.write(`: fcm-router-failover-from=${key}\n\n`)
         } catch { /* best-effort */ }
       }
-      sentToClient = true
-      res.write(firstChunkBuffer)
+      if (!atomicStream) sentToClient = true
+      observeStreamChunk(firstChunkBuffer)
+      if (atomicStream) {
+        bufferedChunks.push(firstChunkBuffer)
+        bufferedBytes += firstChunkBuffer.length
+        if (bufferedBytes > MAX_ATOMIC_STREAM_BYTES) {
+          if (!res.headersSent) {
+            res.writeHead(response.status, {
+              ...headerEntries(response.headers),
+              'x-fcm-router-model': key,
+              'x-request-id': requestId,
+            })
+          }
+          sentToClient = true
+          for (const buffered of bufferedChunks) res.write(buffered)
+          bufferedChunks.length = 0
+          bufferedBytes = 0
+        }
+      } else {
+        res.write(firstChunkBuffer)
+      }
 
-      while (!res.writableEnded) {
+      while (!res.writableEnded && !streamTerminalSeen) {
         const chunk = await this.readStreamChunkWithTimeout(reader)
         if (chunk.done || !chunk.value) break
         // 📖 Guard: ensure chunk value is safe for Buffer conversion
         const buf = Buffer.isBuffer(chunk.value) ? chunk.value : Buffer.from(chunk.value)
-        res.write(buf)
+        observeStreamChunk(buf)
+        if (atomicStream && !sentToClient) {
+          bufferedChunks.push(buf)
+          bufferedBytes += buf.length
+          if (bufferedBytes > MAX_ATOMIC_STREAM_BYTES) {
+            if (!res.headersSent) {
+              res.writeHead(response.status, {
+                ...headerEntries(response.headers),
+                'x-fcm-router-model': key,
+                'x-request-id': requestId,
+              })
+            }
+            sentToClient = true
+            for (const buffered of bufferedChunks) res.write(buffered)
+            bufferedChunks.length = 0
+            bufferedBytes = 0
+          }
+        } else {
+          res.write(buf)
+        }
         if (activeReq) {
           if (activeReq.last_activity_at) activeReq.last_activity_at = Date.now()
           activeReq.tokens += 1 // Increment a counter to show progress
         }
       }
 
+      // Stop consuming upstream once an OpenAI terminal marker has arrived.
+      // Some providers keep the HTTP connection alive after [DONE]; waiting for
+      // EOF would turn a completed response into a false stall/timeout.
+      if (streamTerminalSeen) {
+        try { await reader.cancel() } catch {}
+      }
+
+      // A standards-compliant SSE event is normally terminated by a blank line,
+      // but some upstreams close immediately after their final data line. Flush
+      // any buffered tail at EOF before deciding that the stream was truncated.
+      if (!streamTerminalSeen && streamFrameBuffer.trim()) observeStreamChunk(Buffer.from('\n\n'))
+      const durationMs = Math.round(performance.now() - started)
+      if (!streamTerminalSeen) {
+        const reason = 'upstream_stream_ended_without_terminal'
+        this.markFailure(key, reason)
+        this.recordRouterError(reason, requestId, { model: key, partial: sentToClient, duration_ms: durationMs })
+        this.addRequestLog({ request_id: requestId, model: key, status: 'ERR', latency_ms: latencyMs, duration_ms: durationMs, tokens: 0, failover: attemptIndex > 0, error: reason, stream: true, stream_outcome: 'truncated' })
+        this.logger.warn(`Streaming response from ${key} ended without a terminal marker`, { request_id: requestId, duration_ms: durationMs, atomic_stream: atomicStream })
+        if (!sentToClient) return { done: false, failoverToNext: true, reason }
+        if (!res.writableEnded) res.end()
+        return { done: true }
+      }
+      if (atomicStream && !sentToClient) {
+        if (!res.headersSent) {
+          res.writeHead(response.status, {
+            ...headerEntries(response.headers),
+            'x-fcm-router-model': key,
+            'x-request-id': requestId,
+          })
+        }
+        sentToClient = true
+        for (const buffered of bufferedChunks) res.write(buffered)
+        bufferedChunks.length = 0
+        bufferedBytes = 0
+      }
       this.markSuccess(key, latencyMs)
       this.totalRequestsRouted += 1
       this.addRequestLog({
@@ -2476,9 +2588,11 @@ class RouterRuntime {
         model: key,
         status: response.status,
         latency_ms: latencyMs,
+        duration_ms: durationMs,
         tokens: 0,
         failover: attemptIndex > 0,
         stream: true,
+        stream_outcome: 'completed',
       })
       if (!res.writableEnded) res.end()
       return { done: true }
@@ -2489,49 +2603,22 @@ class RouterRuntime {
         return { done: true }
       }
       const reason = error.name === 'AbortError' ? 'timeout' : (error.message || String(error))
-      // 📖 Issue #137: stream-stall timeouts get a special tag so we can
-      // 📖 distinguish them from generic upstream errors below. Only stalls
-      // 📖 should trigger failover after a partial response — generic errors
-      // 📖 (malformed JSON, network reset, etc.) usually mean the partial
-      // 📖 data is invalid anyway, so closing cleanly is safer.
-      const isStall = reason === 'stream_stall_timeout' || reason === 'timeout'
+      const durationMs = Math.round(performance.now() - started)
+      const streamOutcome = reason === 'stream_stall_timeout' || reason === 'timeout'
+        ? 'idle_timeout'
+        : 'upstream_error'
       this.markFailure(key, reason)
       if (reason !== 'timeout') {
         this.recordRouterError('upstream_stream_error', requestId, { model: key, reason, partial: sentToClient })
       } else {
         this.recordRouterError('timeout', requestId, { model: key, reason, partial: sentToClient })
       }
-      this.addRequestLog({ request_id: requestId, model: key, status: 'ERR', latency_ms: null, tokens: 0, failover: attemptIndex > 0, error: reason, stream: true })
+      this.addRequestLog({ request_id: requestId, model: key, status: 'ERR', latency_ms: null, duration_ms: durationMs, tokens: 0, failover: attemptIndex > 0, error: reason, stream: true, stream_outcome: streamOutcome })
       if (sentToClient) {
-        if (isStall) {
-          // 📖 Issue #137: failover even after a partial response. Emit a
-          // 📖 synthetic SSE error event in OpenAI format so clients know the
-          // 📖 stream was truncated and that the router is failing over. The
-          // 📖 outer retry loop will then try the next model on a fresh
-          // 📖 upstream connection; its chunks are appended to the same
-          // 📖 response object so the client sees one continuous stream.
-          this.logger.warn(`Stream stall after partial response from ${key}, attempting failover`, { request_id: requestId, reason })
-          if (!res.writableEnded) {
-            try {
-              // 📖 Issue #137: failover even after a partial response.
-              // 📖 We use a regular chat delta instead of an error payload so
-              // 📖 that clients (which often abort on "error") stay connected.
-              const failoverMsg = `\n\n> [!CAUTION]\n> Stream truncated by router due to upstream ${reason}; failing over to next model.\n\n`
-              const deltaPayload = JSON.stringify({
-                choices: [{
-                  index: 0,
-                  delta: { content: failoverMsg },
-                  finish_reason: null,
-                }],
-              })
-              res.write(`data: ${deltaPayload}\n\n`)
-            } catch { /* best-effort */ }
-          }
-          return { done: false, failoverToNext: true, reason: `stream_stall_${reason}` }
-        }
-        // 📖 Non-stall errors after partial output: keep existing behaviour
-        // 📖 (close cleanly, no failover) to avoid sending malformed data.
-        this.logger.warn(`Streaming failure after partial response from ${key}`, { request_id: requestId, reason })
+        // Once bytes have reached the client, a different model cannot continue
+        // the same semantic SSE stream safely. Record the terminal failure and
+        // close the partial response; the caller may retry as a new request.
+        this.logger.warn(`Streaming failure after partial response from ${key}`, { request_id: requestId, reason, stream_outcome: streamOutcome, duration_ms: durationMs })
         try { if (!res.writableEnded) res.end() } catch {}
         return { done: true }
       }
