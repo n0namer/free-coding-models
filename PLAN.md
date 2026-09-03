@@ -87,8 +87,8 @@ If direct live patching is used, record base identity + exact delta + validation
 
 ## Current Stop Point
 
-Work is at **source validation of PR #3 hardening changes**. The implementation exists, but no canonical PASS is yet recorded for the current branch head and live `0.5.81` is not proven to contain it.
+Source validation is complete on the exact Coding Station workspace: targeted stream lifecycle `6/6` PASS, canonical `819/819` PASS, syntax PASS. Runtime code and the focused lifecycle regression file are canonicalized to PR #3 at `389f03b14e2d856074212c169b247152ec1faad8`; the large legacy `test/test.js` compatibility update is still local to the tested workspace because Station publication credentials are unavailable for this repository. Live `0.5.81` remains `DESIGN_RUNTIME_DRIFT` until the actual FCM target is identified and patched/verified.
 
 ## Next Move
 
-Use the already-created Coding Station repo session at the exact implementation head, run the targeted stream/failover regressions, then full `pnpm test`; patch only inside that Coding Station workspace if a test proves an owning FCM defect.
+Identify the actual live FCM process/source behind `fcm-private-dev`, prove its base identity, then apply only the already-tested hardened runtime delta directly to that FCM target. Follow with bounded live canaries and runtime-log readback before any merge/release decision.
