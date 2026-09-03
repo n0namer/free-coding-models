@@ -56,7 +56,7 @@ async function withSourceUrls(overrides, fn) {
   }
 }
 
-function config(streamStallTimeoutMs = 60) {
+function config(streamStallTimeoutMs = 1000) {
   return {
     telemetry: { enabled: false },
     apiKeys: { groq: 'test-groq', nvidia: 'test-nvidia' },
@@ -135,14 +135,14 @@ describe('router long-stream lifecycle', () => {
     await withProvider(async (_req, res) => {
       res.writeHead(200, { 'content-type': 'text/event-stream' })
       res.write('data: {"choices":[{"delta":{"content":"partial"},"finish_reason":null}]}\n\n')
-      setTimeout(() => res.destroy(), 250).unref?.()
+      setTimeout(() => res.destroy(), 2500).unref?.()
     }, async (groq) => {
       await withProvider(async (_req, res) => {
         res.writeHead(200, { 'content-type': 'text/event-stream' })
         res.end('data: {"choices":[{"delta":{"content":"fallback"},"finish_reason":"stop"}]}\n\ndata: [DONE]\n\n')
       }, async (nvidia) => {
         await withSourceUrls({ groq: groq.url, nvidia: nvidia.url }, async () => {
-          await withRouter(config(40), async ({ runtime, baseUrl }) => {
+          await withRouter(config(), async ({ runtime, baseUrl }) => {
             const response = await post(baseUrl)
             const text = await response.text()
             assert.equal(response.status, 200)
@@ -188,14 +188,14 @@ describe('router long-stream lifecycle', () => {
     await withProvider(async (_req, res) => {
       res.writeHead(200, { 'content-type': 'text/event-stream' })
       res.flushHeaders()
-      setTimeout(() => res.destroy(), 250).unref?.()
+      setTimeout(() => res.destroy(), 2500).unref?.()
     }, async (groq) => {
       await withProvider(async (_req, res) => {
         res.writeHead(200, { 'content-type': 'text/event-stream' })
         res.end('data: {"choices":[{"delta":{"content":"fallback"},"finish_reason":"stop"}]}\n\ndata: [DONE]\n\n')
       }, async (nvidia) => {
         await withSourceUrls({ groq: groq.url, nvidia: nvidia.url }, async () => {
-          await withRouter(config(40), async ({ baseUrl }) => {
+          await withRouter(config(), async ({ baseUrl }) => {
             const response = await post(baseUrl)
             const text = await response.text()
             assert.equal(response.status, 200)
@@ -212,14 +212,14 @@ describe('router long-stream lifecycle', () => {
     await withProvider(async (_req, res) => {
       res.writeHead(200, { 'content-type': 'text/event-stream' })
       res.write('data: {"choices":[{"delta":{"tool_calls":[{"index":0,"id":"call_1","type":"function","function":{"name":"read_file","arguments":"{\\\"path\\\":\\\"a"}}]},"finish_reason":null}]}\n\n')
-      setTimeout(() => res.destroy(), 250).unref?.()
+      setTimeout(() => res.destroy(), 2500).unref?.()
     }, async (groq) => {
       await withProvider(async (_req, res) => {
         res.writeHead(200, { 'content-type': 'text/event-stream' })
         res.end('data: {"choices":[{"delta":{"content":"fallback-ok"},"finish_reason":"stop"}]}\n\ndata: [DONE]\n\n')
       }, async (nvidia) => {
         await withSourceUrls({ groq: groq.url, nvidia: nvidia.url }, async () => {
-          await withRouter(config(40), async ({ runtime, baseUrl }) => {
+          await withRouter(config(), async ({ runtime, baseUrl }) => {
             const response = await post(baseUrl, {
               tools: [{ type: 'function', function: { name: 'read_file', parameters: { type: 'object', properties: { path: { type: 'string' } } } } }],
               tool_choice: 'auto',
@@ -235,6 +235,31 @@ describe('router long-stream lifecycle', () => {
             assert.equal(failed.stream_outcome, 'idle_timeout')
             const completed = runtime.requestLog.find((item) => item.model === `nvidia/${NVIDIA_MODEL}` && item.stream_outcome === 'completed')
             assert.ok(completed)
+          })
+        })
+      })
+    })
+  })
+
+  it('finishes an atomic stream on a terminal marker even if upstream stays open', async () => {
+    await withProvider(async (_req, res) => {
+      res.writeHead(200, { 'content-type': 'text/event-stream' })
+      res.write('data: {"choices":[{"delta":{"content":"done"},"finish_reason":"stop"}]}\n\ndata: [DONE]\n\n')
+      setTimeout(() => res.destroy(), 2500).unref?.()
+    }, async (groq) => {
+      await withProvider(async (_req, res) => {
+        res.writeHead(200, { 'content-type': 'text/event-stream' })
+        res.end('data: [DONE]\n\n')
+      }, async (nvidia) => {
+        await withSourceUrls({ groq: groq.url, nvidia: nvidia.url }, async () => {
+          await withRouter(config(), async ({ runtime, baseUrl }) => {
+            const response = await post(baseUrl, { response_format: { type: 'json_object' } })
+            const text = await response.text()
+            assert.equal(response.status, 200)
+            assert.match(text, /done/)
+            assert.equal(groq.requests.length, 1)
+            assert.equal(nvidia.requests.length, 0)
+            assert.ok(runtime.requestLog.find((item) => item.model === `groq/${GROQ_MODEL}` && item.stream_outcome === 'completed'))
           })
         })
       })
