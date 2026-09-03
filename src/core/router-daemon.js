@@ -2498,11 +2498,24 @@ class RouterRuntime {
       if (atomicStream) {
         bufferedChunks.push(firstChunkBuffer)
         bufferedBytes += firstChunkBuffer.length
+        if (bufferedBytes > MAX_ATOMIC_STREAM_BYTES) {
+          if (!res.headersSent) {
+            res.writeHead(response.status, {
+              ...headerEntries(response.headers),
+              'x-fcm-router-model': key,
+              'x-request-id': requestId,
+            })
+          }
+          sentToClient = true
+          for (const buffered of bufferedChunks) res.write(buffered)
+          bufferedChunks.length = 0
+          bufferedBytes = 0
+        }
       } else {
         res.write(firstChunkBuffer)
       }
 
-      while (!res.writableEnded) {
+      while (!res.writableEnded && !streamTerminalSeen) {
         const chunk = await this.readStreamChunkWithTimeout(reader)
         if (chunk.done || !chunk.value) break
         // 📖 Guard: ensure chunk value is safe for Buffer conversion
