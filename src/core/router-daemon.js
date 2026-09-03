@@ -2546,6 +2546,13 @@ class RouterRuntime {
         }
       }
 
+      // Stop consuming upstream once an OpenAI terminal marker has arrived.
+      // Some providers keep the HTTP connection alive after [DONE]; waiting for
+      // EOF would turn a completed response into a false stall/timeout.
+      if (streamTerminalSeen) {
+        try { await reader.cancel() } catch {}
+      }
+
       // A standards-compliant SSE event is normally terminated by a blank line,
       // but some upstreams close immediately after their final data line. Flush
       // any buffered tail at EOF before deciding that the stream was truncated.
