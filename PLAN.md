@@ -66,12 +66,12 @@ Each batch should optimize for 80/20 information gain and end with fresh evidenc
 
 ### Active Batch
 
-1. Validate exact source in Coding Station at the current implementation SHA.
-2. Run targeted `test/router-stream-lifecycle.test.js`.
-3. Run canonical `pnpm test`.
-4. If tests fail, diagnose only the first owning failure, apply a minimal patch directly in the Coding Station workspace, and rerun targeted tests.
-5. Stop code changes after targeted + canonical PASS; do not broaden the batch into unrelated cleanup.
-6. Write back evidence and the next bounded move here.
+1. Source validation is green: targeted `6/6`, canonical `819/819`, syntax PASS on the tested Coding Station workspace.
+2. Canonicalize the verified runtime-code/focused-regression delta to PR #3; keep the remaining `test/test.js` publication gap explicit instead of hiding drift.
+3. Identify the actual live FCM runtime behind the existing `fcm-private-dev` proxy using read-only target discovery.
+4. Apply the minimal hardened runtime delta directly to the live FCM target only after exact target/source identity is proven.
+5. Run bounded live canaries for CLOSED-before-HALF_OPEN routing, pre-client-byte failover, atomic structured-stream retry, and terminal-marker completion.
+6. Update this SoT from runtime readback; stop the batch after the live acceptance gate or a precise blocker.
 
 ## Anti-Drift Contract
 
