@@ -64,13 +64,32 @@ function validateSchemaDefinition(schema, path = 'schema', seen = new Set()) {
     if (!schema.$ref.startsWith('#/')) return fail(`${path}.$ref: only local JSON Pointer refs are supported`)
   }
 
-  const numericKeywords = [
-    'minLength', 'maxLength', 'minimum', 'maximum', 'exclusiveMinimum', 'exclusiveMaximum',
-    'multipleOf', 'minItems', 'maxItems', 'minProperties', 'maxProperties',
-  ]
+  const numericKeywords = ['minimum', 'maximum', 'exclusiveMinimum', 'exclusiveMaximum']
   for (const key of numericKeywords) {
     if (schema[key] !== undefined && (typeof schema[key] !== 'number' || !Number.isFinite(schema[key]))) {
       return fail(`${path}.${key}: must be a finite number`)
+    }
+  }
+  for (const key of ['minLength', 'maxLength', 'minItems', 'maxItems', 'minProperties', 'maxProperties']) {
+    if (schema[key] !== undefined && (!Number.isInteger(schema[key]) || schema[key] < 0)) {
+      return fail(`${path}.${key}: must be a non-negative integer`)
+    }
+  }
+  if (schema.multipleOf !== undefined && (typeof schema.multipleOf !== 'number' || !Number.isFinite(schema.multipleOf) || schema.multipleOf <= 0)) {
+    return fail(`${path}.multipleOf: must be a finite number greater than 0`)
+  }
+  if (Array.isArray(schema.type) && new Set(schema.type).size !== schema.type.length) {
+    return fail(`${path}.type: duplicate types are not allowed`)
+  }
+  if (Array.isArray(schema.required) && new Set(schema.required).size !== schema.required.length) {
+    return fail(`${path}.required: duplicate property names are not allowed`)
+  }
+  if (Array.isArray(schema.enum)) {
+    if (schema.enum.length === 0) return fail(`${path}.enum: must not be empty`)
+    for (let i = 0; i < schema.enum.length; i += 1) {
+      for (let j = i + 1; j < schema.enum.length; j += 1) {
+        if (deepEqual(schema.enum[i], schema.enum[j])) return fail(`${path}.enum: duplicate values are not allowed`)
+      }
     }
   }
   if (schema.pattern !== undefined) {
