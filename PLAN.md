@@ -61,14 +61,17 @@ Academic references:
 ## Current Source State
 
 - Active fix branch: `fix/fcm-long-stream-lifecycle`.
-- Branch head: `389f03b14e2d856074212c169b247152ec1faad8`.
-- Recent owning commits include:
+- Current verified head before this PLAN write-back: `8ed335f679d128cf8ac3d0b25ddcabfe4395d9a0`.
+- Owning stream-lifecycle commits include:
   - `67ee3f647ebabd157f58f5d080e67bf6a5c02b95` — prefer healthy CLOSED routes before HALF_OPEN probes.
-  - `4a734e200fff1760c30ef45dadb28c07b4a288ef` — enforce atomic first-chunk cap.
+  - `4a734e200fff1760c30ef45dadb28c07b4a288ef` — bound atomic first-chunk buffering.
   - `996541d4fe42f2de4fdf809ae0c738c03c86f5f9` — stop reading after terminal marker.
   - `389f03b14e2d856074212c169b247152ec1faad8` — harden stream-lifecycle regressions.
-- Root `PLAN.md` did not exist before this reconciliation; this file is now the canonical project SoT for the active branch.
-- **Gap found during reconciliation:** `389f03b` bounds atomic buffering at 16 MiB by flushing the buffered payload and switching to client-visible streaming when the cap is exceeded. That preserves memory bounds but violates the stronger atomic invariant/DoD for tool/structured flows, because a later failure can no longer be transparently retried without leaking a partial payload. Before P0 closure, change cap overflow to a clean fail-closed attempt (zero client bytes) and add a deterministic regression for it.
+  - `97ab17cf4c7948f4c55f24bd87f994b7d3b4dece` + `ab7a283cd2aa443e847cc9096f315ac00e109b7f` — change atomic buffer overflow from client flush to fail-closed/retryable zero-byte failure.
+  - `47300620a59df801649336225ffea878340df1d4` — regression for 17 MiB atomic overflow with no failed-attempt payload leakage.
+  - `8ed335f679d128cf8ac3d0b25ddcabfe4395d9a0` — align legacy HALF_OPEN regression with CLOSED-before-HALF_OPEN and isolate positive telemetry testing from deployment env.
+- The earlier 16 MiB atomic-overflow gap is **CLOSED**: overflow is now an attempt failure (`atomic_stream_buffer_limit` / `stream_outcome=buffer_overflow`) before client commit, so a later model can be tried without leaking the failed payload.
+- `PLAN.md` remains the canonical project SoT for this active branch.
 
 ## Current Runtime State — CURRENT Evidence
 
