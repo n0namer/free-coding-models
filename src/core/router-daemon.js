@@ -2686,6 +2686,18 @@ class RouterRuntime {
         if (!res.writableEnded) res.end()
         return { done: true }
       }
+      if (atomicStream && !sentToClient && body?.response_format?.type === 'json_schema') {
+        const bufferedText = Buffer.concat(bufferedChunks).toString('utf8')
+        const schemaValidation = validateStructuredResponseAgainstRequest(body, extractSseStructuredContent(bufferedText))
+        if (!schemaValidation.ok) {
+          const reason = 'response_schema_validation_failed'
+          this.markFailure(key, reason)
+          this.recordRouterError(reason, requestId, { model: key, status: response.status, detail: schemaValidation.error, stream: true })
+          this.addRequestLog({ request_id: requestId, model: key, status: 'ERR', latency_ms: latencyMs, duration_ms: durationMs, tokens: 0, failover: attemptIndex > 0, error: reason, stream: true, stream_outcome: 'schema_invalid' })
+          return { done: false, failoverToNext: true, reason }
+        }
+      }
+
       if (atomicStream && !sentToClient) {
         if (!res.headersSent) {
           res.writeHead(response.status, {
