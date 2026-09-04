@@ -306,36 +306,61 @@ export function validateStructuredContent(contract, content) {
   return validateValue(value, contract.schema)
 }
 
-export function extractCompletionStructuredContent(payload) {
-  const content = payload?.choices?.[0]?.message?.content
+function normalizeContentParts(content) {
   if (typeof content === 'string') return content
   if (Array.isArray(content)) return content.map((part) => typeof part === 'string' ? part : (typeof part?.text === 'string' ? part.text : '')).join('')
   return null
 }
 
-export function extractSseStructuredContent(raw) {
-  let content = ''
+export function extractCompletionStructuredContents(payload) {
+  if (!Array.isArray(payload?.choices)) return []
+  return payload.choices.map((choice) => normalizeContentParts(choice?.message?.content))
+}
+
+export function extractCompletionStructuredContent(payload) {
+  return extractCompletionStructuredContents(payload)[0] ?? null
+}
+
+export function extractSseStructuredContents(raw) {
+  const byChoice = new Map()
   for (const frame of String(raw || '').replace(/\r\n/g, '\n').split('\n\n')) {
     const data = frame.split('\n').filter((line) => line.startsWith('data:')).map((line) => line.slice(5).trim()).join('\n')
     if (!data || data === '[DONE]') continue
     try {
       const payload = JSON.parse(data)
-      for (const choice of payload?.choices || []) {
-        const delta = choice?.delta?.content
-        if (typeof delta === 'string') content += delta
-        else if (Array.isArray(delta)) content += delta.map((part) => typeof part === 'string' ? part : (typeof part?.text === 'string' ? part.text : '')).join('')
+      const choices = Array.isArray(payload?.choices) ? payload.choices : []
+      for (let position = 0; position < choices.length; position += 1) {
+        const choice = choices[position]
+        const key = Number.isInteger(choice?.index) ? choice.index : position
+        const delta = normalizeContentParts(choice?.delta?.content)
+        if (typeof delta === 'string') byChoice.set(key, (byChoice.get(key) || '') + delta)
       }
     } catch {
       // SSE framing/lifecycle validation remains router-daemon's responsibility.
     }
   }
-  return content || null
+  return [...byChoice.entries()].sort(([a], [b]) => a - b).map(([, content]) => content)
+}
+
+export function extractSseStructuredContent(raw) {
+  return extractSseStructuredContents(raw)[0] ?? null
+}
+
+function validateStructuredChoices(contract, contents) {
+  if (!Array.isArray(contents) || contents.length === 0) return fail('structured response content is missing')
+  for (let index = 0; index < contents.length; index += 1) {
+    const result = validateStructuredContent(contract, contents[index])
+    if (!result.ok) return fail(`choice[${index}]: ${result.error}`)
+  }
+  return { ok: true }
 }
 
 export function validateCompletionAgainstStructuredContract(contract, payload) {
-  return validateStructuredContent(contract, extractCompletionStructuredContent(payload))
+  if (!contract || contract.kind !== 'json_schema') return { ok: true }
+  return validateStructuredChoices(contract, extractCompletionStructuredContents(payload))
 }
 
 export function validateSseAgainstStructuredContract(contract, raw) {
-  return validateStructuredContent(contract, extractSseStructuredContent(raw))
+  if (!contract || contract.kind !== 'json_schema') return { ok: true }
+  return validateStructuredChoices(contract, extractSseStructuredContents(raw))
 }
