@@ -86,27 +86,20 @@ Academic references:
 
 ## Current Stage
 
-**LIVE ACCEPTANCE / ANTI-DRIFT for the FCM long-stream lifecycle.**
+**P0 STREAM-LIFECYCLE FUNCTIONAL PASS / RELEASE-EVIDENCE PARTIAL.**
 
-The source-branch design is not sufficient evidence. The next mandatory gate is to prove the permanent FCM DEV runtime is running the exact tested semantics, then prove those semantics with deterministic fault injection.
+The broker lifecycle defect itself is fixed in the permanent FCM DEV runtime and its owning source/test delta is durably captured on the active Git branch. Two acceptance items remain evidence blockers rather than known stream-lifecycle defects: successful external-model generation is currently blocked by upstream quota exhaustion, and the full canonical suite is red only on an unrelated wall-clock microbenchmark threshold.
 
 ## DoD for Current Gate
 
-All must pass before this gate is DONE:
-
-1. Exact live source identity is read back and compared with `389f03b14e2d856074212c169b247152ec1faad8` or a newer equivalent runtime delta.
-2. Any needed code change is made directly in the permanent FCM DEV container, not by GitHub-first redeploy.
-3. Canonical local validation PASS on exact live source.
-4. Deterministic fault-injection canaries PASS:
-   - healthy CLOSED route is selected before HALF_OPEN,
-   - pre-byte 429/5xx/timeout can transparently fail over,
-   - truncated tool/structured attempt emits ZERO client bytes and is discarded before retry,
-   - terminal `finish_reason` or `[DONE]` completes the attempt even if upstream keeps the connection open,
-   - atomic buffer-cap overflow fails cleanly without partial client payload.
-5. Plain-text streaming still delivers low-latency first bytes and never splices a second model after emission.
-6. Telemetry distinguishes attempt failure / stream outcome from success without recording prompt/response content.
-7. At least one real black-box consumer canary passes without any consumer code change.
-8. Exact tested live delta is written back to Git and remote readback matches the tested artifact.
+1. **PASS — live identity / anti-drift.** Actual FCM runtime is identified and the post-reload live router SHA256 is recorded (`fe087729...`). Image provenance is explicitly kept separate from live source identity.
+2. **PASS — container-first implementation.** All product changes were applied directly to the permanent FCM DEV container with stale-SHA guarded patches; no GitHub-first programming/redeploy was used.
+3. **PARTIAL — canonical local validation.** `node --check` and the relevant router/stream tests PASS, but `npm test` exits non-zero only because `test/extended-benchmarks.test.js` measures the 10k lookup microbenchmark at ~53.7–54.3 ms against a hard `<50 ms` threshold. Do not weaken this unrelated benchmark as part of the FCM lifecycle fix.
+4. **PASS — deterministic fault matrix.** CLOSED-before-HALF_OPEN, pre-byte failover, zero-byte atomic truncation retry, terminal-marker keepalive completion, no post-byte plain-text splicing, and clean atomic buffer overflow are covered and pass.
+5. **PASS — plain-text semantics.** Low-latency streaming remains client-visible and a second model is never appended after client commit.
+6. **PASS — telemetry contract.** Attempt failures and stream outcomes are distinguished (`completed`, `truncated`, `buffer_overflow`, `idle_timeout`, `upstream_error`) without logging prompt/response bodies.
+7. **BLOCKED — successful real black-box generation.** The real daemon/auth/OpenAI-compatible surface canary passes, but chat generation currently returns a correct `429` because external routed models are quota-exhausted. Re-run the same unmodified-client canary when one configured upstream becomes callable.
+8. **PASS — durable Git capture.** Product and regression changes are on `fix/fcm-long-stream-lifecycle`; the code/test head before PLAN-only reconciliation was `8ed335f679d128cf8ac3d0b25ddcabfe4395d9a0`. The accidental publication PR against `main` was closed unmerged; no main-branch product change was made.
 
 ## 30-minute Batches — Pareto 80/20
 
