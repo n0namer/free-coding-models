@@ -174,7 +174,7 @@ Actionable concerns:
 | Validator accepts malformed schema and gives false assurance | TECH | 2 | 3 | 6 | fail-closed schema-definition checks + boundary table tests |
 | Multi-choice response validates only choice 0 or mixes SSE choices | DATA | 2 | 3 | 6 | validate every completion choice; isolate SSE by `choice.index`; dedicated regression tests |
 | Validator semantics drift from supported schema subset | TECH | 2 | 2 | 4 | table-driven keyword boundaries now; differential reference-validator suite later |
-| Catastrophic regex / pathological schema CPU | SEC/PERF | 2 | 3 | 6 | unresolved release risk: bound/disable unsafe pattern semantics or use safe validator; add timeout test |
+| Catastrophic regex / pathological schema CPU | SEC/PERF | 2 | 3 | 6 | `pattern` disabled fail-closed for current subset; keep disabled until safe-engine + timeout evidence exists |
 | Recursive/deep schema causes stack/CPU exhaustion | SEC/PERF | 2 | 3 | 6 | recursion cap exists; add schema-depth/node-count tests and request-size evidence |
 | Both providers return invalid structured output | BUS/TECH | 2 | 3 | 6 | integration test must prove fail-closed terminal error and no rejected payload leak |
 | Provider normalizer mutates acceptance contract | DATA | 2 | 3 | 6 | canonical immutable contract + per-attempt cloned materialization; cross-provider body assertions |
