@@ -207,20 +207,6 @@ function parseJsonResult(raw) {
 
 
 
-function extractSseStructuredContent(raw) {
-  let content = ''
-  for (const frame of raw.replace(/\r\n/g, '\n').split('\n\n')) {
-    const data = frame.split('\n').filter((line) => line.startsWith('data:')).map((line) => line.slice(5).trim()).join('\n')
-    if (!data || data === '[DONE]') continue
-    try {
-      for (const choice of JSON.parse(data)?.choices || []) {
-        const delta = choice?.delta?.content
-        if (typeof delta === 'string') content += delta
-      }
-    } catch {}
-  }
-  return content || null
-}
 
 function validateStructuredResponseAgainstRequest(body, content) {
   const contract = getRequestedJsonSchema(body)
