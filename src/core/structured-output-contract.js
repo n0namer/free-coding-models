@@ -59,7 +59,10 @@ function validateSchemaDefinition(schema, path = 'schema', seen = new Set()) {
     return fail(`${path}.required: must be an array of strings`)
   }
   if (schema.enum !== undefined && !Array.isArray(schema.enum)) return fail(`${path}.enum: must be an array`)
-  if (schema.$ref !== undefined && typeof schema.$ref !== 'string') return fail(`${path}.$ref: must be a string`)
+  if (schema.$ref !== undefined) {
+    if (typeof schema.$ref !== 'string') return fail(`${path}.$ref: must be a string`)
+    if (!schema.$ref.startsWith('#/')) return fail(`${path}.$ref: only local JSON Pointer refs are supported`)
+  }
 
   const numericKeywords = [
     'minLength', 'maxLength', 'minimum', 'maximum', 'exclusiveMinimum', 'exclusiveMaximum',
