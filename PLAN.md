@@ -162,7 +162,7 @@ Strengths:
 Actionable concerns:
 - CI/Coding Station dependency installation is currently unreliable (`ENOSPC` / missing dependencies), so full-suite evidence must not be inferred from unit PASS;
 - clean Coolify deployment has not yet produced an exact-head runtime readback;
-- regex `pattern` uses the JS regular-expression engine and needs a bounded security/performance policy before claiming hostile-schema safety;
+- regex `pattern` is intentionally rejected fail-closed in the current supported subset; do not re-enable it without a bounded/safe engine and adversarial timeout evidence;
 - recursive/local `$ref` complexity needs explicit bounded-depth/size acceptance evidence;
 - provider-native refusals / alternate structured-output terminal forms need protocol-specific acceptance decisions before being treated as schema failures.
 
