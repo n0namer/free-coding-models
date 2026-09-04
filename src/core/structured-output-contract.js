@@ -92,11 +92,6 @@ function validateSchemaDefinition(schema, path = 'schema', seen = new Set()) {
       }
     }
   }
-  if (schema.pattern !== undefined) {
-    if (typeof schema.pattern !== 'string') return fail(`${path}.pattern: must be a string`)
-    try { new RegExp(schema.pattern) } catch { return fail(`${path}.pattern: invalid regular expression`) }
-  }
-
   for (const key of ['properties', '$defs', 'definitions']) {
     if (schema[key] === undefined) continue
     if (!schema[key] || typeof schema[key] !== 'object' || Array.isArray(schema[key])) return fail(`${path}.${key}: must be an object`)
