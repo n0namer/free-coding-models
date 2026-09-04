@@ -71,6 +71,60 @@ describe('structured output contract', () => {
     assert.equal(validateStructuredContent(contract, '{not-json').ok, false)
   })
 
+  it('rejects invalid schema boundaries before any provider attempt', () => {
+    const invalidSchemas = [
+      { type: 'string', minLength: -1 },
+      { type: 'array', maxItems: 1.5 },
+      { type: 'object', minProperties: -1 },
+      { type: 'number', multipleOf: 0 },
+      { type: ['string', 'string'] },
+      { type: 'object', required: ['answer', 'answer'] },
+      { enum: [] },
+      { enum: ['x', 'x'] },
+    ]
+    for (const schema of invalidSchemas) {
+      assert.equal(buildStructuredOutputContract(request(schema)).ok, false, JSON.stringify(schema))
+    }
+  })
+
+  it('covers representative supported keyword boundaries', () => {
+    const cases = [
+      [{ type: 'string', minLength: 2, maxLength: 3, pattern: '^a' }, 'ab', true],
+      [{ type: 'string', minLength: 2 }, 'a', false],
+      [{ type: 'number', minimum: 2, maximum: 4, multipleOf: 2 }, 4, true],
+      [{ type: 'number', exclusiveMinimum: 2 }, 2, false],
+      [{ type: 'array', minItems: 1, maxItems: 2, uniqueItems: true, items: { type: 'integer' } }, [1, 2], true],
+      [{ type: 'array', uniqueItems: true }, [1, 1], false],
+      [{ type: 'object', minProperties: 1, maxProperties: 1, properties: { x: { type: 'boolean' } }, additionalProperties: false }, { x: true }, true],
+      [{ allOf: [{ type: 'number' }, { minimum: 2 }] }, 1, false],
+      [{ anyOf: [{ type: 'string' }, { type: 'number' }] }, 1, true],
+      [{ oneOf: [{ type: 'number' }, { minimum: 0 }] }, 1, false],
+      [{ not: { type: 'null' } }, null, false],
+      [{ $defs: { answer: { type: 'string' } }, $ref: '#/$defs/answer' }, 'ok', true],
+    ]
+    for (const [schema, value, expected] of cases) {
+      const contract = buildStructuredOutputContract(request(schema))
+      assert.equal(contract.ok, true, JSON.stringify(schema))
+      assert.equal(validateStructuredContent(contract, JSON.stringify(value)).ok, expected, JSON.stringify({ schema, value }))
+    }
+  })
+
+  it('keeps validation deterministic across repeated contract materialization', () => {
+    const body = request({
+      type: 'object',
+      required: ['answer'],
+      properties: { answer: { enum: ['a', 'b', 'c'] } },
+      additionalProperties: false,
+    })
+    const contract = buildStructuredOutputContract(body)
+    for (let i = 0; i < 100; i += 1) {
+      const providerBody = applyStructuredOutputContract({ ...body, attempt: i }, contract)
+      assert.deepEqual(providerBody.response_format, body.response_format)
+      const candidate = JSON.stringify({ answer: ['a', 'b', 'c'][i % 3] })
+      assert.equal(validateStructuredContent(contract, candidate).ok, true)
+    }
+  })
+
   it('reconstructs structured content from buffered SSE before client commit', () => {
     const raw = [
       `data: ${JSON.stringify({ choices: [{ delta: { content: '{"ans' } }] })}\n\n`,
