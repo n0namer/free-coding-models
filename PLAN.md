@@ -119,10 +119,11 @@ The broker lifecycle defect is fixed in the permanent FCM DEV runtime, the ownin
 - Plain-text never splices after client commit — PASS.
 - 16 MiB atomic buffer overflow fails cleanly and remains retryable — PASS.
 
-### Batch 3 — Black-box consumer — PARTIAL / EXTERNAL BLOCKER
+### Batch 3 — Black-box consumer — DONE
 
 - Real live daemon auth/OpenAI-compatible protocol surface — PASS.
-- Real-model chat generation — blocked by upstream `429 insufficient_quota`; no consumer code change is justified.
+- Active set is Gonka-only: MiniMax priority 1, DeepSeek priority 2.
+- Real-model chat generation — PASS via `gonka/MiniMaxAI/MiniMax-M2.7` with HTTP 200.
 
 ### Batch 4 — Durable capture — DONE FOR FCM DELTA
 
