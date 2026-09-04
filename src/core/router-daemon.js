@@ -2366,7 +2366,7 @@ class RouterRuntime {
     }
   }
 
-  async proxyStreamingRequest({ req, res, body, candidate, requestId, attemptIndex }) {
+  async proxyStreamingRequest({ req, res, body, structuredContract, candidate, requestId, attemptIndex }) {
     const key = candidate.key
     const activeReq = this.activeRequests.get(requestId)
     if (activeReq) {
