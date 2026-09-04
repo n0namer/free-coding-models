@@ -55,6 +55,12 @@ import { TIER_ORDER } from './utils.js'
 import { atomicWriteJson, safeJsonParse, sleep, maskApiKey, isRouteableProvider } from './shared-helpers.js'
 import { normalizeRequestBody } from './schema-normalizer.js'
 import {
+  applyStructuredOutputContract,
+  buildStructuredOutputContract,
+  validateCompletionAgainstStructuredContract,
+  validateSseAgainstStructuredContract,
+} from './structured-output-contract.js'
+import {
   loadCache as loadProbeCache,
   flushCache as flushProbeCache,
   recordProbeResults as recordProbeCacheResults,
