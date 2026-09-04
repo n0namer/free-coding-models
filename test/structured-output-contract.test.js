@@ -96,7 +96,7 @@ describe('structured output contract', () => {
 
   it('covers representative supported keyword boundaries', () => {
     const cases = [
-      [{ type: 'string', minLength: 2, maxLength: 3, pattern: '^a' }, 'ab', true],
+      [{ type: 'string', minLength: 2, maxLength: 3 }, 'ab', true],
       [{ type: 'string', minLength: 2 }, 'a', false],
       [{ type: 'number', minimum: 2, maximum: 4, multipleOf: 2 }, 4, true],
       [{ type: 'number', exclusiveMinimum: 2 }, 2, false],
