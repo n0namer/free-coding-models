@@ -122,8 +122,8 @@ The broker lifecycle defect is fixed in the permanent FCM DEV runtime, the ownin
 ### Batch 3 — Black-box consumer — DONE
 
 - Real live daemon auth/OpenAI-compatible protocol surface — PASS.
-- Active set is Gonka-only: MiniMax priority 1, DeepSeek priority 2.
-- Real-model chat generation — PASS via `gonka/MiniMaxAI/MiniMax-M2.7` with HTTP 200.
+- Active set is Gonka-only: DeepSeek priority 1, MiniMax priority 2.
+- Real-model chat generation — PASS via `gonka/deepseek-ai/DeepSeek-V4-Flash-0731` with HTTP 200.
 
 ### Batch 4 — Durable capture — DONE FOR FCM DELTA
 
