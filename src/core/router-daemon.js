@@ -2499,17 +2499,13 @@ class RouterRuntime {
         bufferedChunks.push(firstChunkBuffer)
         bufferedBytes += firstChunkBuffer.length
         if (bufferedBytes > MAX_ATOMIC_STREAM_BYTES) {
-          if (!res.headersSent) {
-            res.writeHead(response.status, {
-              ...headerEntries(response.headers),
-              'x-fcm-router-model': key,
-              'x-request-id': requestId,
-            })
-          }
-          sentToClient = true
-          for (const buffered of bufferedChunks) res.write(buffered)
-          bufferedChunks.length = 0
-          bufferedBytes = 0
+          const reason = 'atomic_stream_buffer_limit'
+          const durationMs = Math.round(performance.now() - started)
+          this.markFailure(key, reason)
+          this.recordRouterError(reason, requestId, { model: key, partial: false, duration_ms: durationMs })
+          this.addRequestLog({ request_id: requestId, model: key, status: 'ERR', latency_ms: latencyMs, duration_ms: durationMs, tokens: 0, failover: attemptIndex > 0, error: reason, stream: true, stream_outcome: 'buffer_overflow' })
+          try { await reader.cancel() } catch {}
+          return { done: false, failoverToNext: true, reason }
         }
       } else {
         res.write(firstChunkBuffer)
