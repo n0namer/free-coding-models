@@ -128,6 +128,39 @@ describe('structured output contract', () => {
     }
   })
 
+  it('validates every completion choice instead of trusting only choice zero', () => {
+    const contract = buildStructuredOutputContract(request({
+      type: 'object',
+      required: ['answer'],
+      additionalProperties: false,
+      properties: { answer: { type: 'string' } },
+    }))
+    const payload = {
+      choices: [
+        { message: { content: '{"answer":"ok"}' } },
+        { message: { content: '{"answer":123}' } },
+      ],
+    }
+    const result = validateCompletionAgainstStructuredContract(contract, payload)
+    assert.equal(result.ok, false)
+    assert.match(result.error, /choice\[1\]/)
+  })
+
+  it('keeps concurrent SSE choices isolated while validating all of them', () => {
+    const contract = buildStructuredOutputContract(request({
+      type: 'object',
+      required: ['answer'],
+      properties: { answer: { type: 'string' } },
+    }))
+    const raw = [
+      `data: ${JSON.stringify({ choices: [{ index: 0, delta: { content: '{"answer":"a' } }, { index: 1, delta: { content: '{"answer":"b' } }] })}\n\n`,
+      `data: ${JSON.stringify({ choices: [{ index: 1, delta: { content: '"}' } }, { index: 0, delta: { content: '"}' } }] })}\n\n`,
+      'data: [DONE]\n\n',
+    ].join('')
+    assert.deepEqual(extractSseStructuredContents(raw), ['{"answer":"a"}', '{"answer":"b"}'])
+    assert.equal(validateSseAgainstStructuredContract(contract, raw).ok, true)
+  })
+
   it('reconstructs structured content from buffered SSE before client commit', () => {
     const raw = [
       `data: ${JSON.stringify({ choices: [{ delta: { content: '{"ans' } }] })}\n\n`,
