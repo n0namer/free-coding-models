@@ -218,9 +218,11 @@ Implemented during test-design/automation review:
 - representative supported-keyword boundary matrix added;
 - 100-iteration deterministic invariant test added for independent provider materialization;
 - discovered and fixed an unhandled multi-choice defect: non-stream previously validated only `choices[0]`, while SSE concatenated content from multiple choices; central validation now validates every choice independently and SSE accumulation is keyed by `choice.index`;
-- dedicated multi-choice regressions added.
+- dedicated multi-choice regressions added;
+- exact-source dependency-free contract suite PASS: 9/9 tests, 1 suite, 0 failures on code head `731d5a634dc9d8b02b0db0386c3860476fb05c11`; `node --check` for the central contract and router had already passed on the immediately preceding compatible source shape;
+- router integration execution remains a VALIDATION_BLOCKER in Coding Station because dependencies cannot be installed (`npm ci` -> `ENOSPC`; direct router suite -> missing `chalk`). This is environment evidence, not an application-test failure.
 
-Current nearest mandatory move: run the exact-head dependency-free contract suite, then restore a working full integration environment and execute the P0/P1 API failure matrix before any clean runtime acceptance or SourceLoop.
+Current nearest mandatory move: restore one authoritative integration environment, run the P0/P1 API failure matrix plus canonical `npm test`, then perform exact-SHA DEV deploy/readback and live Gonka schema smoke before SourceLoop.
 
 ## Handoff for the Next LLM
 
