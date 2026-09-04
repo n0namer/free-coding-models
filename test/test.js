@@ -3162,16 +3162,12 @@ describe('router daemon integration hardening', () => {
             const text = await response.text()
 
             assert.equal(response.status, 200)
-            // 📖 Partial data from the first model is visible to the client.
             assert.match(text, /partial-/)
-            // 📖 The router emits a synthetic SSE caution message so the client knows
-            // 📖 the stream was truncated and a failover is happening.
-            assert.match(text, /CAUTION/)
-            assert.match(text, /Stream truncated by router/)
-            // 📖 Fallback stream from nvidia was appended.
-            assert.match(text, /fallback/)
+            assert.doesNotMatch(text, /CAUTION/)
+            assert.doesNotMatch(text, /Stream truncated by router/)
+            assert.doesNotMatch(text, /fallback/)
             assert.equal(groqProvider.requests.length, 1)
-            assert.equal(nvidiaProvider.requests.length, 1)
+            assert.equal(nvidiaProvider.requests.length, 0)
           })
         })
       })
