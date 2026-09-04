@@ -87,9 +87,9 @@ Academic references:
 
 ## Current Stage
 
-**P0 STREAM-LIFECYCLE FUNCTIONAL PASS / RELEASE-EVIDENCE PARTIAL.**
+**P0 STREAM-LIFECYCLE + LIVE GONKA ROUTING PASS / CANONICAL-SUITE RESIDUAL.**
 
-The broker lifecycle defect itself is fixed in the permanent FCM DEV runtime and its owning source/test delta is durably captured on the active Git branch. Two acceptance items remain evidence blockers rather than known stream-lifecycle defects: successful external-model generation is currently blocked by upstream quota exhaustion, and the full canonical suite is red only on an unrelated wall-clock microbenchmark threshold.
+The broker lifecycle defect is fixed in the permanent FCM DEV runtime, the owning source/test delta is durably captured, and a real black-box generation through the intended priority-1 Gonka MiniMax route returns HTTP 200. The only remaining red signal is an unrelated wall-clock microbenchmark threshold in the full canonical suite.
 
 ## DoD for Current Gate
 
