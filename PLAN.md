@@ -144,8 +144,8 @@ Resume here; do not re-diagnose from chat memory.
 2. **Only FCM is in scope.** SWE-AF/OpenCode/AgentField consumers are black-box test clients only. Existing SWE-AF hardening is intentionally kept but must not be expanded for this FCM task.
 3. **Do not program via GitHub.** Observe and edit the permanent FCM DEV container directly; Git is write-back after verification.
 4. **Source design head is `389f03b`.** Recent owning changes enforce CLOSED>HALF_OPEN, atomic structured/tool failover, terminal-marker completion, bounded buffering, and regressions.
-5. **Live FCM container is healthy.** Coolify service `wgifzaww64jjnhazzed2nrrz`, app `broker-dev`, container `ac6ec419...`, mount `/work`. Health alone is not functional proof.
-6. **First next action is read-only live source identity.** Current DEV terminal mediation blocks opaque exec with `OBSERVE_REQUIRED: scope_unknown`. Do not guess live HEAD or mutate until this readback route is resolved.
+5. **Do not use `wgifzaww64jjnhazzed2nrrz / broker-dev` as FCM.** Fresh Coolify + source readback proves it is the LAN Ops DEV broker; it is NON-TARGET.
+6. **First next action is authoritative FCM deployment discovery, then read-only live source identity.** Inspect candidate runtime metadata/provenance and bind the real deployment to this repository before any code mutation. Do not guess from names, ports, or health.
 7. **Then run the fault-injection matrix.** The gate is not “tests exist in Git”; the gate is “the exact live runtime passes them with no consumer hacks.”
 8. **Acceptance = router-local fault gates + one black-box consumer + telemetry + exact Git write-back.**
 9. **BMad route:** `bmad-help → bmad-testarch-test-design → bmad-quick-dev` only if live evidence shows a code defect.
