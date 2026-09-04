@@ -2346,6 +2346,15 @@ class RouterRuntime {
           this.addRequestLog({ request_id: requestId, model: key, status: 502, latency_ms: latencyMs, tokens: 0, failover: attemptIndex > 0, error: 'upstream_invalid_json' })
           return { done: false, failoverToNext: true, reason: 'upstream_invalid_json' }
         }
+        const schemaValidation = validateStructuredResponseAgainstRequest(body, extractCompletionStructuredContent(parsed.value))
+        if (!schemaValidation.ok) {
+          const reason = 'response_schema_validation_failed'
+          this.markFailure(key, reason)
+          this.recordRouterError(reason, requestId, { model: key, status: response.status, detail: schemaValidation.error })
+          this.addRequestLog({ request_id: requestId, model: key, status: 'ERR', latency_ms: latencyMs, tokens: 0, failover: attemptIndex > 0, error: reason })
+          this.recordRuntimeCall({ providerKey: candidate.provider, modelId: candidate.model, success: false, latencyMs, error: reason })
+          return { done: false, failoverToNext: true, reason }
+        }
         this.markSuccess(key, latencyMs)
         const usage = extractUsage(parsed.value)
         this.tokenTracker.record(candidate.provider, candidate.model, usage)
