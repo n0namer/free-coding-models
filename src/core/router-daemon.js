@@ -204,14 +204,6 @@ function parseJsonResult(raw) {
 
 
 
-function schemaTypeMatches(value, type) {
-  if (type === 'null') return value === null
-  if (type === 'array') return Array.isArray(value)
-  if (type === 'object') return value !== null && typeof value === 'object' && !Array.isArray(value)
-  if (type === 'integer') return typeof value === 'number' && Number.isInteger(value)
-  if (type === 'number') return typeof value === 'number' && Number.isFinite(value)
-  return typeof value === type
-}
 
 function validateSchemaValue(value, schema, root = schema, path = 'root', depth = 0) {
   if (depth > 64) return { ok: false, error: `${path}: schema recursion limit` }
