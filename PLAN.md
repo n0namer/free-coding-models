@@ -87,9 +87,9 @@ Academic references:
 
 ## Current Stage
 
-**P0 STREAM-LIFECYCLE + LIVE GONKA ROUTING PASS / CANONICAL-SUITE RESIDUAL.**
+**P0 STREAM-LIFECYCLE + LIVE GONKA ROUTING + CANONICAL SUITE — PASS.**
 
-The broker lifecycle defect is fixed in the permanent FCM DEV runtime, the owning source/test delta is durably captured, and a real black-box generation through the intended priority-1 Gonka DeepSeek route returns HTTP 200. MiniMax is the only priority-2 fallback. The only remaining red signal is an unrelated wall-clock microbenchmark threshold in the full canonical suite.
+The broker lifecycle defect is fixed in the permanent FCM DEV runtime, the owning source/test delta is durably captured, real black-box generation through the intended priority-1 Gonka DeepSeek route returns HTTP 200, and the canonical live-container suite is green. MiniMax is the only priority-2 fallback. No P0 validation blocker remains.
 
 ## DoD for Current Gate
 
