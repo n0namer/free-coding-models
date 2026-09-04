@@ -2123,8 +2123,8 @@ class RouterRuntime {
 
         tried.push(candidate.key)
         const result = body.stream === true
-          ? await this.proxyStreamingRequest({ req, res, body, candidate, requestId, attemptIndex })
-          : await this.proxyJsonRequest({ req, res, body, candidate, requestId, attemptIndex })
+          ? await this.proxyStreamingRequest({ req, res, body, structuredContract, candidate, requestId, attemptIndex })
+          : await this.proxyJsonRequest({ req, res, body, structuredContract, candidate, requestId, attemptIndex })
         if (result.done) return
         attemptIndex += 1
         if (result.authFailure) blockedProviders.add(candidate.provider)
