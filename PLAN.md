@@ -99,7 +99,7 @@ The broker lifecycle defect is fixed in the permanent FCM DEV runtime, the ownin
 4. **PASS — deterministic fault matrix.** CLOSED-before-HALF_OPEN, pre-byte failover, zero-byte atomic truncation retry, terminal-marker keepalive completion, no post-byte plain-text splicing, and clean atomic buffer overflow are covered and pass.
 5. **PASS — plain-text semantics.** Low-latency streaming remains client-visible and a second model is never appended after client commit.
 6. **PASS — telemetry contract.** Attempt failures and stream outcomes are distinguished (`completed`, `truncated`, `buffer_overflow`, `idle_timeout`, `upstream_error`) without logging prompt/response bodies.
-7. **BLOCKED — successful real black-box generation.** The real daemon/auth/OpenAI-compatible surface canary passes, but chat generation currently returns a correct `429` because external routed models are quota-exhausted. Re-run the same unmodified-client canary when one configured upstream becomes callable.
+7. **PASS — successful real black-box generation.** Live config uses only Gonka MiniMax priority 1 and Gonka DeepSeek priority 2; an unmodified OpenAI-compatible request returned HTTP 200 and `x-fcm-router-model: gonka/MiniMaxAI/MiniMax-M2.7`.
 8. **PASS — durable Git capture.** Product and regression changes are on `fix/fcm-long-stream-lifecycle`; the code/test head before PLAN-only reconciliation was `8ed335f679d128cf8ac3d0b25ddcabfe4395d9a0`. The accidental publication PR against `main` was closed unmerged; no main-branch product change was made.
 
 ## 30-minute Batches — Pareto 80/20
