@@ -71,11 +71,13 @@ Academic references:
 
 ## Current Runtime State — CURRENT Evidence
 
-- The previously assumed runtime `wgifzaww64jjnhazzed2nrrz / broker-dev / ac6ec419...` is **NOT FCM**. Authoritative Coolify metadata identifies service `wgifzaww64jjnhazzed2nrrz` as `lan-ops-dev`, and live `/work/broker/app/main.py` identifies itself as `LAN Ops Broker` v0.3.0-dev with LAN edge/discovery endpoints.
-- Static VPS Terminal target `lan-ops-dev-broker` also binds that compose project to `/work/broker`; searches show no FCM `stream_outcome`/`finish_reason` lifecycle code there. This runtime is NON-TARGET and must not be patched for FCM.
-- Therefore the actual deployed FCM runtime identity is currently **UNRESOLVED**. This is an identity/capability discovery gate, not evidence of an FCM code failure.
-- Several opaque application containers exist on the host, but none may be called FCM until Coolify/container/source provenance proves ownership. Health or a suggestive name/port is insufficient.
-- Next mandatory action is authoritative deployment discovery, then exact source/readback of the real FCM runtime before any mutation.
+- The previously assumed runtime `wgifzaww64jjnhazzed2nrrz / broker-dev / ac6ec419...` is **NOT FCM**. Authoritative Coolify + source readback proves it is the LAN Ops DEV broker; it remains NON-TARGET.
+- The actual FCM runtime is now authoritatively identified as Coolify application `krhkfc6xjtreidxxbf8xdia3`, name **FCM LLM Gateway DEV**, repository `n0namer/free-coding-models.git`, exposed port `19280`, start command `node bin/free-coding-models.js --daemon`, no public FQDN.
+- Running container: `8ac7bb34efbbeb91fc6258a633a820179a707b2f7bd1197fd13f6ada70cbef57`, healthy, image tag `krhkfc6xjtreidxxbf8xdia3:cd64d76cb6e9c7ede9c7ce556b786e8732a4a81e`, `/config` backed by volume `fcm-config`.
+- Coolify provenance says the image was built from branch `capture/windows-local-20260901` at `cd64d76cb6e9c7ede9c7ce556b786e8732a4a81e`. The live container has no `.git` metadata under `/app`.
+- Live `/app/src/core/router-daemon.js` SHA256 is `9ee3681465c7c1be3658724c2c40e86da0aae9d3a85adfc762fb0f02d99efb1a` and contains direct post-build edits: CLOSED-before-HALF_OPEN ordering is present even though that Git commit landed later than the image source commit. Therefore configured image SHA alone is not the current source identity.
+- More importantly, live stream code still has the old unsafe behavior: it writes the first upstream chunk immediately (`sentToClient = true`), and on a partial stall emits a synthetic warning then returns `failoverToNext=true`, allowing a second model to append to the same client response. It has no `streamTerminalSeen` lifecycle logic and no `test/router-stream-lifecycle.test.js` in the live filesystem.
+- This is direct **DESIGN_RUNTIME_DRIFT** against the P0 broker invariant and is now a concrete owning FCM defect. The smallest next change is to bring the permanent FCM DEV container's router stream lifecycle to the tested branch semantics, then execute deterministic fault injection before Git write-back.
 
 ## Current Stage
 
