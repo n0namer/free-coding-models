@@ -1,10 +1,11 @@
 # FCM Broker Plan / Source of Truth
 
 Status: ACTIVE
-Last reconciled: 2026-09-04
+Last reconciled: 2026-09-05
 Repository: `n0namer/free-coding-models`
 Active working branch: `fix/fcm-long-stream-lifecycle`
-Verified code/test head (before PLAN-only reconciliation commits): `8ed335f679d128cf8ac3d0b25ddcabfe4395d9a0` — `test(router): align recovery routing and telemetry isolation`
+Current Git source head: `194ae9986c4b4b0af64cde62bceb96c56848e026` — `test(router): cover all-invalid and invalid-json failover`
+Execution rule: debug/implement directly in permanent `fcm-dev`; GitHub is SoT/write-back only after live verification. No GitHub-first programming or redeploy debug loop.
 
 ## North Star
 
