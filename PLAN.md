@@ -134,6 +134,94 @@ The broker lifecycle defect is fixed in the permanent FCM DEV runtime, the ownin
 
 ---
 
+## P1 Structured Contract Validation — BMAD Test Architecture
+
+Status: ACTIVE / TEST-HARDENING. P0 lifecycle remains PASS and must not be weakened.
+
+BMad routing used for this phase:
+1. `bmad-help` — restored project/stage and routed the next mandatory move.
+2. `bmad-testarch-test-design` — system-level risk/testability and coverage design.
+3. `bmad-testarch-automate` — expand only the highest-leverage deterministic automation first.
+4. `bmad-review-edge-case-hunter` — enumerate unhandled schema/choice/boundary paths before runtime acceptance.
+
+### Evidence-based testing strategy
+
+The test strategy follows three high-leverage findings from software-testing research:
+- error-path/fault-injection tests receive P0 priority because simple error-handling tests prevent a large fraction of catastrophic distributed-system failures (Yuan et al., OSDI 2014);
+- properties/invariants are exercised over many generated/repeated values instead of only examples (Claessen & Hughes, QuickCheck, ICFP 2000);
+- mutation adequacy is a later confidence check for critical validator branches, not a substitute for deterministic correctness tests (Jia & Harman, IEEE TSE 2011).
+
+### Testability assessment
+
+Strengths:
+- structured contract is now isolated in `src/core/structured-output-contract.js`;
+- provider attempts are mockable and deterministic;
+- streaming attempts can be fault-injected before client commit;
+- contract materialization and validation can be tested without network/dependencies.
+
+Actionable concerns:
+- CI/Coding Station dependency installation is currently unreliable (`ENOSPC` / missing dependencies), so full-suite evidence must not be inferred from unit PASS;
+- clean Coolify deployment has not yet produced an exact-head runtime readback;
+- regex `pattern` uses the JS regular-expression engine and needs a bounded security/performance policy before claiming hostile-schema safety;
+- recursive/local `$ref` complexity needs explicit bounded-depth/size acceptance evidence;
+- provider-native refusals / alternate structured-output terminal forms need protocol-specific acceptance decisions before being treated as schema failures.
+
+### Risk matrix
+
+| Risk | Cat. | P | I | Score | Mitigation / evidence |
+|---|---|---:|---:|---:|---|
+| Invalid primary output leaks before failover | DATA/TECH | 2 | 3 | 6 | P0 atomic buffer + router JSON-schema integration test; must remain zero-byte before retry |
+| Validator accepts malformed schema and gives false assurance | TECH | 2 | 3 | 6 | fail-closed schema-definition checks + boundary table tests |
+| Multi-choice response validates only choice 0 or mixes SSE choices | DATA | 2 | 3 | 6 | validate every completion choice; isolate SSE by `choice.index`; dedicated regression tests |
+| Validator semantics drift from supported schema subset | TECH | 2 | 2 | 4 | table-driven keyword boundaries now; differential reference-validator suite later |
+| Catastrophic regex / pathological schema CPU | SEC/PERF | 2 | 3 | 6 | unresolved release risk: bound/disable unsafe pattern semantics or use safe validator; add timeout test |
+| Recursive/deep schema causes stack/CPU exhaustion | SEC/PERF | 2 | 3 | 6 | recursion cap exists; add schema-depth/node-count tests and request-size evidence |
+| Both providers return invalid structured output | BUS/TECH | 2 | 3 | 6 | integration test must prove fail-closed terminal error and no rejected payload leak |
+| Provider normalizer mutates acceptance contract | DATA | 2 | 3 | 6 | canonical immutable contract + per-attempt cloned materialization; cross-provider body assertions |
+| Refusal/alternate terminal response misclassified as invalid schema | BUS/TECH | 2 | 2 | 4 | explicitly specify/test accepted refusal semantics before release |
+| Full suite/runtime identity not proven | OPS | 3 | 3 | 9 | exact-source full suite + exact deployed SHA + live black-box schema smoke required for DONE |
+
+### Pareto coverage plan — 20% effort / 80% confidence
+
+P0 mandatory before P1 DONE:
+1. Unit/component: build-once immutable contract, fail-closed malformed schema, every supported keyword representative pass/fail boundary, local-ref behavior, deterministic repeated materialization.
+2. API integration: non-stream invalid primary -> valid fallback; stream invalid primary -> valid fallback with zero leaked rejected bytes; malformed client schema -> 400 with zero upstream calls.
+3. Failure matrix: both upstream attempts invalid; invalid JSON syntax; missing structured content; terminal truncation; 16 MiB atomic overflow; no post-client-commit failover.
+4. Multi-choice: every completion choice validated; SSE chunks isolated by choice index and every choice validated.
+5. Runtime acceptance: canonical full suite green on exact source; deployed identity equals tested identity; real Gonka `json_schema` request PASS and ordinary text request unchanged.
+
+P1 confidence extensions after the mandatory gate:
+- deterministic property/fuzz generation for nested objects/arrays/unions and local refs;
+- differential validation against a mature JSON Schema reference implementation for the advertised subset;
+- mutation testing of validator branches to detect weak assertions;
+- bounded adversarial performance cases for depth, large enums/arrays, regex patterns, and 16 MiB boundary ±1 byte;
+- repeated failover runs to detect state leakage/circuit-breaker coupling.
+
+### Quality gate / DoD for P1
+
+P1 is DONE only when all are evidenced:
+- P0 scenarios: 100% PASS;
+- all score >=6 risks have implemented mitigation and executable evidence;
+- centralized contract unit suite PASS on exact source;
+- router JSON-schema integration suite PASS on exact source;
+- canonical `npm test` PASS with zero failures;
+- exact tested Git SHA is the deployed DEV identity;
+- live black-box `response_format=json_schema` PASS through priority-1 Gonka route;
+- fault-injected invalid primary proves safe pre-commit fallback; both-invalid proves fail-closed;
+- plain-text/non-structured behavior remains unchanged;
+- SourceLoop happens only after this runtime gate, per current user direction.
+
+### BMAD execution delta — 2026-09-04
+
+Implemented during test-design/automation review:
+- malformed numeric schema bounds, duplicate `type`/`required`/`enum`, empty `enum`, and non-positive `multipleOf` now fail closed at contract build;
+- representative supported-keyword boundary matrix added;
+- 100-iteration deterministic invariant test added for independent provider materialization;
+- discovered and fixed an unhandled multi-choice defect: non-stream previously validated only `choices[0]`, while SSE concatenated content from multiple choices; central validation now validates every choice independently and SSE accumulation is keyed by `choice.index`;
+- dedicated multi-choice regressions added.
+
+Current nearest mandatory move: run the exact-head dependency-free contract suite, then restore a working full integration environment and execute the P0/P1 API failure matrix before any clean runtime acceptance or SourceLoop.
+
 ## Handoff for the Next LLM
 
 Resume here; do not re-diagnose from chat memory.
