@@ -130,7 +130,7 @@ The broker lifecycle defect is fixed in the permanent FCM DEV runtime, the ownin
 - Product and regression delta written back to `fix/fcm-long-stream-lifecycle` and reread.
 - Test-only CLOSED/HALF_OPEN + telemetry-environment cleanup durably merged at code/test head `8ed335f...`.
 - PLAN reconciled after write-back.
-- Full-suite residual is isolated to the unrelated `extended-benchmarks` wall-clock threshold and remains separate validation debt.
+- Canonical live-container `npm test` is now green: 814/814 tests, 159 suites, 0 failures. The earlier benchmark suspicion did not reproduce; the actual first-run red was stale live test expectation drift, already represented correctly in the branch.
 
 ---
 
