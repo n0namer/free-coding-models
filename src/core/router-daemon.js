@@ -2248,7 +2248,7 @@ class RouterRuntime {
           this.addRequestLog({ request_id: requestId, model: key, status: 502, latency_ms: latencyMs, tokens: 0, failover: attemptIndex > 0, error: 'upstream_invalid_json' })
           return { done: false, failoverToNext: true, reason: 'upstream_invalid_json' }
         }
-        const schemaValidation = validateStructuredResponseAgainstRequest(body, extractCompletionStructuredContent(parsed.value))
+        const schemaValidation = validateCompletionAgainstStructuredContract(structuredContract, parsed.value)
         if (!schemaValidation.ok) {
           const reason = 'response_schema_validation_failed'
           this.markFailure(key, reason)
