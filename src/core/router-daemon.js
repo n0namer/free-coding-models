@@ -206,12 +206,6 @@ function parseJsonResult(raw) {
 
 
 
-function extractCompletionStructuredContent(payload) {
-  const content = payload?.choices?.[0]?.message?.content
-  if (typeof content === 'string') return content
-  if (Array.isArray(content)) return content.map((part) => typeof part === 'string' ? part : (part?.text || '')).join('')
-  return null
-}
 
 function extractSseStructuredContent(raw) {
   let content = ''
