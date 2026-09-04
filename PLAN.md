@@ -87,9 +87,9 @@ Academic references:
 
 ## Current Stage
 
-**P0 STREAM-LIFECYCLE + LIVE GONKA ROUTING + CANONICAL SUITE — PASS.**
+**P1 STRUCTURED CONTRACT VALIDATION — ACTIVE / LIVE RECOVERY FIRST.**
 
-The broker lifecycle defect is fixed in the permanent FCM DEV runtime, the owning source/test delta is durably captured, real black-box generation through the intended priority-1 Gonka DeepSeek route returns HTTP 200, and the canonical live-container suite is green. MiniMax is the only priority-2 fallback. No P0 validation blocker remains.
+P0 lifecycle design and prior evidence remain accepted, but CURRENT on-disk DEV source is not releasable: `router-daemon.js` fails syntax because of duplicated live-patch tail and the centralized P1 module/tests are not present in the old runtime filesystem. The nearest mandatory gate is to reconcile the current P1 source shape directly into `fcm-dev`, run focused P0/P1 tests plus canonical suite, reload the same container only after source PASS, then run live Gonka schema + plain-text smoke. SourceLoop write-back follows only after that runtime gate is green.
 
 ## DoD for Current Gate
 
