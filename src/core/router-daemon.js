@@ -2147,6 +2147,11 @@ class RouterRuntime {
       sendError(res, 400, 'Missing required field: model', 'invalid_request_error', 'missing_model', requestId)
       return
     }
+    const schemaContract = getRequestedJsonSchema(body)
+    if (schemaContract.active && !schemaContract.schema) {
+      sendError(res, 400, schemaContract.error, 'invalid_request_error', 'invalid_json_schema', requestId)
+      return
+    }
 
     const set = this.getSet(setName)
     if (!set) {
