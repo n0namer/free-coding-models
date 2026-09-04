@@ -146,9 +146,9 @@ Resume here; do not re-diagnose from chat memory.
 2. **Only FCM is in scope.** SWE-AF/OpenCode/AgentField consumers are black-box test clients only. Existing SWE-AF hardening is intentionally kept but must not be expanded for this FCM task.
 3. **Do not program via GitHub.** Observe and edit the permanent FCM DEV container directly; Git is write-back after verification.
 4. **Source design head is `389f03b`.** Recent owning changes enforce CLOSED>HALF_OPEN, atomic structured/tool failover, terminal-marker completion, bounded buffering, and regressions.
-5. **Do not use `wgifzaww64jjnhazzed2nrrz / broker-dev` as FCM.** Fresh Coolify + source readback proves it is the LAN Ops DEV broker; it is NON-TARGET.
-6. **First next action is authoritative FCM deployment discovery, then read-only live source identity.** Inspect candidate runtime metadata/provenance and bind the real deployment to this repository before any code mutation. Do not guess from names, ports, or health.
-7. **Then run the fault-injection matrix.** The gate is not “tests exist in Git”; the gate is “the exact live runtime passes them with no consumer hacks.”
+5. **Actual FCM runtime is identified.** Coolify app `krhkfc6xjtreidxxbf8xdia3` / container `8ac7bb34...`, repository `n0namer/free-coding-models.git`, port `19280`. Do not use `wgifzaww... / broker-dev`; that is LAN Ops DEV.
+6. **Live defect is already evidenced.** `/app/src/core/router-daemon.js` SHA256 `9ee36814...` still emits first chunks immediately and explicitly fails over after a partial stall, splicing two models into one response. The tested branch has the required atomic/terminal lifecycle but the live container does not.
+7. **Next action is direct live patch + fault matrix.** The generic container surface currently allows bounded observation (`pwd/ls/grep/sha256sum`) but rejects write/test commands with `OBSERVE_REQUIRED: scope_unknown`, and the FCM app is not registered as a typed live-patch target. Do not bypass this by GitHub-first redeploy. Resolve the typed direct-container path, patch the live router, then run deterministic fault injection.
 8. **Acceptance = router-local fault gates + one black-box consumer + telemetry + exact Git write-back.**
 9. **BMad route:** `bmad-help → bmad-testarch-test-design → bmad-quick-dev` only if live evidence shows a code defect.
 10. **Stop rule:** do not add semantic JSON-schema enforcement or consumer-specific behavior until the P0 broker lifecycle gate above is PASS.
