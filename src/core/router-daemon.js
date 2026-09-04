@@ -196,6 +196,118 @@ function parseJsonResult(raw) {
   }
 }
 
+function getRequestedJsonSchema(body) {
+  if (body?.response_format?.type !== 'json_schema') return { active: false, schema: null }
+  const schema = body?.response_format?.json_schema?.schema
+  if (!schema || typeof schema !== 'object' || Array.isArray(schema)) {
+    return { active: true, schema: null, error: 'response_format.json_schema.schema must be an object' }
+  }
+  return { active: true, schema }
+}
+
+function resolveLocalSchemaRef(root, pointer) {
+  if (typeof pointer !== 'string' || !pointer.startsWith('#/')) return null
+  let node = root
+  for (const raw of pointer.slice(2).split('/')) {
+    const key = raw.replace(/~1/g, '/').replace(/~0/g, '~')
+    if (!node || typeof node !== 'object' || !(key in node)) return null
+    node = node[key]
+  }
+  return node
+}
+
+function schemaTypeMatches(value, type) {
+  if (type === 'null') return value === null
+  if (type === 'array') return Array.isArray(value)
+  if (type === 'object') return value !== null && typeof value === 'object' && !Array.isArray(value)
+  if (type === 'integer') return typeof value === 'number' && Number.isInteger(value)
+  if (type === 'number') return typeof value === 'number' && Number.isFinite(value)
+  return typeof value === type
+}
+
+function validateSchemaValue(value, schema, root = schema, path = 'root', depth = 0) {
+  if (depth > 64) return { ok: false, error: `${path}: schema recursion limit` }
+  if (schema === true) return { ok: true }
+  if (schema === false || !schema || typeof schema !== 'object' || Array.isArray(schema)) return { ok: false, error: `${path}: invalid schema` }
+  if (schema.$ref) {
+    const target = resolveLocalSchemaRef(root, schema.$ref)
+    return target ? validateSchemaValue(value, target, root, path, depth + 1) : { ok: false, error: `${path}: unresolved $ref` }
+  }
+  if (schema.const !== undefined && JSON.stringify(value) !== JSON.stringify(schema.const)) return { ok: false, error: `${path}: const mismatch` }
+  if (Array.isArray(schema.enum) && !schema.enum.some((entry) => JSON.stringify(entry) === JSON.stringify(value))) return { ok: false, error: `${path}: enum mismatch` }
+  if (Array.isArray(schema.allOf)) for (const child of schema.allOf) { const result = validateSchemaValue(value, child, root, path, depth + 1); if (!result.ok) return result }
+  if (Array.isArray(schema.anyOf) && !schema.anyOf.some((child) => validateSchemaValue(value, child, root, path, depth + 1).ok)) return { ok: false, error: `${path}: anyOf mismatch` }
+  if (Array.isArray(schema.oneOf) && schema.oneOf.filter((child) => validateSchemaValue(value, child, root, path, depth + 1).ok).length !== 1) return { ok: false, error: `${path}: oneOf mismatch` }
+  if (schema.not && validateSchemaValue(value, schema.not, root, path, depth + 1).ok) return { ok: false, error: `${path}: matched forbidden schema` }
+  if (schema.type !== undefined) {
+    const types = Array.isArray(schema.type) ? schema.type : [schema.type]
+    if (!types.some((type) => schemaTypeMatches(value, type))) return { ok: false, error: `${path}: type mismatch` }
+  }
+  if (typeof value === 'string') {
+    const length = [...value].length
+    if (Number.isInteger(schema.minLength) && length < schema.minLength) return { ok: false, error: `${path}: minLength` }
+    if (Number.isInteger(schema.maxLength) && length > schema.maxLength) return { ok: false, error: `${path}: maxLength` }
+    if (typeof schema.pattern === 'string') {
+      try { if (!new RegExp(schema.pattern).test(value)) return { ok: false, error: `${path}: pattern` } } catch { return { ok: false, error: `${path}: invalid pattern` } }
+    }
+  }
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    if (typeof schema.minimum === 'number' && value < schema.minimum) return { ok: false, error: `${path}: minimum` }
+    if (typeof schema.maximum === 'number' && value > schema.maximum) return { ok: false, error: `${path}: maximum` }
+    if (typeof schema.exclusiveMinimum === 'number' && value <= schema.exclusiveMinimum) return { ok: false, error: `${path}: exclusiveMinimum` }
+    if (typeof schema.exclusiveMaximum === 'number' && value >= schema.exclusiveMaximum) return { ok: false, error: `${path}: exclusiveMaximum` }
+  }
+  if (Array.isArray(value)) {
+    if (Number.isInteger(schema.minItems) && value.length < schema.minItems) return { ok: false, error: `${path}: minItems` }
+    if (Number.isInteger(schema.maxItems) && value.length > schema.maxItems) return { ok: false, error: `${path}: maxItems` }
+    if (schema.uniqueItems === true && new Set(value.map((entry) => JSON.stringify(entry))).size !== value.length) return { ok: false, error: `${path}: uniqueItems` }
+    if (schema.items) for (let i = 0; i < value.length; i += 1) { const result = validateSchemaValue(value[i], schema.items, root, `${path}[${i}]`, depth + 1); if (!result.ok) return result }
+  }
+  if (value !== null && typeof value === 'object' && !Array.isArray(value)) {
+    const properties = schema.properties && typeof schema.properties === 'object' ? schema.properties : {}
+    for (const key of schema.required || []) if (!Object.prototype.hasOwnProperty.call(value, key)) return { ok: false, error: `${path}.${key}: required` }
+    for (const [key, child] of Object.entries(properties)) {
+      if (!Object.prototype.hasOwnProperty.call(value, key)) continue
+      const result = validateSchemaValue(value[key], child, root, `${path}.${key}`, depth + 1)
+      if (!result.ok) return result
+    }
+    if (schema.additionalProperties === false) for (const key of Object.keys(value)) if (!Object.prototype.hasOwnProperty.call(properties, key)) return { ok: false, error: `${path}.${key}: additional property` }
+  }
+  return { ok: true }
+}
+
+function extractCompletionStructuredContent(payload) {
+  const content = payload?.choices?.[0]?.message?.content
+  if (typeof content === 'string') return content
+  if (Array.isArray(content)) return content.map((part) => typeof part === 'string' ? part : (part?.text || '')).join('')
+  return null
+}
+
+function extractSseStructuredContent(raw) {
+  let content = ''
+  for (const frame of raw.replace(/\r\n/g, '\n').split('\n\n')) {
+    const data = frame.split('\n').filter((line) => line.startsWith('data:')).map((line) => line.slice(5).trim()).join('\n')
+    if (!data || data === '[DONE]') continue
+    try {
+      for (const choice of JSON.parse(data)?.choices || []) {
+        const delta = choice?.delta?.content
+        if (typeof delta === 'string') content += delta
+      }
+    } catch {}
+  }
+  return content || null
+}
+
+function validateStructuredResponseAgainstRequest(body, content) {
+  const contract = getRequestedJsonSchema(body)
+  if (!contract.active) return { ok: true }
+  if (!contract.schema) return { ok: false, error: contract.error || 'missing json_schema' }
+  if (typeof content !== 'string' || !content.trim()) return { ok: false, error: 'structured response content is missing' }
+  const parsed = parseJsonResult(content)
+  if (!parsed.ok) return { ok: false, error: 'structured response is not valid JSON' }
+  return validateSchemaValue(parsed.value, contract.schema)
+}
+
 function isProcessAlive(pid) {
   if (!Number.isInteger(pid) || pid <= 0) return false
   try {
