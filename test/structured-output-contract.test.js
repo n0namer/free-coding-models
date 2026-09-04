@@ -53,6 +53,10 @@ describe('structured output contract', () => {
     assert.equal(unsupported.ok, false)
     assert.match(unsupported.error, /unsupported JSON Schema keyword/)
 
+    const unsafePattern = buildStructuredOutputContract(request({ type: 'string', pattern: '^(a+)+$' }))
+    assert.equal(unsafePattern.ok, false)
+    assert.match(unsafePattern.error, /unsupported JSON Schema keyword/)
+
     const externalRef = buildStructuredOutputContract(request({
       $ref: 'https://example.com/schema.json',
     }))
