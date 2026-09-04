@@ -203,16 +203,6 @@ function parseJsonResult(raw) {
 }
 
 
-function resolveLocalSchemaRef(root, pointer) {
-  if (typeof pointer !== 'string' || !pointer.startsWith('#/')) return null
-  let node = root
-  for (const raw of pointer.slice(2).split('/')) {
-    const key = raw.replace(/~1/g, '/').replace(/~0/g, '~')
-    if (!node || typeof node !== 'object' || !(key in node)) return null
-    node = node[key]
-  }
-  return node
-}
 
 function schemaTypeMatches(value, type) {
   if (type === 'null') return value === null
