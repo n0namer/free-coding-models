@@ -68,6 +68,7 @@ Academic references:
   - `996541d4fe42f2de4fdf809ae0c738c03c86f5f9` — stop reading after terminal marker.
   - `389f03b14e2d856074212c169b247152ec1faad8` — harden stream-lifecycle regressions.
 - Root `PLAN.md` did not exist before this reconciliation; this file is now the canonical project SoT for the active branch.
+- **Gap found during reconciliation:** `389f03b` bounds atomic buffering at 16 MiB by flushing the buffered payload and switching to client-visible streaming when the cap is exceeded. That preserves memory bounds but violates the stronger atomic invariant/DoD for tool/structured flows, because a later failure can no longer be transparently retried without leaking a partial payload. Before P0 closure, change cap overflow to a clean fail-closed attempt (zero client bytes) and add a deterministic regression for it.
 
 ## Current Runtime State — CURRENT Evidence
 
