@@ -2245,6 +2245,8 @@ describe('telemetry', () => {
 
   it('sends app_start and app_use with the same distinct_id and session_id', async () => {
     const originalFetch = global.fetch
+    const originalTelemetryEnv = process.env.FREE_CODING_MODELS_TELEMETRY
+    delete process.env.FREE_CODING_MODELS_TELEMETRY
     const calls = []
     global.fetch = async (url, options) => {
       calls.push({ url, options })
@@ -2299,6 +2301,8 @@ describe('telemetry', () => {
       assert.equal(useBody.properties.model_tier, 'S+')
     } finally {
       global.fetch = originalFetch
+      if (originalTelemetryEnv === undefined) delete process.env.FREE_CODING_MODELS_TELEMETRY
+      else process.env.FREE_CODING_MODELS_TELEMETRY = originalTelemetryEnv
     }
   })
 
@@ -3258,13 +3262,9 @@ describe('router daemon integration hardening', () => {
     })
   })
 
-  // 📖 Regression for issue #120 — HALF_OPEN recovery must NOT be skipped.
-  // 📖 The screenshot from the user showed a HALF_OPEN priority-#1 model
-  // 📖 being skipped for a CLOSED priority-#20 model. The priority-first
-  // 📖 comparator in getRoutingCandidates now guarantees explicit priority
-  // 📖 wins over circuit state, so a high-priority model mid-recovery is
-  // 📖 still tried before any lower-priority CLOSED fallback.
-  it('keeps a higher-priority HALF_OPEN model above a lower-priority CLOSED one (issue #120)', async () => {
+  // Regression: a HALF_OPEN route is a recovery probe and must not pre-empt
+  // any known-good CLOSED route, even when the probe has higher static priority.
+  it('routes healthy CLOSED models before higher-priority HALF_OPEN probes', async () => {
     await withMockProvider(() => ({
       body: { id: 'chatcmpl-halfopen', choices: [{ message: { role: 'assistant', content: 'from-halfopen' } }] },
     }), async (groqProvider) => {
@@ -3277,32 +3277,25 @@ describe('router daemon integration hardening', () => {
             { provider: 'nvidia', model: ROUTER_TEST_MODELS.nvidiaFast, priority: 5 },
           ])
           await withRouterTestServer(config, async ({ baseUrl, runtime }) => {
-            // 📖 Force groq (priority #1) into HALF_OPEN recovery. nvidia
-            // 📖 (priority #5) stays CLOSED. The OLD code would have sorted
-            // 📖 HALF_OPEN AFTER CLOSED regardless of priority; the NEW
-            // 📖 comparator must keep groq at the top.
             const groqKey = `groq/${ROUTER_TEST_MODELS.groqFast}`
+            const nvidiaKey = `nvidia/${ROUTER_TEST_MODELS.nvidiaFast}`
             const groqCircuit = runtime.circuit.get(groqKey)
             assert.ok(groqCircuit, 'groq circuit entry must exist')
             groqCircuit.state = 'HALF_OPEN'
             groqCircuit.openedAt = Date.now() - 60_000
 
-            // 📖 routingOrder surface: groq (HALF_OPEN, priority 1) MUST be
-            // 📖 before nvidia (CLOSED, priority 5) — issue #120's exact case.
             const stats = await (await fetch(`${baseUrl}/stats`)).json()
-            assert.equal(stats.routingOrder[0].key, groqKey,
-              'priority-#1 HALF_OPEN must come before priority-#5 CLOSED')
-            assert.equal(stats.routingOrder[0].state, 'HALF_OPEN')
-            assert.equal(stats.routingOrder[1].key, `nvidia/${ROUTER_TEST_MODELS.nvidiaFast}`)
-            assert.equal(stats.routingOrder[1].state, 'CLOSED')
+            assert.equal(stats.routingOrder[0].key, nvidiaKey,
+              'healthy CLOSED route must come before HALF_OPEN recovery probe')
+            assert.equal(stats.routingOrder[0].state, 'CLOSED')
+            assert.equal(stats.routingOrder[1].key, groqKey)
+            assert.equal(stats.routingOrder[1].state, 'HALF_OPEN')
 
-            // 📖 End-to-end check: a real chat-completions request hits groq
-            // 📖 (the HALF_OPEN priority-#1), NOT nvidia (the CLOSED priority-#5).
             const response = await postRouterChat(baseUrl)
             assert.equal(response.status, 200)
-            assert.equal(response.headers.get('x-fcm-router-model'), groqKey)
-            assert.equal(groqProvider.requests.length, 1)
-            assert.equal(nvidiaProvider.requests.length, 0)
+            assert.equal(response.headers.get('x-fcm-router-model'), nvidiaKey)
+            assert.equal(groqProvider.requests.length, 0)
+            assert.equal(nvidiaProvider.requests.length, 1)
           })
         })
       })
