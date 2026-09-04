@@ -76,15 +76,14 @@ Academic references:
 
 ## Current Runtime State — CURRENT Evidence
 
-- `wgifzaww64jjnhazzed2nrrz / broker-dev` remains confirmed LAN Ops DEV and is NON-TARGET.
-- Actual FCM DEV is Coolify application `krhkfc6xjtreidxxbf8xdia3`, **FCM LLM Gateway DEV**, repo `n0namer/free-coding-models.git`, port `19280`, start command `node bin/free-coding-models.js --daemon`, no public FQDN.
-- Running container is still `8ac7bb34efbbeb91fc6258a633a820179a707b2f7bd1197fd13f6ada70cbef57`, healthy, with zero restart-count drift in Coolify. The image provenance remains `capture/windows-local-20260901@cd64d76cb6e9c7ede9c7ce556b786e8732a4a81e`, so image SHA alone is **not** the live source identity.
-- FCM DEV is registered as typed live-patch target `fcm-dev`; code was edited directly in the permanent container with stale-SHA guarded patches and reloaded by restarting the same container, not by rebuild/redeploy.
-- Post-reload `/app/src/core/router-daemon.js` SHA256 is `fe087729a2f4d85d4e19e60a49b61af64d09144a7e14f6876b79654df40dd49c`. The unsafe post-byte model-splicing path is gone; structured/tool attempts are atomic until terminal completion; cap overflow is fail-closed before client commit; CLOSED routes outrank HALF_OPEN probes.
-- `node --check` on the live router PASS. The deterministic fault matrix exercised pre-byte failover, no post-byte plain-text splicing, atomic tool/structured retry without failed-attempt leakage, terminal-marker completion with upstream keepalive, CLOSED-before-HALF_OPEN, and atomic overflow handling; these P0 behaviors PASS.
-- Live router config is intentionally constrained to **Gonka Proxy only**, active set `fast-coding`, with exactly two routes: `gonka/deepseek-ai/DeepSeek-V4-Flash-0731` priority 1 and `gonka/MiniMaxAI/MiniMax-M2.7` priority 2. All previous Cloudflare/Ollama/Qwen/Google/NVIDIA entries remain absent from the active set. The order change was applied through the running FCM router API and persisted to `/config/config.json` without redeploy.
-- Real black-box generation canary against the actual daemon PASS after the reorder: HTTP 200, routed model `gonka/deepseek-ai/DeepSeek-V4-Flash-0731`. This proves the intended priority-1 DeepSeek route is live and callable with current credentials; MiniMax is the only fallback.
-- Canonical `npm test` on the permanent live container now PASS: 814/814 tests, 159 suites, 0 failures, total ~17.7 s. The previously suspected `extended-benchmarks` residual did not reproduce (10k lookup sanity completed in ~5.7 ms). The actual first-run failure was a stale live regression that still expected unsafe post-byte model splicing for issue #137; its assertions were aligned with the already-canonical branch behavior, then the full suite passed.
+- `wgifzaww64jjnhazzed2nrrz / broker-dev` remains NON-TARGET. The authoritative DEV target is typed target `fcm-dev` / Coolify application `krhkfc6xjtreidxxbf8xdia3`, port `19280`.
+- The permanent runtime is still the old image/container lineage (`8ac7bb34...`, image provenance `capture/windows-local-20260901@cd64d76...`). Rebuild/redeploy is not the debug path.
+- CURRENT live filesystem is **drifted from Git SoT**: `/app` does not contain current `PLAN.md`/`AGENTS.md`; `/app/test` does not yet contain P1 files such as `router-json-schema.test.js`; `/app/src/core/structured-output-contract.js` is absent.
+- `/app/src/core/router-daemon.js` is currently a damaged live-edit artifact: SHA256 `e013d87fbaff13d19cf3932abe9952e4b236268a9af40679b48f6f077e77d663`, 346,502 bytes / 8,015 lines. `node --check` FAILS at line 4164 because a duplicated tail redeclares `isProcessAlive`. The running daemon was not reloaded after this corruption, so process health does **not** prove the file on disk is executable.
+- SourceLoop/FVE live-patch lane is CURRENT and readable for `fcm-dev`; the journal shows the corruption/recovery patch chain as pending write-back. SourceLoop write-back remains intentionally deferred until the runtime gate is green.
+- Fresh config readback confirms Gonka-only routing is still persisted: `fast-coding` contains exactly `gonka/deepseek-ai/DeepSeek-V4-Flash-0731` priority 1 and `gonka/MiniMaxAI/MiniMax-M2.7` priority 2.
+- P0 evidence from the last known-good loaded runtime remains valid historical evidence (814/814 full suite and deterministic lifecycle matrix), but it does **not** override the current on-disk syntax failure.
+- Git source head `194ae9986c4b4b0af64cde62bceb96c56848e026` contains the centralized P1 structured-output contract and expanded JSON-schema tests; live DEV has not yet been reconciled to that source shape.
 
 ## Current Stage
 
