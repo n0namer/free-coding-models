@@ -4,6 +4,9 @@ import {
   applyStructuredOutputContract,
   buildStructuredOutputContract,
   extractSseStructuredContent,
+  extractSseStructuredContents,
+  validateCompletionAgainstStructuredContract,
+  validateSseAgainstStructuredContract,
   validateStructuredContent,
 } from '../src/core/structured-output-contract.js'
 
