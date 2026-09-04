@@ -208,15 +208,6 @@ function parseJsonResult(raw) {
 
 
 
-function validateStructuredResponseAgainstRequest(body, content) {
-  const contract = getRequestedJsonSchema(body)
-  if (!contract.active) return { ok: true }
-  if (!contract.schema) return { ok: false, error: contract.error || 'missing json_schema' }
-  if (typeof content !== 'string' || !content.trim()) return { ok: false, error: 'structured response content is missing' }
-  const parsed = parseJsonResult(content)
-  if (!parsed.ok) return { ok: false, error: 'structured response is not valid JSON' }
-  return validateSchemaValue(parsed.value, contract.schema)
-}
 
 function isProcessAlive(pid) {
   if (!Number.isInteger(pid) || pid <= 0) return false
