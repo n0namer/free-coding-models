@@ -11,7 +11,7 @@ const ALLOWED_SCHEMA_KEYS = new Set([
   'type', 'enum', 'const', 'allOf', 'anyOf', 'oneOf', 'not',
   'properties', 'required', 'additionalProperties',
   'items', 'prefixItems',
-  'minLength', 'maxLength', 'pattern',
+  'minLength', 'maxLength',
   'minimum', 'maximum', 'exclusiveMinimum', 'exclusiveMaximum', 'multipleOf',
   'minItems', 'maxItems', 'uniqueItems',
   'minProperties', 'maxProperties',
