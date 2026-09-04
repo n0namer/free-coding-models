@@ -265,4 +265,31 @@ describe('router long-stream lifecycle', () => {
       })
     })
   })
+
+  it('fails atomic buffer overflow without leaking the failed payload', async () => {
+    await withProvider(async (_req, res) => {
+      res.writeHead(200, { 'content-type': 'text/event-stream' })
+      res.end(`data: ${'x'.repeat(17 * 1024 * 1024)}\n\n`)
+    }, async (groq) => {
+      await withProvider(async (_req, res) => {
+        res.writeHead(200, { 'content-type': 'text/event-stream' })
+        res.end('data: {"choices":[{"delta":{"content":"overflow-fallback"},"finish_reason":"stop"}]}\n\ndata: [DONE]\n\n')
+      }, async (nvidia) => {
+        await withSourceUrls({ groq: groq.url, nvidia: nvidia.url }, async () => {
+          await withRouter(config(), async ({ runtime, baseUrl }) => {
+            const response = await post(baseUrl, { response_format: { type: 'json_object' } })
+            const text = await response.text()
+            assert.equal(response.status, 200)
+            assert.doesNotMatch(text, /xxxxxxxxxxxxxxxx/)
+            assert.match(text, /overflow-fallback/)
+            assert.equal(groq.requests.length, 1)
+            assert.equal(nvidia.requests.length, 1)
+            const failed = runtime.requestLog.find((item) => item.model === `groq/${GROQ_MODEL}` && item.error === 'atomic_stream_buffer_limit')
+            assert.ok(failed)
+            assert.equal(failed.stream_outcome, 'buffer_overflow')
+          })
+        })
+      })
+    })
+  })
 })
