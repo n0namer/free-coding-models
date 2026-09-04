@@ -140,16 +140,16 @@ Use local deterministic upstreams; do not depend on external model reliability f
 
 Resume here; do not re-diagnose from chat memory.
 
-1. **Project is FCM Broker.** Repo: `n0namer/free-coding-models`. Active branch: `fix/fcm-long-stream-lifecycle`.
-2. **Only FCM is in scope.** SWE-AF/OpenCode/AgentField consumers are black-box test clients only. Existing SWE-AF hardening is intentionally kept but must not be expanded for this FCM task.
-3. **Do not program via GitHub.** Observe and edit the permanent FCM DEV container directly; Git is write-back after verification.
-4. **Source design head is `389f03b`.** Recent owning changes enforce CLOSED>HALF_OPEN, atomic structured/tool failover, terminal-marker completion, bounded buffering, and regressions.
-5. **Actual FCM runtime is identified.** Coolify app `krhkfc6xjtreidxxbf8xdia3` / container `8ac7bb34...`, repository `n0namer/free-coding-models.git`, port `19280`. Do not use `wgifzaww... / broker-dev`; that is LAN Ops DEV.
-6. **Live defect is already evidenced.** `/app/src/core/router-daemon.js` SHA256 `9ee36814...` still emits first chunks immediately and explicitly fails over after a partial stall, splicing two models into one response. The tested branch has the required atomic/terminal lifecycle but the live container does not.
-7. **Next action is direct live patch + fault matrix.** The generic container surface currently allows bounded observation (`pwd/ls/grep/sha256sum`) but rejects write/test commands with `OBSERVE_REQUIRED: scope_unknown`, and the FCM app is not registered as a typed live-patch target. Do not bypass this by GitHub-first redeploy. Resolve the typed direct-container path, patch the live router, then run deterministic fault injection.
-8. **Acceptance = router-local fault gates + one black-box consumer + telemetry + exact Git write-back.**
-9. **BMad route:** `bmad-help → bmad-testarch-test-design → bmad-quick-dev` only if live evidence shows a code defect.
-10. **Stop rule:** do not add semantic JSON-schema enforcement or consumer-specific behavior until the P0 broker lifecycle gate above is PASS.
+1. **Project is FCM Broker.** Repo `n0namer/free-coding-models`; active branch `fix/fcm-long-stream-lifecycle`. Only FCM is in scope. Existing SWE-AF hardening stays but must not be expanded for this work.
+2. **Permanent DEV runtime is known and typed.** Coolify app `krhkfc6xjtreidxxbf8xdia3`, container `8ac7bb34...`, typed target `fcm-dev`, port `19280`. `wgifzaww... / broker-dev` is LAN Ops DEV and must not be touched.
+3. **Container-first rule remains mandatory.** Do not program by editing GitHub and redeploying. Live debugging/patching happens in `fcm-dev`; Git is durable write-back only after verification.
+4. **P0 lifecycle behavior is already fixed live.** Post-reload router SHA256 is `fe087729a2f4d85d4e19e60a49b61af64d09144a7e14f6876b79654df40dd49c`. No post-byte model splicing; structured/tool attempts are atomic; terminal markers end the attempt; 16 MiB overflow fails before client commit; CLOSED outranks HALF_OPEN.
+5. **Deterministic P0 fault matrix is PASS.** Do not reopen the lifecycle design unless new evidence contradicts it. Product/regression write-back is already on the active branch; pre-PLAN code/test head was `8ed335f679d128cf8ac3d0b25ddcabfe4395d9a0`.
+6. **Remaining blocker #1 is external evidence, not code.** The real daemon/auth/OpenAI-compatible surface is healthy, but real chat generation currently returns correct `429 insufficient_quota` because all configured external routes are exhausted. Re-run the same unmodified-client canary when one upstream is callable; do not patch a consumer to hide this.
+7. **Remaining blocker #2 is unrelated validation debt.** Full `npm test` is red only on `extended-benchmarks` wall-clock performance sanity (~53.7–54.3 ms vs `<50 ms`). Do not relax that threshold as part of FCM stream work; treat separately if the project wants container-stable performance testing.
+8. **Git hygiene is clean for this scope.** The test-only write-back was merged to the active fix branch. An accidental publication PR targeting `main` was explicitly closed unmerged; no main-branch product change was made.
+9. **BMad route for the next move:** `bmad-help → bmad-testarch-test-design`; invoke `bmad-quick-dev` only if a new concrete FCM defect is observed. The highest-value next move is evidence collection, not more code.
+10. **Do not start P1 schema-semantic enforcement yet.** First close the two evidence blockers above or explicitly split them into separate non-P0 gates.
 
 ## Not Part of the Current Gate
 
