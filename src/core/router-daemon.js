@@ -202,14 +202,6 @@ function parseJsonResult(raw) {
   }
 }
 
-function getRequestedJsonSchema(body) {
-  if (body?.response_format?.type !== 'json_schema') return { active: false, schema: null }
-  const schema = body?.response_format?.json_schema?.schema
-  if (!schema || typeof schema !== 'object' || Array.isArray(schema)) {
-    return { active: true, schema: null, error: 'response_format.json_schema.schema must be an object' }
-  }
-  return { active: true, schema }
-}
 
 function resolveLocalSchemaRef(root, pointer) {
   if (typeof pointer !== 'string' || !pointer.startsWith('#/')) return null
