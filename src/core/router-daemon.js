@@ -2184,7 +2184,7 @@ class RouterRuntime {
     }
   }
 
-  async proxyJsonRequest({ req, res, body, candidate, requestId, attemptIndex }) {
+  async proxyJsonRequest({ req, res, body, structuredContract, candidate, requestId, attemptIndex }) {
     const key = candidate.key
     const apiKey = this.getApiKeyForProvider(candidate.provider)
     // 📖 Guard: bail early if provider URL cannot be resolved
