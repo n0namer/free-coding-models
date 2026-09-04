@@ -4,7 +4,7 @@ Status: ACTIVE
 Last reconciled: 2026-09-04
 Repository: `n0namer/free-coding-models`
 Active working branch: `fix/fcm-long-stream-lifecycle`
-Verified branch head: `389f03b14e2d856074212c169b247152ec1faad8` — `test(router): harden stream lifecycle regressions`
+Verified branch head: `8ed335f679d128cf8ac3d0b25ddcabfe4395d9a0` — `test(router): align recovery routing and telemetry isolation`
 
 ## North Star
 
