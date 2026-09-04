@@ -71,13 +71,11 @@ Academic references:
 
 ## Current Runtime State — CURRENT Evidence
 
-- Coolify custom service: `wgifzaww64jjnhazzed2nrrz` (`lan-ops-dev`).
-- FCM application: `broker-dev`, UUID `callyuohdc3zqb9nqvcwvrpx`, image `python:3.13-slim`.
-- Container: `ac6ec41941018989f53fe4fcb719e7b1e910ac99d4d3236c83deff9142c6b804`.
-- Container state: running + healthy, restart count 0, created `2026-09-02T07:44:53Z`.
-- RW SourceLoop volume is mounted at `/work`.
-- Health readback confirms repeated HTTP 200 checks to `/healthz`.
-- Exact live git/source identity is currently unresolved: DEV container read-only opaque exec is blocked by operator mediation with `OBSERVE_REQUIRED: scope_unknown`. Therefore do not claim that live `/work` already matches `389f03b`. Treat this as `DESIGN_RUNTIME_DRIFT / EVIDENCE_MISSING` until source readback succeeds.
+- The previously assumed runtime `wgifzaww64jjnhazzed2nrrz / broker-dev / ac6ec419...` is **NOT FCM**. Authoritative Coolify metadata identifies service `wgifzaww64jjnhazzed2nrrz` as `lan-ops-dev`, and live `/work/broker/app/main.py` identifies itself as `LAN Ops Broker` v0.3.0-dev with LAN edge/discovery endpoints.
+- Static VPS Terminal target `lan-ops-dev-broker` also binds that compose project to `/work/broker`; searches show no FCM `stream_outcome`/`finish_reason` lifecycle code there. This runtime is NON-TARGET and must not be patched for FCM.
+- Therefore the actual deployed FCM runtime identity is currently **UNRESOLVED**. This is an identity/capability discovery gate, not evidence of an FCM code failure.
+- Several opaque application containers exist on the host, but none may be called FCM until Coolify/container/source provenance proves ownership. Health or a suggestive name/port is insufficient.
+- Next mandatory action is authoritative deployment discovery, then exact source/readback of the real FCM runtime before any mutation.
 
 ## Current Stage
 
