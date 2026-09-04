@@ -198,6 +198,52 @@ describe('router json_schema contract validation', () => {
     })
   })
 
+  it('fails closed when every routed model violates the requested schema and never leaks rejected payloads', async () => {
+    await withMockProvider(() => ({
+      body: { id: 'bad-primary', choices: [{ message: { role: 'assistant', content: '{"foo":123}' } }] },
+    }), async (primary) => {
+      await withMockProvider(() => ({
+        body: { id: 'bad-fallback', choices: [{ message: { role: 'assistant', content: '{"answer":456}' } }] },
+      }), async (fallback) => {
+        await withSourceUrls({ groq: primary.url, nvidia: fallback.url }, async () => {
+          await withRouter(async (baseUrl) => {
+            const response = await post(baseUrl, { response_format: responseFormat() })
+            const text = await response.text()
+            const payload = JSON.parse(text)
+            assert.equal(response.status, 503)
+            assert.equal(payload.error?.code, 'all_models_failed')
+            assert.equal(primary.requests.length, 1)
+            assert.equal(fallback.requests.length, 1)
+            assert.doesNotMatch(text, /bad-primary|bad-fallback|\"foo\"|456/)
+          })
+        })
+      })
+    })
+  })
+
+  it('fails over when an upstream returns syntactically invalid JSON before client commit', async () => {
+    await withMockProvider(() => ({
+      headers: { 'content-type': 'application/json' },
+      chunks: ['{not-json'],
+    }), async (primary) => {
+      await withMockProvider(() => ({
+        body: { id: 'good-after-invalid-json', choices: [{ message: { role: 'assistant', content: '{"answer":"ok"}' } }] },
+      }), async (fallback) => {
+        await withSourceUrls({ groq: primary.url, nvidia: fallback.url }, async () => {
+          await withRouter(async (baseUrl) => {
+            const response = await post(baseUrl, { response_format: responseFormat() })
+            const payload = await response.json()
+            assert.equal(response.status, 200)
+            assert.equal(response.headers.get('x-fcm-router-model'), `nvidia/${MODELS.fallback}`)
+            assert.equal(payload.id, 'good-after-invalid-json')
+            assert.equal(primary.requests.length, 1)
+            assert.equal(fallback.requests.length, 1)
+          })
+        })
+      })
+    })
+  })
+
   it('rejects a malformed json_schema request before contacting an upstream', async () => {
     await withMockProvider(() => ({
       body: { id: 'should-not-run', choices: [] },
