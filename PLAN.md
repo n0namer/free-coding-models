@@ -103,36 +103,32 @@ The broker lifecycle defect itself is fixed in the permanent FCM DEV runtime and
 
 ## 30-minute Batches — Pareto 80/20
 
-### Batch 1 — Identity + minimum live proof
+### Batch 1 — Identity + minimum live proof — DONE
 
-- Read live `/work` repo HEAD/status and owning broker files.
-- Compare live delta to `389f03b`.
-- If missing, apply only the missing owning stream-lifecycle delta directly in the container.
-- Run the smallest canonical syntax/check plus the stream-lifecycle test slice.
-- Stop and replan if live base has unexpected drift.
+- Actual FCM DEV runtime identified; LAN Ops false target excluded.
+- `fcm-dev` typed live-patch target registered.
+- Missing stream-lifecycle behavior patched directly in the permanent container and syntax-checked.
 
-### Batch 2 — Deterministic fault-injection matrix
+### Batch 2 — Deterministic fault-injection matrix — DONE
 
-Use local deterministic upstreams; do not depend on external model reliability for the error-path gate.
+- CLOSED before HALF_OPEN — PASS.
+- Pre-byte provider failure can fail over — PASS.
+- Atomic tool/structured truncation emits zero failed-attempt client bytes before retry — PASS.
+- Terminal marker completes despite upstream keepalive — PASS.
+- Plain-text never splices after client commit — PASS.
+- 16 MiB atomic buffer overflow fails cleanly and remains retryable — PASS.
 
-- CLOSED before HALF_OPEN.
-- Pre-byte retry on 429/5xx/timeout.
-- Atomic tool/structured truncation + retry.
-- Terminal marker + upstream keepalive.
-- Buffer-cap overflow with zero leaked partial payload.
+### Batch 3 — Black-box consumer — PARTIAL / EXTERNAL BLOCKER
 
-### Batch 3 — Black-box consumer
+- Real live daemon auth/OpenAI-compatible protocol surface — PASS.
+- Real-model chat generation — blocked by upstream `429 insufficient_quota`; no consumer code change is justified.
 
-- Run an unmodified consumer against live FCM.
-- For structured/tool flows, verify no fragment from a failed first attempt is visible.
-- Verify FCM telemetry correlates the attempt chain without content logging.
+### Batch 4 — Durable capture — DONE FOR FCM DELTA
 
-### Batch 4 — Durable capture
-
-- Run canonical tests on the exact accepted live source.
-- Write the exact live delta back to the active Git branch.
-- Read back remote blobs/head.
-- Update this `PLAN.md` with execution IDs, test counts, live identity, and any durable lesson.
+- Product and regression delta written back to `fix/fcm-long-stream-lifecycle` and reread.
+- Test-only CLOSED/HALF_OPEN + telemetry-environment cleanup durably merged at code/test head `8ed335f...`.
+- PLAN reconciled after write-back.
+- Full-suite residual is isolated to the unrelated `extended-benchmarks` wall-clock threshold and remains separate validation debt.
 
 ---
 
