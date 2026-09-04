@@ -18,7 +18,7 @@ Clients such as SWE-AF, OpenCode, OpenClaw, and other consumers are black-box ca
 
 - FCM broker routing, circuit health, failover, stream lifecycle, tool/structured-output transparency, and related telemetry.
 - FCM broker tests and fault-injection canaries.
-- FCM DEV runtime `broker-dev` in Coolify service `wgifzaww64jjnhazzed2nrrz`.
+- The actual FCM DEV runtime, once identified by authoritative deployment/source evidence. Do not infer it from a container or service name alone.
 
 ### Non-target
 
