@@ -2591,9 +2591,9 @@ class RouterRuntime {
         if (!res.writableEnded) res.end()
         return { done: true }
       }
-      if (atomicStream && !sentToClient && body?.response_format?.type === 'json_schema') {
+      if (atomicStream && !sentToClient && structuredContract.kind === 'json_schema') {
         const bufferedText = Buffer.concat(bufferedChunks).toString('utf8')
-        const schemaValidation = validateStructuredResponseAgainstRequest(body, extractSseStructuredContent(bufferedText))
+        const schemaValidation = validateSseAgainstStructuredContract(structuredContract, bufferedText)
         if (!schemaValidation.ok) {
           const reason = 'response_schema_validation_failed'
           this.markFailure(key, reason)
