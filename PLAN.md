@@ -147,7 +147,7 @@ Resume here; do not re-diagnose from chat memory.
 7. **Remaining blocker is unrelated validation debt.** Full `npm test` is red only on `extended-benchmarks` wall-clock performance sanity (~53.7–54.3 ms vs `<50 ms`). Do not relax that threshold as part of FCM stream work; treat separately if the project wants container-stable performance testing.
 8. **Git hygiene is clean for this scope.** The test-only write-back was merged to the active fix branch. An accidental publication PR targeting `main` was explicitly closed unmerged; no main-branch product change was made.
 9. **BMad route for the next move:** `bmad-help → bmad-testarch-test-design`; invoke `bmad-quick-dev` only if a new concrete FCM defect is observed. The highest-value next move is evidence collection, not more code.
-10. **Do not start P1 schema-semantic enforcement yet.** First close the two evidence blockers above or explicitly split them into separate non-P0 gates.
+10. **Do not start P1 schema-semantic enforcement yet.** P0 routing/lifecycle and real Gonka generation are proven; keep the unrelated performance benchmark as a separate validation-debt decision rather than expanding this broker scope.
 
 ## Not Part of the Current Gate
 
