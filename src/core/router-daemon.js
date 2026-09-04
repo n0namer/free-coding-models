@@ -2405,7 +2405,7 @@ class RouterRuntime {
 
     const timeout = setTimeout(() => controller.abort(), this.routerConfig().failover.requestTimeoutMs)
     let sentToClient = false
-    const atomicStream = requiresAtomicStream(body)
+    const atomicStream = requiresAtomicStream(body, structuredContract)
     const bufferedChunks = []
     let bufferedBytes = 0
     let streamTerminalSeen = false
