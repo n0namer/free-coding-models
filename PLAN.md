@@ -75,13 +75,14 @@ Academic references:
 
 ## Current Runtime State — CURRENT Evidence
 
-- The previously assumed runtime `wgifzaww64jjnhazzed2nrrz / broker-dev / ac6ec419...` is **NOT FCM**. Authoritative Coolify + source readback proves it is the LAN Ops DEV broker; it remains NON-TARGET.
-- The actual FCM runtime is now authoritatively identified as Coolify application `krhkfc6xjtreidxxbf8xdia3`, name **FCM LLM Gateway DEV**, repository `n0namer/free-coding-models.git`, exposed port `19280`, start command `node bin/free-coding-models.js --daemon`, no public FQDN.
-- Running container: `8ac7bb34efbbeb91fc6258a633a820179a707b2f7bd1197fd13f6ada70cbef57`, healthy, image tag `krhkfc6xjtreidxxbf8xdia3:cd64d76cb6e9c7ede9c7ce556b786e8732a4a81e`, `/config` backed by volume `fcm-config`.
-- Coolify provenance says the image was built from branch `capture/windows-local-20260901` at `cd64d76cb6e9c7ede9c7ce556b786e8732a4a81e`. The live container has no `.git` metadata under `/app`.
-- Live `/app/src/core/router-daemon.js` SHA256 is `9ee3681465c7c1be3658724c2c40e86da0aae9d3a85adfc762fb0f02d99efb1a` and contains direct post-build edits: CLOSED-before-HALF_OPEN ordering is present even though that Git commit landed later than the image source commit. Therefore configured image SHA alone is not the current source identity.
-- More importantly, live stream code still has the old unsafe behavior: it writes the first upstream chunk immediately (`sentToClient = true`), and on a partial stall emits a synthetic warning then returns `failoverToNext=true`, allowing a second model to append to the same client response. It has no `streamTerminalSeen` lifecycle logic and no `test/router-stream-lifecycle.test.js` in the live filesystem.
-- This is direct **DESIGN_RUNTIME_DRIFT** against the P0 broker invariant and is now a concrete owning FCM defect. The smallest next change is to bring the permanent FCM DEV container's router stream lifecycle to the tested branch semantics, then execute deterministic fault injection before Git write-back.
+- `wgifzaww64jjnhazzed2nrrz / broker-dev` remains confirmed LAN Ops DEV and is NON-TARGET.
+- Actual FCM DEV is Coolify application `krhkfc6xjtreidxxbf8xdia3`, **FCM LLM Gateway DEV**, repo `n0namer/free-coding-models.git`, port `19280`, start command `node bin/free-coding-models.js --daemon`, no public FQDN.
+- Running container is still `8ac7bb34efbbeb91fc6258a633a820179a707b2f7bd1197fd13f6ada70cbef57`, healthy, with zero restart-count drift in Coolify. The image provenance remains `capture/windows-local-20260901@cd64d76cb6e9c7ede9c7ce556b786e8732a4a81e`, so image SHA alone is **not** the live source identity.
+- FCM DEV is registered as typed live-patch target `fcm-dev`; code was edited directly in the permanent container with stale-SHA guarded patches and reloaded by restarting the same container, not by rebuild/redeploy.
+- Post-reload `/app/src/core/router-daemon.js` SHA256 is `fe087729a2f4d85d4e19e60a49b61af64d09144a7e14f6876b79654df40dd49c`. The unsafe post-byte model-splicing path is gone; structured/tool attempts are atomic until terminal completion; cap overflow is fail-closed before client commit; CLOSED routes outrank HALF_OPEN probes.
+- `node --check` on the live router PASS. The deterministic fault matrix exercised pre-byte failover, no post-byte plain-text splicing, atomic tool/structured retry without failed-attempt leakage, terminal-marker completion with upstream keepalive, CLOSED-before-HALF_OPEN, and atomic overflow handling; these P0 behaviors PASS.
+- Live black-box protocol/auth canary against the real daemon PASS for the OpenAI-compatible surface and `/v1/models`. A live chat attempt currently returns a precise OpenAI-compatible `429` because the configured external upstream set is quota-exhausted; therefore a successful real-model generation canary remains **EXTERNAL_VALIDATION_BLOCKER**, not a broker lifecycle failure.
+- Canonical `npm test` on the live container currently has one unrelated performance-threshold failure in `test/extended-benchmarks.test.js`: 10k fixture lookups measured ~53.7–54.3 ms against a hard `<50 ms` threshold. The stream/router changes are not implicated; do not weaken that benchmark merely to green this gate.
 
 ## Current Stage
 
