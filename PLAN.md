@@ -89,7 +89,7 @@ Academic references:
 
 **P0 STREAM-LIFECYCLE + LIVE GONKA ROUTING PASS / CANONICAL-SUITE RESIDUAL.**
 
-The broker lifecycle defect is fixed in the permanent FCM DEV runtime, the owning source/test delta is durably captured, and a real black-box generation through the intended priority-1 Gonka MiniMax route returns HTTP 200. The only remaining red signal is an unrelated wall-clock microbenchmark threshold in the full canonical suite.
+The broker lifecycle defect is fixed in the permanent FCM DEV runtime, the owning source/test delta is durably captured, and a real black-box generation through the intended priority-1 Gonka DeepSeek route returns HTTP 200. MiniMax is the only priority-2 fallback. The only remaining red signal is an unrelated wall-clock microbenchmark threshold in the full canonical suite.
 
 ## DoD for Current Gate
 
