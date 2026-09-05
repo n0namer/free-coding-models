@@ -2478,7 +2478,7 @@ class RouterRuntime {
         this.markFailure(key, 'upstream_html_maintenance', 503, upstreamMeta)
         this.recordRouterError('upstream_html_maintenance', requestId, { model: key, status: response.status })
         this.addRequestLog({ request_id: requestId, model: key, status: 503, latency_ms: latencyMs, tokens: 0, failover: attemptIndex > 0, error: 'upstream_html_maintenance' })
-        return { done: false, failoverToNext: true, reason: 'upstream_html_maintenance' }
+        return { done: false, failoverToNext: true, reason: 'upstream_html_maintenance', providerFailure: true }
       }
 
       if (response.ok) {
