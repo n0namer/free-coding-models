@@ -37,7 +37,7 @@ Clients depend only on FCM. No second model router/control plane is introduced.
 - `docker restart fcm` now preserves the managed config, both named sets, `autoHeal=true`, `userCustomized=false`, persistent probe cache, persistent runtime telemetry, and the live code patches.
 - CURRENT canonical `ensureRouterConfigForDaemon()` still overwrites non-active named sets and router-level customization. Upstream has not fixed this at current HEAD.
 - The live Windows container has a direct runtime patch that merges existing `config.router` and existing named sets before refreshing the active set. Syntax and restart/readback are green.
-- Persistent probe/runtime telemetry is currently broken on first use when `~/.free-coding-models/` does not exist: `atomicWriteJson()` does not create its parent directory. Probe/runtime state reset was observed across restart.
+- Persistent probe/runtime telemetry is fixed in the live Windows container: `atomicWriteJson()` now creates its parent directory. Both `probe-cache.json` and `runtime-telemetry.json` were created on the Docker volume and reloaded successfully after `docker restart fcm`.
 - CURRENT `--sync-set` is the correct native refresh mechanism but needs minimal unattended-safety hardening: exact probe validation, provider-local 429 stop/backoff behavior, and protection against replacing a good set with a tiny partial scan.
 - Windows has no FCM Scheduled Task yet for periodic `--sync-set`.
 - Running image source commit is not proven. Windows checkout and running container must not be assumed equivalent to GitHub `main`.
