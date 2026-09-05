@@ -67,7 +67,7 @@ async function withMockProvider(responder, fn) {
   })
   const port = await listen(server)
   try {
-    return await fn({ requests, url: `http://127.0.0.1${port}/v1/chat/completions` })
+    return await fn({ requests, url: `http://127.0.0.1:${port}/v1/chat/completions` })
   } finally {
     await close(server)
   }
