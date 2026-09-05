@@ -2247,7 +2247,7 @@ class RouterRuntime {
       if (upstreamBody.parallel_tool_calls !== undefined) delete upstreamBody.parallel_tool_calls
 
       const controller = new AbortController()
-      const timeoutMs = Math.min(this.routerConfig().failover.requestTimeoutMs, 10000)
+      const timeoutMs = Math.max(1, Math.min(this.routerConfig().failover.requestTimeoutMs, 8000, remainingBudgetMs))
       const timeout = setTimeout(() => controller.abort(), timeoutMs)
       const clientAbort = attachClientAbort(req, res, controller)
       const started = performance.now()
