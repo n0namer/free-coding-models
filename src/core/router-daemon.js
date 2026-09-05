@@ -57,8 +57,12 @@ import { normalizeRequestBody } from './schema-normalizer.js'
 import {
   applyStructuredOutputContract,
   buildStructuredOutputContract,
+  createStructuredRepairPlan,
+  extractSingleCompletionStructuredObject,
+  extractSseStructuredContents,
   validateCompletionAgainstStructuredContract,
   validateSseAgainstStructuredContract,
+  validateStructuredValueAgainstContract,
 } from './structured-output-contract.js'
 import {
   loadCache as loadProbeCache,
