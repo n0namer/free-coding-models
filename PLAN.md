@@ -92,18 +92,19 @@ Academic references:
 
 ## Current Stage
 
-**P1 STRUCTURED CONTRACT VALIDATION — RUNTIME GATE PASS / ANTI-DRIFT WRITE-BACK ACTIVE.**
+**P1.5 PROGRESSIVE STRUCTURED REPAIR — REQUIRED / NOT YET IMPLEMENTED.**
 
-The functional/runtime gate is green: repaired live source is syntax-valid, P1 fault injection is green, canonical live `npm test` has zero failures, and direct live plain-text plus `json_schema` canaries both pass after reloading the same container. The remaining work is anti-drift, not feature debugging: keep only verified durable deltas in canonical Git, record the SourceLoop artifact gap, and do not claim exact-source identity because the permanent container still uses an older image/source layout with a runtime adaptation of the canonical P1 architecture.
+The previously reported P1 runtime gate is green only for full-contract validation + failover. CURRENT live code builds one full contract, validates the completed attempt, and on `response_schema_validation_failed` marks that candidate failed and moves to the next candidate with the same full contract. It does **not** yet decompose a failing JSON contract into smaller schema-preserving fragments for a weaker model. That is a product gap against the clarified North Star, so the prior statement “functional North Star reached” is withdrawn.
 
 ### North Star progress / remaining closure tasks
 
-- **Functional North Star in DEV: REACHED.** No known product-behavior defect remains in the current P0/P1 scope: failover boundaries, atomic structured output, plain text, live Gonka, and schema enforcement are all evidenced PASS.
-- **Formal P1/plan DONE still has 3 mandatory closure tasks:**
-  1. **Exact-source full-suite evidence:** run the complete canonical suite from the exact Git source in an environment that can perform the normal install/build lifecycle. Focused exact-source owning suites are already 21/21 PASS; current Coding Station full-suite attempts remain environment-blocked by filesystem/quota and missing build/self-link artifacts.
-  2. **Exact deployed source identity:** reconcile the permanent DEV filesystem to the exact tested canonical source and prove tested Git SHA == deployed source identity. This is `DESIGN_RUNTIME_DRIFT`; do not use GitHub-first programming or redeploy as a debug loop.
-  3. **SourceLoop closure:** recover a valid capture artifact and verify durable write-back status/readback. Current journal entries remain `PENDING` and artifact retrieval is `capture_artifact_reference_invalid`, so this remains `SOURCELOOP_GAP`.
-- Optional fuzz/differential/mutation/adversarial-schema work is confidence extension after the gate, not part of the 3-task mandatory closure count.
+- **Functional North Star in DEV: NOT YET REACHED.** Existing P0/P1 behavior is green, but progressive schema decomposition/repair after structured validation failure is missing.
+- **Mandatory tasks now = 4:**
+  1. **Progressive structured repair:** for safely decomposable object schemas, preserve the immutable original contract; on structured validation failure, reuse independently valid fields, generate missing/invalid required fields under smaller subcontracts, merge deterministically, and require a final validation against the unchanged original contract before client commit. Bound retries/pieces; if repair cannot prove correctness, fall back to the existing candidate failover path.
+  2. **Exact-source full-suite evidence:** run the complete canonical suite from exact Git source in an environment that can perform normal install/build lifecycle. Focused exact-source owning suites are already 21/21 PASS; Coding Station full-suite attempts remain environment-blocked.
+  3. **Exact deployed source identity:** reconcile permanent DEV filesystem to the exact tested canonical source and prove tested Git SHA == deployed source identity. This remains `DESIGN_RUNTIME_DRIFT`; no GitHub-first programming/redeploy debug loop.
+  4. **SourceLoop closure:** recover a valid capture artifact and verify durable write-back/readback. Current capture artifact retrieval remains `capture_artifact_reference_invalid` => `SOURCELOOP_GAP`.
+- Optional fuzz/differential/mutation/adversarial-schema work remains post-gate confidence extension, except decomposition-specific limits/failure tests required by Task 1.
 
 ## DoD for Current Gate
 
