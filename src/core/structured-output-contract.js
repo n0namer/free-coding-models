@@ -373,58 +373,158 @@ function schemaHasUnsafeRepairRef(schema) {
   return Object.values(schema).some(schemaHasUnsafeRepairRef)
 }
 
-export function createStructuredRepairPlan(contract, failedContent, { maxPieces = 4 } = {}) {
-  if (!contract || contract.kind !== 'json_schema') return fail('repair requires json_schema contract')
-  const schema = contract.schema
-  if (!schema || typeof schema !== 'object' || Array.isArray(schema)) return fail('repair schema must be an object schema')
+function repairObjectSchema(schema) {
+  if (!schema || typeof schema !== 'object' || Array.isArray(schema)) return false
+  if (schema.$ref || schema.allOf || schema.anyOf || schema.oneOf || schema.not) return false
   const types = schema.type === undefined ? [] : (Array.isArray(schema.type) ? schema.type : [schema.type])
-  if (types.length > 0 && !types.includes('object')) return fail('repair currently supports object roots only')
-  if (schema.$ref || schema.allOf || schema.anyOf || schema.oneOf || schema.not) return fail('repair skips cross-field root combinators')
+  if (types.length > 0 && !types.includes('object')) return false
   const properties = schema.properties
   const required = Array.isArray(schema.required) ? schema.required : []
-  if (!properties || typeof properties !== 'object' || Array.isArray(properties) || required.length === 0) return fail('repair requires object properties and required fields')
-  if (schema.minProperties !== undefined && schema.minProperties > required.length) return fail('repair skips minProperties beyond required fields')
-  const safeRequired = required.filter((key) => Object.prototype.hasOwnProperty.call(properties, key))
-  if (safeRequired.length !== required.length) return fail('repair required field missing from properties')
+  if (!properties || typeof properties !== 'object' || Array.isArray(properties) || required.length === 0) return false
+  if (required.some((key) => !Object.prototype.hasOwnProperty.call(properties, key))) return false
+  if (schema.minProperties !== undefined && schema.minProperties > required.length) return false
+  return true
+}
 
-  let draft = null
-  if (typeof failedContent === 'string' && failedContent.trim()) {
-    try {
-      const parsed = JSON.parse(failedContent)
-      if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) draft = parsed
-    } catch {}
+function defineRepairKey(target, key, value) {
+  Object.defineProperty(target, key, { value, enumerable: true, configurable: true, writable: true })
+}
+
+function setRepairPath(target, path, value) {
+  let cursor = target
+  for (let index = 0; index < path.length - 1; index += 1) {
+    const key = path[index]
+    const existing = Object.prototype.hasOwnProperty.call(cursor, key) ? cursor[key] : null
+    if (!existing || typeof existing !== 'object' || Array.isArray(existing)) {
+      const next = {}
+      defineRepairKey(cursor, key, next)
+      cursor = next
+    } else {
+      cursor = existing
+    }
   }
+  defineRepairKey(cursor, path[path.length - 1], cloneJson(value))
+}
 
-  const seed = {}
-  const needed = []
-  for (const key of required) {
-    const propertySchema = properties[key]
+function collectRepairNeeds({ schema, draft, root, path = [], depth = 0, maxDepth = 2, seed, needed, reused }) {
+  const properties = schema.properties && typeof schema.properties === 'object' && !Array.isArray(schema.properties) ? schema.properties : {}
+  const required = new Set(Array.isArray(schema.required) ? schema.required : [])
+  const draftObject = draft && typeof draft === 'object' && !Array.isArray(draft) ? draft : null
+
+  for (const [key, propertySchema] of Object.entries(properties)) {
     if (schemaHasUnsafeRepairRef(propertySchema)) return fail('repair skips property refs outside $defs/definitions')
-    if (draft && Object.prototype.hasOwnProperty.call(draft, key)) {
-      const check = validateValue(draft[key], propertySchema, schema, `root.${key}`)
+    const childPath = [...path, key]
+    const hasDraftValue = Boolean(draftObject && Object.prototype.hasOwnProperty.call(draftObject, key))
+    if (hasDraftValue) {
+      const check = validateValue(draftObject[key], propertySchema, root, `root.${childPath.join('.')}`)
       if (check.ok) {
-        seed[key] = cloneJson(draft[key])
+        setRepairPath(seed, childPath, draftObject[key])
+        reused.count += 1
         continue
       }
     }
-    needed.push(key)
-  }
-  if (needed.length === 0) return fail('repair found no independently invalid required fields')
 
-  const pieceLimit = Math.max(1, Math.min(8, Number.isInteger(maxPieces) ? maxPieces : 4))
+    if (!required.has(key)) continue
+    const childDraft = hasDraftValue && draftObject[key] && typeof draftObject[key] === 'object' && !Array.isArray(draftObject[key]) ? draftObject[key] : null
+    if (depth < maxDepth && repairObjectSchema(propertySchema)) {
+      const nested = collectRepairNeeds({ schema: propertySchema, draft: childDraft, root, path: childPath, depth: depth + 1, maxDepth, seed, needed, reused })
+      if (!nested.ok) return nested
+      continue
+    }
+    needed.push({ path: childPath, schema: cloneJson(propertySchema) })
+  }
+  return { ok: true }
+}
+
+function buildRepairFragmentSchema(entries, rootSchema) {
+  const leaf = Symbol('repair-leaf')
+  const tree = Object.create(null)
+  for (const entry of entries) {
+    let cursor = tree
+    for (let index = 0; index < entry.path.length; index += 1) {
+      const key = entry.path[index]
+      if (!Object.prototype.hasOwnProperty.call(cursor, key)) defineRepairKey(cursor, key, Object.create(null))
+      if (index === entry.path.length - 1) cursor[key][leaf] = entry.schema
+      cursor = cursor[key]
+    }
+  }
+
+  function render(node) {
+    const properties = Object.create(null)
+    const required = []
+    for (const key of Object.keys(node)) {
+      const child = node[key]
+      required.push(key)
+      defineRepairKey(properties, key, child[leaf] ? cloneJson(child[leaf]) : render(child))
+    }
+    return { type: 'object', properties, required, additionalProperties: false }
+  }
+
+  return {
+    ...render(tree),
+    ...(rootSchema.$defs ? { $defs: cloneJson(rootSchema.$defs) } : {}),
+    ...(rootSchema.definitions ? { definitions: cloneJson(rootSchema.definitions) } : {}),
+  }
+}
+
+export function mergeStructuredRepairFragment(target, fragment) {
+  if (!target || typeof target !== 'object' || Array.isArray(target) || !fragment || typeof fragment !== 'object' || Array.isArray(fragment)) return target
+  for (const [key, value] of Object.entries(fragment)) {
+    const existing = Object.prototype.hasOwnProperty.call(target, key) ? target[key] : null
+    if (value && typeof value === 'object' && !Array.isArray(value) && existing && typeof existing === 'object' && !Array.isArray(existing)) {
+      mergeStructuredRepairFragment(existing, value)
+    } else {
+      defineRepairKey(target, key, cloneJson(value))
+    }
+  }
+  return target
+}
+
+function parseStructuredRepairObject(content) {
+  const normalized = normalizeContentParts(content)
+  if (typeof normalized !== 'string' || !normalized.trim()) return null
+  let candidate = normalized.trim()
+  if (candidate.startsWith('<think>')) {
+    const end = candidate.lastIndexOf('</think>')
+    if (end < 0) return null
+    candidate = candidate.slice(end + '</think>'.length).trim()
+  }
+  if (candidate.startsWith('```') && candidate.endsWith('```')) {
+    const firstNewline = candidate.indexOf('\n')
+    if (firstNewline < 0) return null
+    candidate = candidate.slice(firstNewline + 1, -3).trim()
+  }
+  try {
+    const parsed = JSON.parse(candidate)
+    return parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? parsed : null
+  } catch {
+    return null
+  }
+}
+
+export function createStructuredRepairPlan(contract, failedContent, { maxPieces = 6, maxDepth = 2 } = {}) {
+  if (!contract || contract.kind !== 'json_schema') return fail('repair requires json_schema contract')
+  const schema = contract.schema
+  if (!repairObjectSchema(schema)) return fail('repair currently supports decomposable object roots only')
+
+  const draft = parseStructuredRepairObject(failedContent)
+  const seed = {}
+  const needed = []
+  const reused = { count: 0 }
+  const collected = collectRepairNeeds({ schema, draft, root: schema, maxDepth: Math.max(0, Math.min(4, Number.isInteger(maxDepth) ? maxDepth : 2)), seed, needed, reused })
+  if (!collected.ok) return collected
+  if (needed.length === 0) {
+    const salvaged = validateValue(seed, schema)
+    if (!salvaged.ok) return fail('repair found no regenerable required fields')
+    return { ok: true, seed, reusedCount: reused.count, parts: [] }
+  }
+
+  const pieceLimit = Math.max(1, Math.min(8, Number.isInteger(maxPieces) ? maxPieces : 6))
   const pieceCount = Math.min(pieceLimit, needed.length)
   const groups = Array.from({ length: pieceCount }, () => [])
-  needed.forEach((key, index) => groups[index % pieceCount].push(key))
-  const parts = groups.filter((group) => group.length > 0).map((keys, index) => {
-    const partProperties = Object.fromEntries(keys.map((key) => [key, cloneJson(properties[key])]))
-    const partSchema = {
-      type: 'object',
-      properties: partProperties,
-      required: [...keys],
-      additionalProperties: false,
-      ...(schema.$defs ? { $defs: cloneJson(schema.$defs) } : {}),
-      ...(schema.definitions ? { definitions: cloneJson(schema.definitions) } : {}),
-    }
+  needed.forEach((entry, index) => groups[index % pieceCount].push(entry))
+  const parts = groups.filter((group) => group.length > 0).map((entries, index) => {
+    const partSchema = buildRepairFragmentSchema(entries, schema)
     const partContract = buildStructuredOutputContract({
       response_format: {
         type: 'json_schema',
@@ -435,20 +535,17 @@ export function createStructuredRepairPlan(contract, failedContent, { maxPieces 
         },
       },
     })
-    return { keys: [...keys], contract: partContract }
+    return {
+      keys: [...new Set(entries.map((entry) => entry.path[0]))],
+      paths: entries.map((entry) => [...entry.path]),
+      contract: partContract,
+    }
   })
   if (parts.some((part) => !part.contract.ok)) return fail('repair fragment contract build failed')
-  return { ok: true, seed, parts }
+  return { ok: true, seed, reusedCount: reused.count, parts }
 }
 
 export function extractSingleCompletionStructuredObject(payload) {
   if (!Array.isArray(payload?.choices) || payload.choices.length !== 1) return null
-  const content = normalizeContentParts(payload.choices[0]?.message?.content)
-  if (typeof content !== 'string' || !content.trim()) return null
-  try {
-    const parsed = JSON.parse(content)
-    return parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? parsed : null
-  } catch {
-    return null
-  }
+  return parseStructuredRepairObject(payload.choices[0]?.message?.content)
 }
