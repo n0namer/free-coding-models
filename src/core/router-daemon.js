@@ -1408,12 +1408,13 @@ class RouterRuntime {
   // 📖 The ordering below preserves issue #120's explicit-priority semantics
   // 📖 among equally healthy models while keeping circuit-breaker recovery
   // 📖 probes behind known-good routes.
-  getRoutingCandidates(set) {
+  getRoutingCandidates(set, { structured = false } = {}) {
     const scored = this.scoreCandidates(set)
     const usable = scored.filter((candidate) => {
       if (!candidate.catalog || candidate.circuit?.stale) return false
       if (!candidate.catalog.routeable || candidate.circuit?.unsupported) return false
       if (candidate.circuit?.authError) return false
+      if (structured && this.isStructuredRouteBlocked(candidate.key)) return false
       if (!this.getApiKeyForProvider(candidate.provider)) return false
       return candidate.circuit?.state === 'CLOSED' || candidate.circuit?.state === 'HALF_OPEN'
     })
