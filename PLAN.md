@@ -4,7 +4,7 @@ Status: ACTIVE
 Last reconciled: 2026-09-05
 Repository: `n0namer/free-coding-models`
 Active working branch: `fix/fcm-long-stream-lifecycle`
-Current verified code/test head before PLAN-only reconciliation: `855c0edbe6d911417ba91dde435101b7f72fbaff` — `test(router): fix JSON schema mock provider URL`
+Current live-verified canonical head before PLAN-only reconciliation: `d2467ac2922e55ae2b717e1ecec8b06b38af7818` — `fix(router): migrate fast-coding off Gonka-only routing`
 Execution rule: debug/implement directly in permanent `fcm-dev`; GitHub is SoT/write-back only after live verification. No GitHub-first programming or redeploy debug loop.
 
 ## North Star
