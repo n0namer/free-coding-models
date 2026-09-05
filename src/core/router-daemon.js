@@ -2239,6 +2239,7 @@ class RouterRuntime {
     try {
       const tried = []
       const blockedProviders = new Set()
+      const authBlockedProviders = new Set()
       let attemptIndex = 0
       for (const candidate of candidates) {
         if (attemptIndex >= maxAttempts) break
@@ -2256,17 +2257,31 @@ class RouterRuntime {
           : await this.proxyJsonRequest({ req, res, body, structuredContract, candidate, requestId, attemptIndex })
         if (result.done) return
         attemptIndex += 1
-        if (result.authFailure) blockedProviders.add(candidate.provider)
+        if (result.authFailure) {
+          authBlockedProviders.add(candidate.provider)
+          blockedProviders.add(candidate.provider)
+        } else if (result.providerFailure) {
+          blockedProviders.add(candidate.provider)
+        }
+        const afterAttempt = this.activeRequests.get(requestId)
+        if (afterAttempt) afterAttempt.last_failover_reason = result.reason || null
         if (result.failoverToNext && attemptIndex < maxAttempts) {
           const next = candidates.find((entry) => !tried.includes(entry.key) && !blockedProviders.has(entry.provider))
-          this.logger.warn(`Failover ${candidate.key}${next ? ` -> ${next.key}` : ''}`, { request_id: requestId, reason: result.reason })
+          const failureDomain = result.providerFailure || result.authFailure ? 'provider' : result.structuredFailure ? 'structured_route' : 'model'
+          this.logger.warn(`Failover ${candidate.key}${next ? ` -> ${next.key}` : ''}`, { request_id: requestId, reason: result.reason, failure_domain: failureDomain })
           void sendUsageTelemetry(this.config, {}, {
             event: 'app_router_failover',
             mode: 'daemon',
             properties: {
+              logical_model: body.model,
               from_model: candidate.key,
+              from_provider: candidate.provider,
+              from_model_id: candidate.model,
               to_model: next?.key || null,
+              to_provider: next?.provider || null,
+              to_model_id: next?.model || null,
               reason: result.reason,
+              failure_domain: failureDomain,
               attempt_number: attemptIndex,
             },
           })
@@ -2275,14 +2290,14 @@ class RouterRuntime {
       }
 
       const quotaExhausted = [...this.quotaExhausted].filter((key) => tried.includes(key))
-      const allAuthError = tried.every((key) => {
+      const allAuthError = tried.length > 0 && tried.every((key) => {
         const [provider] = key.split('/')
-        return blockedProviders.has(provider)
+        return authBlockedProviders.has(provider)
       })
       const allQuotaError = tried.length > 0 && quotaExhausted.length === tried.length
-      const allAuthOrQuota = tried.every((key) => {
+      const allAuthOrQuota = tried.length > 0 && tried.every((key) => {
         const [provider] = key.split('/')
-        return blockedProviders.has(provider) || quotaExhausted.includes(key)
+        return authBlockedProviders.has(provider) || quotaExhausted.includes(key)
       })
 
       let statusCode = 503
