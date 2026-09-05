@@ -2204,7 +2204,9 @@ class RouterRuntime {
     if (body?.tool_choice !== undefined && body.tool_choice !== null && body.tool_choice !== 'none') return { ok: false, reason: 'repair_skips_tool_choice' }
 
     const failedContent = failedPayload.choices[0]?.message?.content
-    const plan = createStructuredRepairPlan(structuredContract, typeof failedContent === 'string' ? failedContent : null, { maxPieces: 4 })
+    const repairBudgetMs = Math.max(1000, Math.min(15000, Math.floor(this.routerConfig().failover.requestTimeoutMs / 2)))
+    const repairDeadline = performance.now() + repairBudgetMs
+    const plan = createStructuredRepairPlan(structuredContract, typeof failedContent === 'string' ? failedContent : null, { maxPieces: 6, maxDepth: 2 })
     if (!plan.ok) return { ok: false, reason: 'repair_not_decomposable', detail: plan.error }
 
     const providerUrl = resolveProviderUrl(candidate.provider)
