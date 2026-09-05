@@ -2115,6 +2115,8 @@ class RouterRuntime {
     if (this.probeWatchdog) clearInterval(this.probeWatchdog)
     for (const timeout of this.probeTimeouts) clearTimeout(timeout)
     this.probeTimeouts.clear()
+    this.probeScheduleMode = probeRouter.probeMode
+    this.probeScheduleInterval = probeInterval
 
     const router = this.routerConfig()
     const interval = router.probeIntervals[router.probeMode] || DEFAULT_ROUTER_SETTINGS.probeIntervals.balanced
