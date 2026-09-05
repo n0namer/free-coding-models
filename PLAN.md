@@ -137,7 +137,7 @@ CURRENT live runtime has both previously missing behaviors: progressive `json_sc
 ### Batch 3 — Black-box consumer — DONE
 
 - Real live daemon auth/OpenAI-compatible protocol surface — PASS.
-- Legacy Gonka-only `fast-coding` set is retired. A bounded exhaustive pass tested 131 routeable keyed candidates and persisted all 33 fresh chat-probe successes across 9 provider identities. The set is now explicitly ordered quality-first by native catalog metadata: `tier (S+→C)`, then SWE score descending, then the previous proven order as a stable tie-break. Current priority 1 is `llm7/minimax-m2.7`; weaker healthy routes remain available lower in the cascade.
+- Legacy Gonka-only `fast-coding` set is retired. A bounded exhaustive pass tested 131 routeable keyed candidates and persisted all 33 fresh chat-probe successes across 9 provider identities. The set is now explicitly ordered by the available SWE benchmark result: SWE score descending, tier only as a tie-break, then the previous proven order. Current priority 1 remains `llm7/minimax-m2.7`; weaker healthy routes remain available lower in the cascade. FCM does not run its own quality benchmark for this ordering.
 - Real-model live acceptance remains PASS for ordinary text and `json_schema`; catalog-only or failed candidates were not added, and structured incompatibility remains route/role scoped rather than inferred from chat liveness.
 
 ### Batch 4 — Durable capture — DONE FOR FCM DELTA
