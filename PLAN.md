@@ -11,6 +11,8 @@ Execution rule: debug/implement directly in permanent `fcm-dev`; GitHub is SoT/w
 
 FCM is a generic, reusable OpenAI-compatible free-model broker. It must hide upstream failure when failover is still safe, but it must never corrupt client-visible semantics by splicing multiple upstream attempts into one response.
 
+For `response_format=json_schema`, the client contract is the immutable acceptance SoT. If a model returns structurally invalid output while client commit is still zero-byte safe, FCM must not only retry the same full contract or immediately fail over: it should make the generation task easier for weaker models by decomposing the original schema into smaller schema-preserving subcontracts, validate each fragment, merge fragments deterministically, and validate the assembled value against the unchanged original full contract before any client-visible commit. Decomposition may simplify generation, but it must never weaken final acceptance semantics.
+
 Clients such as SWE-AF, OpenCode, OpenClaw, and other consumers are black-box canaries only. Their code and runtime are NON-TARGET for this FCM work. Previously made SWE-AF hardening changes are intentionally retained, but they are not evidence that FCM is correct.
 
 ## Scope / Non-scope
