@@ -2634,7 +2634,7 @@ class RouterRuntime {
       this.markFailure(key, reason)
       this.recordRouterError('upstream_transport_error', requestId, { model: key, reason })
       this.addRequestLog({ request_id: requestId, model: key, status: 'ERR', latency_ms: null, tokens: 0, failover: attemptIndex > 0, error: reason })
-      return { done: false, failoverToNext: true, reason }
+      return { done: false, failoverToNext: true, reason, providerFailure: true }
     } finally {
       clearTimeout(timeout)
       clientAbort.dispose()
