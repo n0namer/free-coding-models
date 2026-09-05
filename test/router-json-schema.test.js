@@ -190,7 +190,7 @@ describe('router json_schema contract validation', () => {
             assert.equal(response.headers.get('x-fcm-router-model'), `nvidia/${MODELS.fallback}`)
             assert.match(text, /answer/)
             assert.doesNotMatch(text, /foo/)
-            assert.equal(primary.requests.length, 1)
+            assert.equal(primary.requests.length, 2, 'invalid SSE attempt + failed same-candidate repair fragment')
             assert.equal(fallback.requests.length, 1)
           })
         })
