@@ -92,7 +92,7 @@ Academic references:
 
 ## Current Stage
 
-**P1.6 PROVIDER-DOMAIN REDUNDANCY — LIVE GATE PASS / ANTI-DRIFT ACTIVE.**
+**P1.7 QUALITY-FIRST HEALTH-AWARE ROUTING — LIVE GATE PASS / ANTI-DRIFT ACTIVE.**
 
 CURRENT live runtime has both previously missing behaviors: progressive `json_schema` repair is implemented, and `fast-coding` is no longer Gonka-only. Provider-level retryable failures (`429`, timeout, retryable `5xx`, maintenance) skip the remaining models behind that provider failure domain; structured-schema incompatibility is isolated to that route/role. A bounded exhaustive discovery pass tested 131 routeable keyed candidates and persisted all 33 fresh chat-probe successes across 9 provider identities. The persisted set is now quality-first using the native catalog order `tier (S+→C) → SWE score descending → previous proven order as stable tie-break`; runtime health still filters unusable routes before selection, so latency is secondary and cannot outrank a stronger healthy priority.
 
