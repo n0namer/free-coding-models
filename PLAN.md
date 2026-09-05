@@ -155,7 +155,7 @@ A named-set preservation defect is proven and currently live-patched.
 
 The next active defect is persistent state creation in `atomicWriteJson()`. A backup of `shared-helpers.js` exists at `/home/fcm/shared-helpers.js.bak-fcm-stability-20260905`; mutation has not yet been accepted until post-write readback succeeds.
 
-The Windows edge connection is intermittently unavailable, so any ambiguous write attempt must be followed by readback before retrying.
+At the latest 2026-09-05 execution attempt the Windows edge returned `edge_unreachable` repeatedly. No ambiguous runtime mutation is accepted as applied; before retrying any write, reread the target file and current container state.
 
 ## Exact Next Move
 
