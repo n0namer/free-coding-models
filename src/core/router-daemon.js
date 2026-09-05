@@ -2351,17 +2351,47 @@ class RouterRuntime {
           this.addRequestLog({ request_id: requestId, model: key, status: 502, latency_ms: latencyMs, tokens: 0, failover: attemptIndex > 0, error: 'upstream_invalid_json' })
           return { done: false, failoverToNext: true, reason: 'upstream_invalid_json' }
         }
-        const schemaValidation = validateCompletionAgainstStructuredContract(structuredContract, parsed.value)
+        let successfulPayload = parsed.value
+        let repairMeta = null
+        const schemaValidation = validateCompletionAgainstStructuredContract(structuredContract, successfulPayload)
         if (!schemaValidation.ok) {
-          const reason = 'response_schema_validation_failed'
-          this.markFailure(key, reason)
-          this.recordRouterError(reason, requestId, { model: key, status: response.status, detail: schemaValidation.error })
-          this.addRequestLog({ request_id: requestId, model: key, status: 'ERR', latency_ms: latencyMs, tokens: 0, failover: attemptIndex > 0, error: reason })
-          this.recordRuntimeCall({ providerKey: candidate.provider, modelId: candidate.model, success: false, latencyMs, error: reason })
-          return { done: false, failoverToNext: true, reason }
+          const repair = await this.tryProgressiveStructuredRepair({
+            req,
+            res,
+            body,
+            structuredContract,
+            candidate,
+            requestId,
+            failedPayload: successfulPayload,
+          })
+          if (repair.ok) {
+            const originalChoice = successfulPayload.choices[0] || {}
+            successfulPayload = {
+              ...successfulPayload,
+              choices: [{
+                ...originalChoice,
+                finish_reason: originalChoice.finish_reason ?? 'stop',
+                message: {
+                  ...(originalChoice.message || {}),
+                  role: originalChoice.message?.role || 'assistant',
+                  content: JSON.stringify(repair.value),
+                },
+              }],
+            }
+            const repairedValidation = validateCompletionAgainstStructuredContract(structuredContract, successfulPayload)
+            if (!repairedValidation.ok) return { done: false, failoverToNext: true, reason: 'repair_final_validation_failed' }
+            repairMeta = repair
+          } else {
+            const reason = 'response_schema_validation_failed'
+            this.markFailure(key, reason)
+            this.recordRouterError(reason, requestId, { model: key, status: response.status, detail: schemaValidation.error, repair_reason: repair.reason })
+            this.addRequestLog({ request_id: requestId, model: key, status: 'ERR', latency_ms: latencyMs, tokens: 0, failover: attemptIndex > 0, error: reason, repair_reason: repair.reason })
+            this.recordRuntimeCall({ providerKey: candidate.provider, modelId: candidate.model, success: false, latencyMs, error: reason })
+            return { done: false, failoverToNext: true, reason }
+          }
         }
-        this.markSuccess(key, latencyMs)
-        const usage = extractUsage(parsed.value)
+        this.markSuccess(key, latencyMs + (repairMeta?.latencyMs || 0))
+        const usage = extractUsage(successfulPayload)
         this.tokenTracker.record(candidate.provider, candidate.model, usage)
         // 📖 Runtime telemetry (t3): track every successful routed request so the
         // 📖 real-world score can rank models by what *actually* works.
