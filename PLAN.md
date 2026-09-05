@@ -215,18 +215,20 @@ P1 is DONE only when all are evidenced:
 - plain-text/non-structured behavior remains unchanged;
 - SourceLoop happens only after this runtime gate, per current user direction.
 
-### BMAD execution delta — 2026-09-04
+### BMAD execution delta — 2026-09-05
 
-Implemented during test-design/automation review:
-- malformed numeric schema bounds, duplicate `type`/`required`/`enum`, empty `enum`, and non-positive `multipleOf` now fail closed at contract build;
-- representative supported-keyword boundary matrix added;
-- 100-iteration deterministic invariant test added for independent provider materialization;
-- discovered and fixed an unhandled multi-choice defect: non-stream previously validated only `choices[0]`, while SSE concatenated content from multiple choices; central validation now validates every choice independently and SSE accumulation is keyed by `choice.index`;
-- dedicated multi-choice regressions added;
-- exact-source dependency-free contract suite PASS: 9/9 tests, 1 suite, 0 failures on code head `731d5a634dc9d8b02b0db0386c3860476fb05c11`; `node --check` for the central contract and router had already passed on the immediately preceding compatible source shape;
-- router integration execution remains a VALIDATION_BLOCKER in Coding Station because dependencies cannot be installed (`npm ci` -> `ENOSPC`; direct router suite -> missing `chalk`). This is environment evidence, not an application-test failure.
+Executed as container-first Pareto batches using `bmad-help`, `bmad-testarch-test-design`, `bmad-testarch-automate`, `bmad-review-edge-case-hunter`, and `bmad-quick-dev`:
+- recovered the corrupted live router directly in `fcm-dev`; syntax is green and the same container was reloaded without rebuild/redeploy;
+- retained the centralized P1 contract architecture while adapting it to the old runtime layout; canonical Git continues to own the separate `src/core/structured-output-contract.js` module;
+- P1 fault matrix PASS 4/4: invalid-primary fallback, both-invalid fail-closed/no leak, malformed-schema pre-upstream rejection, and atomic streaming fallback;
+- live acceptance PASS: focused auth/P1/live suite 7/7, including ordinary text and real Gonka `json_schema` requests;
+- repaired duplicated old-image `test/test.js` enough to execute the live canonical suite; `npm test` PASS with 820 discovered / 818 pass / 0 fail / 2 intentional live-canary skips across 159 suites;
+- isolated the live-only canaries from package-test auth sanitization: `test/clear-client-auth-env.js` intentionally removes the client token, so package tests skip those two canaries while direct runtime execution proves both PASS;
+- traced the earlier four JSON-schema integration reds to the test harness itself: mock URL omitted `:` before the random port. Canonical fix is included at code/test head `855c0edbe6d911417ba91dde435101b7f72fbaff`;
+- live-proven structured provider compatibility is also captured canonically: structured requests disable provider thinking only when the client did not specify a thinking policy and the provider supports that field;
+- SourceLoop journal remains readable, but artifact retrieval for recent captures fails with `capture_artifact_reference_invalid`; this is recorded as `SOURCELOOP_GAP` rather than silently claiming write-back success.
 
-Current nearest mandatory move: restore one authoritative integration environment, run the P0/P1 API failure matrix plus canonical `npm test`, then perform exact-SHA DEV deploy/readback and live Gonka schema smoke before SourceLoop.
+Current nearest mandatory move: anti-drift closure only — verify canonical source retains all live-proven durable behavior, avoid copying old-runtime adaptation/diagnostic-only drift into Git, record SourceLoop gap, and keep exact-source identity OPEN until a future controlled source-identity reconciliation is explicitly chosen. No redeploy is required for the current functional runtime gate.
 
 ## Handoff for the Next LLM
 
