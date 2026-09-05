@@ -102,7 +102,7 @@ CURRENT live runtime has progressive `json_schema` repair, provider-failure-doma
 - **Formal project closure still has 3 mandatory anti-drift tasks:**
   1. **Exact-source full-suite evidence:** run the complete canonical suite from exact Git source in an environment that can perform the normal install/build lifecycle. Live-container full suite is green; exact-source focused gates have been green, but exact-source full-suite evidence remains incomplete.
   2. **Exact deployed source identity:** prove tested Git SHA == permanent DEV filesystem identity. The permanent container still uses an older image/source layout, so this remains `DESIGN_RUNTIME_DRIFT`; no GitHub-first programming/redeploy debug loop.
-  3. **SourceLoop closure:** recover a valid capture artifact and verify durable write-back/readback. Current artifact retrieval remains `capture_artifact_reference_invalid` => `SOURCELOOP_GAP`.
+  3. **SourceLoop closure:** register the existing `fcm-dev` target with bounded SourceLoop write-back metadata using the already-proven image-tag Git SHA resolver, then prove one reversible non-loaded test-file capture/artifact round trip and exact restoration. The typed registry write is currently blocked by server-owned mutation scope (`target_registry_scope_denied`), so closure requires one explicit temporary privilege window for `fcm-dev` and independent proof that the window is closed afterward. No serving FCM code/reload/redeploy is part of this task.
 - Optional capability-registry/fuzz/differential/mutation work remains confidence/operability extension, not a blocker for the current live routing fix.
 
 ## DoD for Current Gate
