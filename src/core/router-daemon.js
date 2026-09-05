@@ -955,6 +955,7 @@ class RouterRuntime {
     this.totalRequestsRouted = 0
     this.quotaExhausted = new Set()
     this.quotaDetails = new Map()
+    this.structuredRouteBlocks = new Map()
     this.staleNotifications = new Set()
     this.webBenchmarkRunning = new Set()
     this.webBenchmarkResults = new Map()
