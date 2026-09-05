@@ -137,8 +137,8 @@ CURRENT live runtime has both previously missing behaviors: progressive `json_sc
 ### Batch 3 — Black-box consumer — DONE
 
 - Real live daemon auth/OpenAI-compatible protocol surface — PASS.
-- Legacy Gonka-only `fast-coding` set is retired. Persisted priorities are Gonka DeepSeek 1, Gonka MiniMax 2, Kilo Auto Free 3, LLM7 MiniMax 4.
-- Real-model live acceptance remains PASS for ordinary text and `json_schema`; independent provider domains are now explicit fallbacks rather than catalog-only models.
+- Legacy Gonka-only `fast-coding` set is retired. A bounded exhaustive pass tested 131 routeable keyed candidates and persisted all 33 fresh chat-probe successes across 9 provider identities, preserving DeepSeek as priority 1 while broadening the fallback pool.
+- Real-model live acceptance remains PASS for ordinary text and `json_schema`; catalog-only or failed candidates were not added, and structured incompatibility remains route/role scoped rather than inferred from chat liveness.
 
 ### Batch 4 — Durable capture — DONE FOR FCM DELTA
 
