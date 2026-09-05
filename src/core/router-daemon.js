@@ -2517,11 +2517,14 @@ class RouterRuntime {
               }],
             }
             const repairedValidation = validateCompletionAgainstStructuredContract(structuredContract, successfulPayload)
-            if (!repairedValidation.ok) return { done: false, failoverToNext: true, reason: 'repair_final_validation_failed' }
+            if (!repairedValidation.ok) {
+              this.markStructuredRouteFailure(key, repairedValidation.error || 'repair_final_validation_failed')
+              return { done: false, failoverToNext: true, reason: 'repair_final_validation_failed', structuredFailure: true }
+            }
             repairMeta = repair
           } else {
             const reason = 'response_schema_validation_failed'
-            this.markFailure(key, reason)
+            this.markStructuredRouteFailure(key, schemaValidation.error || reason)
             this.recordRouterError(reason, requestId, { model: key, status: response.status, detail: schemaValidation.error, repair_reason: repair.reason })
             this.addRequestLog({ request_id: requestId, model: key, status: 'ERR', latency_ms: latencyMs, tokens: 0, failover: attemptIndex > 0, error: reason, repair_reason: repair.reason })
             this.recordRuntimeCall({ providerKey: candidate.provider, modelId: candidate.model, success: false, latencyMs, error: reason })
