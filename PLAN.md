@@ -90,9 +90,9 @@ Academic references:
 
 ## Current Stage
 
-**P1 STRUCTURED CONTRACT VALIDATION — ACTIVE / LIVE RECOVERY FIRST.**
+**P1 STRUCTURED CONTRACT VALIDATION — RUNTIME GATE PASS / ANTI-DRIFT WRITE-BACK ACTIVE.**
 
-P0 lifecycle design and prior evidence remain accepted, but CURRENT on-disk DEV source is not releasable: `router-daemon.js` fails syntax because of duplicated live-patch tail and the centralized P1 module/tests are not present in the old runtime filesystem. The nearest mandatory gate is to reconcile the current P1 source shape directly into `fcm-dev`, run focused P0/P1 tests plus canonical suite, reload the same container only after source PASS, then run live Gonka schema + plain-text smoke. SourceLoop write-back follows only after that runtime gate is green.
+The functional/runtime gate is green: repaired live source is syntax-valid, P1 fault injection is green, canonical live `npm test` has zero failures, and direct live plain-text plus `json_schema` canaries both pass after reloading the same container. The remaining work is anti-drift, not feature debugging: keep only verified durable deltas in canonical Git, record the SourceLoop artifact gap, and do not claim exact-source identity because the permanent container still uses an older image/source layout with a runtime adaptation of the canonical P1 architecture.
 
 ## DoD for Current Gate
 
