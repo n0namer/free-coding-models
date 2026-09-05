@@ -287,6 +287,125 @@ describe('router json_schema contract validation', () => {
     })
   })
 
+  it('repairs only an invalid nested leaf while preserving valid nested and optional fields', async () => {
+    await withMockProvider((request) => {
+      const isRepair = request.body?.response_format?.json_schema?.name?.includes('_repair_')
+      const nestedRequired = request.body?.response_format?.json_schema?.schema?.properties?.profile?.required || []
+      const content = isRepair && nestedRequired.includes('age')
+        ? '{"profile":{"age":42}}'
+        : '{"profile":{"name":"keep","age":"bad"},"note":"retain"}'
+      return { body: { id: isRepair ? 'nested-repair' : 'nested-invalid', choices: [{ message: { role: 'assistant', content } }] } }
+    }, async (primary) => {
+      await withMockProvider(() => ({ body: { id: 'should-not-run', choices: [{ message: { content: '{}' } }] } }), async (fallback) => {
+        await withSourceUrls({ groq: primary.url, nvidia: fallback.url }, async () => {
+          await withRouter(async (baseUrl) => {
+            const format = responseFormat()
+            format.json_schema.schema = {
+              type: 'object', required: ['profile'], additionalProperties: false,
+              properties: {
+                profile: {
+                  type: 'object', required: ['name', 'age'], additionalProperties: false,
+                  properties: { name: { type: 'string' }, age: { type: 'integer' } },
+                },
+                note: { type: 'string' },
+              },
+            }
+            const response = await post(baseUrl, { response_format: format })
+            const payload = await response.json()
+            assert.equal(response.status, 200)
+            assert.deepEqual(JSON.parse(payload.choices[0].message.content), { profile: { name: 'keep', age: 42 }, note: 'retain' })
+            assert.equal(primary.requests.length, 2)
+            assert.equal(fallback.requests.length, 0)
+            const repairSchema = primary.requests[1].body.response_format.json_schema.schema
+            assert.deepEqual(repairSchema.properties.profile.required, ['age'])
+            assert.deepEqual(Object.keys(repairSchema.properties.profile.properties), ['age'])
+          })
+        })
+      })
+    })
+  })
+
+  it('salvages a valid required core without hidden calls when only optional or extra fields are invalid', async () => {
+    await withMockProvider(() => ({
+      body: { id: 'salvage', choices: [{ message: { content: '{"answer":"keep","note":123,"extra":"drop"}' } }] },
+    }), async (primary) => {
+      await withMockProvider(() => ({ body: { id: 'should-not-run', choices: [] } }), async (fallback) => {
+        await withSourceUrls({ groq: primary.url, nvidia: fallback.url }, async () => {
+          await withRouter(async (baseUrl) => {
+            const format = responseFormat()
+            format.json_schema.schema.properties.note = { type: 'string' }
+            const response = await post(baseUrl, { response_format: format })
+            const payload = await response.json()
+            assert.equal(response.status, 200)
+            assert.deepEqual(JSON.parse(payload.choices[0].message.content), { answer: 'keep' })
+            assert.equal(primary.requests.length, 1)
+            assert.equal(fallback.requests.length, 0)
+          })
+        })
+      })
+    })
+  })
+
+  it('caps repair at six hidden fragments for a candidate', async () => {
+    await withMockProvider((request) => {
+      const isRepair = request.body?.response_format?.json_schema?.name?.includes('_repair_')
+      if (!isRepair) return { body: { id: 'bad-full', choices: [{ message: { content: '{}' } }] } }
+      const required = request.body.response_format.json_schema.schema.required || []
+      return { body: { id: 'repair', choices: [{ message: { content: JSON.stringify(Object.fromEntries(required.map((key) => [key, key]))) } }] } }
+    }, async (primary) => {
+      await withMockProvider(() => ({ body: { id: 'should-not-run', choices: [] } }), async (fallback) => {
+        await withSourceUrls({ groq: primary.url, nvidia: fallback.url }, async () => {
+          await withRouter(async (baseUrl) => {
+            const fields = Array.from({ length: 8 }, (_, index) => `f${index + 1}`)
+            const format = responseFormat()
+            format.json_schema.schema = {
+              type: 'object', required: fields, additionalProperties: false,
+              properties: Object.fromEntries(fields.map((key) => [key, { type: 'string' }])),
+            }
+            const response = await post(baseUrl, { response_format: format })
+            const payload = await response.json()
+            assert.equal(response.status, 200)
+            assert.deepEqual(Object.keys(JSON.parse(payload.choices[0].message.content)).sort(), [...fields].sort())
+            assert.equal(primary.requests.length, 7, 'one full attempt + at most six hidden repairs')
+            assert.equal(fallback.requests.length, 0)
+          })
+        })
+      })
+    })
+  })
+
+  it('accepts bounded hidden reasoning wrappers and safely repairs prototype-like property names', async () => {
+    await withMockProvider((request) => {
+      const isRepair = request.body?.response_format?.json_schema?.name?.includes('_repair_')
+      if (!isRepair) return { body: { id: 'bad-full', choices: [{ message: { content: '{}' } }] } }
+      const required = request.body.response_format.json_schema.schema.required || []
+      const fragment = Object.fromEntries(required.map((key) => [key, key === '__proto__' ? 'safe' : 'ok']))
+      return { body: { id: 'repair', choices: [{ message: { content: `<think>hidden</think>\n${JSON.stringify(fragment)}` } }] } }
+    }, async (primary) => {
+      await withMockProvider(() => ({ body: { id: 'should-not-run', choices: [] } }), async (fallback) => {
+        await withSourceUrls({ groq: primary.url, nvidia: fallback.url }, async () => {
+          await withRouter(async (baseUrl) => {
+            const format = responseFormat()
+            format.json_schema.schema = {
+              type: 'object', required: ['__proto__', 'answer'], additionalProperties: false,
+              properties: Object.fromEntries([['__proto__', { type: 'string' }], ['answer', { type: 'string' }]]),
+            }
+            const response = await post(baseUrl, { response_format: format })
+            const payload = await response.json()
+            assert.equal(response.status, 200)
+            const value = JSON.parse(payload.choices[0].message.content)
+            assert.equal(Object.prototype.hasOwnProperty.call(value, '__proto__'), true)
+            assert.equal(value.__proto__, 'safe')
+            assert.equal(value.answer, 'ok')
+            assert.equal(({}).safe, undefined)
+            assert.doesNotMatch(payload.choices[0].message.content, /<think>|```/)
+            assert.equal(fallback.requests.length, 0)
+          })
+        })
+      })
+    })
+  })
+
   it('fails closed when every routed model violates the requested schema and never leaks rejected payloads', async () => {
     await withMockProvider(() => ({
       body: { id: 'bad-primary', choices: [{ message: { role: 'assistant', content: '{"foo":123}' } }] },
