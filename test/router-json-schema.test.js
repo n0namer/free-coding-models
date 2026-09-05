@@ -198,6 +198,95 @@ describe('router json_schema contract validation', () => {
     })
   })
 
+  it('repairs a failed object contract with smaller same-candidate fragments and reuses valid fields', async () => {
+    await withMockProvider((request) => {
+      const contractName = request.body?.response_format?.json_schema?.name
+      if (!contractName?.includes('_repair_')) {
+        return { body: { id: 'partial-primary', choices: [{ message: { role: 'assistant', content: '{"answer":"keep"}' } }] } }
+      }
+      const key = request.body?.response_format?.json_schema?.schema?.required?.[0]
+      const content = key === 'score' ? '{"score":7}' : key === 'label' ? '{"label":"ok"}' : '{}'
+      return { body: { id: `repair-${key}`, choices: [{ message: { role: 'assistant', content } }] } }
+    }, async (primary) => {
+      await withMockProvider(() => ({
+        body: { id: 'should-not-run', choices: [{ message: { role: 'assistant', content: '{"answer":"fallback","score":9,"label":"fallback"}' } }] },
+      }), async (fallback) => {
+        await withSourceUrls({ groq: primary.url, nvidia: fallback.url }, async () => {
+          await withRouter(async (baseUrl) => {
+            const format = responseFormat()
+            format.json_schema.schema = {
+              type: 'object',
+              required: ['answer', 'score', 'label'],
+              additionalProperties: false,
+              properties: {
+                answer: { type: 'string' },
+                score: { type: 'integer' },
+                label: { type: 'string' },
+              },
+            }
+            const response = await post(baseUrl, { response_format: format })
+            const payload = await response.json()
+            assert.equal(response.status, 200)
+            assert.equal(response.headers.get('x-fcm-router-model'), `groq/${MODELS.primary}`)
+            assert.deepEqual(JSON.parse(payload.choices[0].message.content), { answer: 'keep', score: 7, label: 'ok' })
+            assert.equal(primary.requests.length, 3, 'one full attempt + two fragment repairs')
+            assert.equal(fallback.requests.length, 0)
+            const fragmentRequired = primary.requests.slice(1).map((entry) => entry.body.response_format.json_schema.schema.required)
+            assert.deepEqual(fragmentRequired, [['score'], ['label']])
+          })
+        })
+      })
+    })
+  })
+
+  it('rebuilds invalid atomic SSE with same-candidate fragments before any client-visible commit', async () => {
+    await withMockProvider((request) => {
+      if (request.body?.stream === true) {
+        return {
+          headers: { 'content-type': 'text/event-stream' },
+          chunks: [
+            `data: ${JSON.stringify({ choices: [{ index: 0, delta: { content: '{}' }, finish_reason: 'stop' }] })}\n\n`,
+            'data: [DONE]\n\n',
+          ],
+        }
+      }
+      const key = request.body?.response_format?.json_schema?.schema?.required?.[0]
+      const content = key === 'answer' ? '{"answer":"ok"}' : key === 'score' ? '{"score":7}' : '{}'
+      return { body: { id: `repair-${key}`, choices: [{ message: { role: 'assistant', content } }] } }
+    }, async (primary) => {
+      await withMockProvider(() => ({
+        headers: { 'content-type': 'text/event-stream' },
+        chunks: [
+          `data: ${JSON.stringify({ choices: [{ delta: { content: '{"answer":"fallback","score":9}' }, finish_reason: 'stop' }] })}\n\n`,
+          'data: [DONE]\n\n',
+        ],
+      }), async (fallback) => {
+        await withSourceUrls({ groq: primary.url, nvidia: fallback.url }, async () => {
+          await withRouter(async (baseUrl) => {
+            const format = responseFormat()
+            format.json_schema.schema = {
+              type: 'object',
+              required: ['answer', 'score'],
+              additionalProperties: false,
+              properties: { answer: { type: 'string' }, score: { type: 'integer' } },
+            }
+            const response = await post(baseUrl, { stream: true, response_format: format })
+            const text = await response.text()
+            assert.equal(response.status, 200)
+            assert.equal(response.headers.get('x-fcm-router-model'), `groq/${MODELS.primary}`)
+            assert.match(text, /answer/)
+            assert.match(text, /score/)
+            assert.match(text, /ok/)
+            assert.doesNotMatch(text, /fallback/)
+            assert.equal(primary.requests.length, 3, 'one invalid SSE attempt + two hidden fragment repairs')
+            assert.equal(fallback.requests.length, 0)
+            assert.equal((text.match(/data: \[DONE\]/g) || []).length, 1)
+          })
+        })
+      })
+    })
+  })
+
   it('fails closed when every routed model violates the requested schema and never leaks rejected payloads', async () => {
     await withMockProvider(() => ({
       body: { id: 'bad-primary', choices: [{ message: { role: 'assistant', content: '{"foo":123}' } }] },
