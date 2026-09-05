@@ -1447,8 +1447,55 @@ class RouterRuntime {
   // 📖 on the next request, so the UI can mark the model that will serve it
   // 📖 (routingOrder[0]) and label every entry as Primary vs Fallback.
   // 📖 Cheap to compute: reuses getRoutingCandidates + already-recorded health.
+  getEmergencyRoutingCandidates(set, { structured = false } = {}) {
+    const setProviders = new Set((set?.models || []).map((entry) => entry.provider))
+    const enabledProviders = Object.entries(this.config?.providers || {})
+      .filter(([, value]) => value?.enabled === true)
+      .map(([provider]) => provider)
+    const picks = []
+    for (const provider of enabledProviders) {
+      if (setProviders.has(provider)) continue
+      if (!this.getApiKeyForProvider(provider)) continue
+      const model = this.findBestModelForProviderInSources(provider)
+      if (!model) continue
+      const key = modelKey(provider, model)
+      const catalog = this.modelCatalog.get(key)
+      if (!catalog?.routeable) continue
+      const circuit = this.ensureRouteState(provider, model)
+      this.updateCircuitForCooldown(key)
+      if (circuit.authError || circuit.stale || circuit.unsupported) continue
+      if (structured && this.isStructuredRouteBlocked(key)) continue
+      if (circuit.state !== 'CLOSED' && circuit.state !== 'HALF_OPEN') continue
+      const tierIndex = TIER_ORDER.indexOf(catalog.tier)
+      const tierRank = tierIndex >= 0 ? tierIndex : TIER_ORDER.length
+      const sweScore = Number.parseFloat(catalog.sweScore) || 0
+      picks.push({
+        provider,
+        model,
+        key,
+        priority: (set?.models?.length || 0) + picks.length + 1,
+        score: 0.5,
+        priorityBonus: 0,
+        stats: this.getWindowStats(key),
+        circuit,
+        catalog,
+        emergency: true,
+        emergencyQuality: ((TIER_ORDER.length - tierRank) * 1000) + sweScore,
+      })
+    }
+    picks.sort((a, b) => b.emergencyQuality - a.emergencyQuality)
+    return picks.map((entry, index) => ({ ...entry, priority: (set?.models?.length || 0) + index + 1 }))
+  }
+
+  getEffectiveRoutingCandidates(set, options = {}) {
+    const primary = this.getRoutingCandidates(set, options)
+    const usedKeys = new Set(primary.map((entry) => entry.key))
+    const emergency = this.getEmergencyRoutingCandidates(set, options).filter((entry) => !usedKeys.has(entry.key))
+    return [...primary, ...emergency]
+  }
+
   getRoutingOrder(set) {
-    return this.getRoutingCandidates(set).map((candidate) => ({
+    return this.getEffectiveRoutingCandidates(set).map((candidate) => ({
       key: candidate.key,
       provider: candidate.provider,
       model: candidate.model,
