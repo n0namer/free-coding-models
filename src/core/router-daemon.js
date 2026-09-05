@@ -4142,6 +4142,29 @@ function buildDefaultRouterSetSync(config = {}, maxModels = 5) {
   }
 }
 
+function expandLegacyGonkaOnlyFastCodingSet(config, activeSet, maxModels = 5) {
+  if (activeSet?.name !== 'fast-coding' || !Array.isArray(activeSet.models) || activeSet.models.length === 0) return activeSet
+  const providers = new Set(activeSet.models.map((entry) => entry.provider))
+  if (providers.size !== 1 || !providers.has('gonka')) return activeSet
+
+  const additions = []
+  for (const [providerKey, providerConfig] of Object.entries(config.providers || {})) {
+    if (providerConfig?.enabled !== true || providers.has(providerKey)) continue
+    if (!isRouteableProvider(providerKey, sources)) continue
+    const source = sources[providerKey]
+    const model = source?.models?.[0]?.[0]
+    if (!model) continue
+    additions.push({ provider: providerKey, model })
+    providers.add(providerKey)
+    if (activeSet.models.length + additions.length >= maxModels) break
+  }
+  if (additions.length === 0) return activeSet
+  return {
+    ...activeSet,
+    models: [...activeSet.models, ...additions].map((entry, index) => ({ ...entry, priority: index + 1 })),
+  }
+}
+
 async function ensureRouterConfigForDaemon(config, skipSave = false) {
   // 📖 Preserve existing named sets (e.g., created by sync-set) to avoid overwriting
   // 📖 user-created configurations. Only rebuild from favorites/defaults when no
