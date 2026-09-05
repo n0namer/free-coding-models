@@ -2424,10 +2424,10 @@ class RouterRuntime {
         })
         this.logger.info(`Routed to ${key} - ${latencyMs}ms`, { request_id: requestId, status: response.status })
         // 📖 Fix #124: normalize malformed tool_calls (finish_reason tool_calls without tool_calls array)
-        let responseText = text
+        let responseText = repairMeta ? JSON.stringify(successfulPayload) : text
         try {
-          if (normalizeToolCallsResponse(parsed.value)) {
-            responseText = JSON.stringify(parsed.value)
+          if (normalizeToolCallsResponse(successfulPayload)) {
+            responseText = JSON.stringify(successfulPayload)
           }
         } catch {}
         if (!res.writableEnded) {
