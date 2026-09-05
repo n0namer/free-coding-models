@@ -1,95 +1,161 @@
 # FCM Broker — Project Plan
 
-**Status:** In Progress — long-running stream and failover hardening  
-**Last verified:** 2026-09-03  
-**Target repository:** `n0namer/free-coding-models`  
-**Canonical project SoT:** this `PLAN.md` for project stage, decisions, gates, DoD, and next move. Detailed product/router requirements remain in `tasks/PRD-smart-model-router.md`; do not duplicate that PRD here.
+**Status:** In Progress — Windows autonomous broker stabilization
+**Last verified:** 2026-09-05
+**Target repository:** `n0namer/free-coding-models`
+**Canonical project SoT:** this `PLAN.md` owns project stage, decisions, DoD, anti-drift state, and next move. Product/router details remain in the existing README/PRD/source owners.
 
 ## North Star
 
-FCM Broker must be a generic, reusable, OpenAI-compatible LLM broker that keeps clients working through provider 400/429/5xx/timeout/stream failures without corrupting plain-text, tool-call, or structured-output semantics.
+FCM on Windows is one autonomous OpenAI-compatible broker at `http://127.0.0.1:19280/v1` that requires no routine manual model picking:
+
+catalog/configured providers → live probes → strongest usable coding models ordered first → active named set → per-model circuit breakers/failover → periodic set refresh → persistent evidence across restarts.
+
+Clients depend only on FCM. No second model router/control plane is introduced.
 
 ## Scope
 
-- **Target:** FCM Broker / `free-coding-models` only.
-- **Non-target:** SWE-AF, PR-AF, Universal Solver, OpenClaw, OpenCode, and future consumers. They may be used only as black-box canary/evidence sources.
-- Do not modify consumer code/config in this project.
-- Do not use GitHub-first edit→redeploy as a debugging primitive. Development/debug patches are applied and validated directly in the existing Coding Station runtime/workspace first; accepted deltas are canonicalized to Git afterwards.
+- **Target:** local Windows FCM only.
+- **Runtime:** Docker Desktop container `fcm`, image `free-coding-models:local`.
+- **Persistent owner:** Docker volume `free-coding-models_fcm-data` mounted at `/home/fcm`.
+- **Non-target:** Outreach and all consumer business logic. Consumers are black-box clients only.
+- Debug/fix live runtime first. Do not use GitHub code edit → redeploy as a diagnostic primitive.
+- Canonicalize accepted code deltas only after live Windows verification.
+- Never expose credentials or delete/reset the FCM volume.
 
-## Current Facts (CURRENT evidence)
+## CURRENT facts
 
-- GitHub default `main` baseline: `4e51bf9ce44456fd93814e7ca23333527d094b13`.
-- Current implementation branch: `fix/fcm-long-stream-lifecycle`.
-- Current implementation branch head after canonicalizing the verified runtime-code + focused regression delta: `389f03b14e2d856074212c169b247152ec1faad8`.
-- Draft PR #3 remains open and unmerged.
-- Coding Station exact-source session `csrepo_eaf4449cf2864348b6a7b1d0bf2c1e13` was created from `f889553f2a80141b8126cbe717123d0e3d75247a` and used for direct workspace edits/validation.
-- On that tested workspace: targeted stream lifecycle regressions PASS `6/6`; canonical `pnpm test` PASS `819/819`; `node --check src/core/router-daemon.js` PASS.
-- The tested workspace includes an uncommitted legacy-regression update in `test/test.js`; Coding Station publication is blocked because `free-coding-models` has no publication metadata/GitHub App credential in Station. Runtime code and `test/router-stream-lifecycle.test.js` have been canonicalized to PR #3; `test/test.js` write-back is still pending.
-- Canonical DEV runtime is now identified directly as container `krhkfc6xjtreidxxbf8xdia3-064735014541`, image `krhkfc6xjtreidxxbf8xdia3:cd64d76cb6e9c7ede9c7ce556b786e8732a4a81e`, Docker IP `172.16.1.26`, port `19280`, healthy with restart count `0`; it is exactly the address resolved by `fcm-dev-internal`.
-- Live FCM reports version `0.5.81`, `activeSet=keyless-dev`. Live `/app/src/core/router-daemon.js` SHA-256 is `9ee3681465c7c1be3658724c2c40e86da0aae9d3a85adfc762fb0f02d99efb1a`, while the accepted DEV Git source `574f300458249252a5616406184c7ef3395e4f3f` has router SHA-256 `4e28bb25880a5185a41a24b00123f2259703bebb2cd664500d2c647fb86b0180`; therefore exact live source != recorded accepted Git source.
-- Direct readback of the live router confirms pre-hardening behavior: priority is compared before circuit state, and streaming still performs client-visible partial-stream splicing/failover. This differs from the tested hardening source.
-- Recent live attempt log contains repeated `429` from `kilo/kilo-auto/free`; this is provider instability evidence, not proof that the broker daemon is down.
-- Root `ERRORS.md` is absent. `AGENTS.md` requires `pnpm test` and runtime verification before completion.
+- GitHub default `main` HEAD re-verified on 2026-09-05: `6c3015737ebd6b204178cbd61550f0b8b17be23c`.
+- Windows container `fcm` is healthy, version `0.5.81`, bound to `127.0.0.1:19280`, restart policy `unless-stopped`.
+- Runtime config is `/home/fcm/.free-coding-models.json`.
+- Current active set is `fast-coding`; two named sets coexist.
+- Current `fast-coding` is user-customized, 4 models, with `autoHeal=false` and `userCustomized=true`; it is not evidence of a fresh managed `--sync-set`.
+- `/api/models` exposes ~206 catalog models / 22 providers; 16 providers currently have credentials available without printing them.
+- `/v1/models` exposes `fcm` and named virtual models.
+- Real Windows daemon logs prove failover after 429, 502/503, timeout, and network failures, including circuit opening.
+- `docker restart fcm` preserved the config hash, active set, both named sets, `autoHeal=false`, and `userCustomized=true`.
+- CURRENT canonical `ensureRouterConfigForDaemon()` still overwrites non-active named sets and router-level customization. Upstream has not fixed this at current HEAD.
+- The live Windows container has a direct runtime patch that merges existing `config.router` and existing named sets before refreshing the active set. Syntax and restart/readback are green.
+- Persistent probe/runtime telemetry is currently broken on first use when `~/.free-coding-models/` does not exist: `atomicWriteJson()` does not create its parent directory. Probe/runtime state reset was observed across restart.
+- CURRENT `--sync-set` is the correct native refresh mechanism but needs minimal unattended-safety hardening: exact probe validation, provider-local 429 stop/backoff behavior, and protection against replacing a good set with a tiny partial scan.
+- Windows has no FCM Scheduled Task yet for periodic `--sync-set`.
+- Running image source commit is not proven. Windows checkout and running container must not be assumed equivalent to GitHub `main`.
+
+## Ratified architecture (BMad Fast Path / brownfield)
+
+1. **One broker, not layered routers.** FCM remains the only model-control plane.
+2. **Strength first, health gates second, runtime fallback always.** `--sync-set` pre-ranks by tier/SWE/coding affinity; only models that pass live capability probes enter the managed set. Router priority remains the primary order among eligible models.
+3. **Failure isolation.** Per-model circuit breakers and provider-aware cooldown/backoff prevent repeatedly burning requests on known-bad routes.
+4. **Graceful degradation.** A bad refresh must not destroy the last known-good set.
+5. **Persistent evidence.** Probe cache and runtime telemetry must survive daemon/container restart.
+6. **Native automation.** Periodic refresh uses FCM `--sync-set` driven by Windows Task Scheduler; no new service/router.
+7. **Anti-drift identities remain separate:** Design/SoT, canonical Git source, Windows checkout/image, and live patched container.
+
+## Evidence-based reliability principles
+
+- Avoid tail-latency amplification and repeatedly selecting slow/unhealthy replicas; bounded failover/circuit isolation is preferred.
+- Failure suspicion should accumulate from observations rather than treating one transient miss as permanent death.
+- Backoff/cooldown after overload limits correlated retry pressure.
+- Preserve last-known-good service state when discovery evidence is incomplete.
+
+These principles guide FCM hardening; they do not create requirements beyond the existing FCM scanner/prober/router design.
 
 ## Phase Goal
 
-Close the long-running stream/failover hardening gate with exact-source evidence, then verify the same behavior in the live FCM runtime.
+Make the existing Windows FCM runtime behave as its README intends:
 
-## Accepted Design Decisions
+1. persistent probe/runtime state;
+2. safe managed `fast-coding` refresh;
+3. strong usable models ordered before weaker usable models;
+4. automatic request failover;
+5. restart persistence;
+6. scheduled refresh every 4 hours;
+7. no normal-operation manual model picking.
 
-1. **Circuit state before static priority across states.** Known-good `CLOSED` routes must be attempted before `HALF_OPEN` recovery probes. User priority remains authoritative within the same state.
-2. **Pre-client-byte failover remains transparent.**
-3. **Structured/tool streams are atomic.** Buffer upstream SSE until a terminal marker; discard a failed/truncated attempt and retry another eligible model before any client-visible bytes.
-4. **Plain-text streams stay low latency.** After bytes are client-visible, do not splice a different model into the same SSE response.
-5. A stream is successful only after `[DONE]` or non-null `finish_reason`, not merely HTTP 200/first byte.
-6. Telemetry must preserve `stream_outcome` and full `duration_ms` without persisting prompt/response bodies.
-7. Atomic buffering is bounded; current branch design uses a 16 MiB cap and degrades to direct streaming after that cap.
+## Definition of Done
 
-## Current Gate / Definition of Done
-
-The hardening incident is not DONE until all are true:
-
-- targeted router lifecycle regressions PASS on the exact intended source;
-- canonical `pnpm test` PASS on that same source;
-- git diff contains only owned FCM changes;
-- source identity used for validation is recorded;
-- deployed/live identity is proven to correspond to the accepted tested source or an exact equivalent live patch;
-- live canary demonstrates:
-  - healthy `CLOSED` routes are preferred over `HALF_OPEN` probes;
-  - 429/5xx/timeout before client-visible bytes fails over;
-  - structured/tool stream truncation does not leak partial upstream state;
-  - terminal completed stream reaches client cleanly;
-- bounded runtime logs show no unresolved broker-local error for the canary.
+- [x] One OpenAI-compatible endpoint is healthy at `127.0.0.1:19280/v1`.
+- [x] Catalog and configured providers are discoverable without exposing secrets.
+- [x] Router failover on real 429/5xx/timeout/network failures is evidenced.
+- [x] Existing live named-set preservation patch survives daemon/container reload.
+- [ ] Probe cache persists across container restart.
+- [ ] Runtime telemetry persists across container restart.
+- [ ] Managed `fast-coding` is generated by live probes from configured providers.
+- [ ] Plain probe requires normalized exact `OK`.
+- [ ] Tool probe validates the expected `echo` call and `text="OK"`.
+- [ ] A provider returning 429 is not repeatedly probed during the same refresh.
+- [ ] A partial/degraded refresh cannot replace a substantially better last-known-good set.
+- [ ] Active managed set contains a useful fallback depth and is ordered strongest usable → weaker usable.
+- [ ] Periodic Windows Task Scheduler refresh runs every 4 hours and records bounded evidence.
+- [ ] Container restart preserves config, sets, probe cache, and runtime telemetry.
+- [ ] Windows/Docker restart path is verified sufficiently for the chosen Docker Desktop startup mode.
+- [ ] Accepted live code deltas are canonicalized after runtime gate is green.
 
 ## 30-Minute Batch Policy
 
-Each batch should optimize for 80/20 information gain and end with fresh evidence.
+Each batch optimizes for 80/20 reliability gain and ends with readback evidence.
 
-### Active Batch
+### Batch 1 — persistence + safe refresh
 
-1. Source validation is green: targeted `6/6`, canonical `819/819`, syntax PASS on the tested Coding Station workspace.
-2. Canonicalize the verified runtime-code/focused-regression delta to PR #3; keep the remaining `test/test.js` publication gap explicit instead of hiding drift.
-3. Identify the actual live FCM runtime behind the existing `fcm-private-dev` proxy using read-only target discovery.
-4. Apply the minimal hardened runtime delta directly to the live FCM target only after exact target/source identity is proven.
-5. Run bounded live canaries for CLOSED-before-HALF_OPEN routing, pre-client-byte failover, atomic structured-stream retry, and terminal-marker completion.
-6. Update this SoT from runtime readback; stop the batch after the live acceptance gate or a precise blocker.
+1. Patch live `/app/src/core/shared-helpers.js`: `atomicWriteJson()` creates parent directory.
+2. Verify syntax; restart same `fcm` container; prove probe/runtime files survive restart.
+3. Harden live `/app/src/core/sync-set.js` only enough for unattended operation:
+   - exact normalized plain `OK`;
+   - validate expected tool call/arguments;
+   - stop further same-provider probes after 429;
+   - preserve last-known-good set on materially incomplete scan.
+4. Run `--sync-set fast-coding` using the native FCM mechanism.
+5. Verify active set size/order and router health/failover.
+
+### Batch 2 — Windows automation + restart
+
+1. Create one Windows Scheduled Task for native `--sync-set fast-coding` every 4 hours.
+2. Ensure task does not run concurrently and runs missed executions after logon.
+3. Verify task history/result and config readback.
+4. Restart the `fcm` container and re-check endpoint/set/cache/telemetry.
+5. Record exact live deltas and recovery backups.
+
+### Batch 3 — canonicalization
+
+Only after live gates are green:
+1. update canonical source with the proven minimal deltas;
+2. add focused existing-framework regression tests;
+3. run canonical tests on exact source;
+4. reconcile source/runtime identity.
 
 ## Anti-Drift Contract
 
-Track three identities separately:
+Track independently:
 
-- **Design / SoT:** `PLAN.md` + detailed router PRD.
-- **Tested source:** exact commit/workspace SHA plus local diff if uncommitted.
-- **Live runtime:** actual version/source/container/process identity from runtime readback.
+- **Design / SoT:** `PLAN.md` + README/PRD.
+- **Canonical source:** GitHub `main` exact SHA.
+- **Windows source/image:** local checkout/image identity.
+- **Live runtime:** actual container plus direct patch hashes/backups.
+- **Observed state:** endpoint/config/cache/set/circuit/log readback.
 
-Never infer one from another.  
-If tested source != live runtime, status is `DESIGN_RUNTIME_DRIFT` until reconciled.  
-If direct live patching is used, record base identity + exact delta + validation evidence, then canonicalize the accepted delta to Git after the runtime gate is green.
+Never infer one identity from another.
+
+After every material mutation: verify → update state → re-plan from CURRENT evidence.
+If live patching is used, record base, delta, backup, syntax/runtime evidence, and eventual canonical owner.
+
+## Recovery
+
+- Do not delete/recreate the FCM volume.
+- Direct live file patches must have a backup under `/home/fcm`.
+- Container-only code patches survive `docker restart` but not container recreate/image rebuild.
+- If a refresh produces insufficient evidence, retain the prior known-good set.
+- If a live code patch regresses startup, restore only the exact owned backup and restart the same container.
 
 ## Current Stop Point
 
-Source validation is complete on the exact Coding Station workspace: targeted stream lifecycle `6/6` PASS, canonical `819/819` PASS, syntax PASS. Runtime code and the focused lifecycle regression file are canonicalized to PR #3 at `389f03b14e2d856074212c169b247152ec1faad8`; the large legacy `test/test.js` compatibility update is still local to the tested workspace because Station publication credentials are unavailable for this repository. The actual live FCM target is now identified and its pre-hardening source behavior is proven, so target discovery is closed. Live patch execution is blocked by a `SOURCELOOP_GAP/CAPABILITY_GAP`: current VPS Terminal `config/targets.json` has no FCM target, typed `fileAction` returns `unknown_target`, generic container writes are mediation-blocked as `scope_unknown`, and generic approval preparation reports `approval_capability_gap`.
+The project is no longer blocked on target discovery: the real Windows `fcm` container is reachable and has already been observed and restarted safely.
 
-## Next Move
+A named-set preservation defect is proven and currently live-patched.
 
-Use an existing authorized typed live-patch route for the identified FCM container if one is added/exposed; otherwise explicitly authorize registering this FCM DEV container as a VPS Terminal live-patch target. Do not bypass mediation with LAN/SSH or GitHub redeploy debugging. Once callable, apply only the already-tested runtime delta, same-runtime reload, then bounded live canaries and log/readback verification.
+The next active defect is persistent state creation in `atomicWriteJson()`. A backup of `shared-helpers.js` exists at `/home/fcm/shared-helpers.js.bak-fcm-stability-20260905`; mutation has not yet been accepted until post-write readback succeeds.
+
+The Windows edge connection is intermittently unavailable, so any ambiguous write attempt must be followed by readback before retrying.
+
+## Exact Next Move
+
+Apply the one-line live persistence fix to `atomicWriteJson()`, verify it on the same container, then immediately harden and execute native `--sync-set fast-coding`. Do not add infrastructure until those runtime gates are green.
