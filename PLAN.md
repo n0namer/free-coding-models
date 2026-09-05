@@ -232,19 +232,16 @@ Current nearest mandatory move: anti-drift closure only — verify canonical sou
 
 ## Handoff for the Next LLM
 
-Resume here; do not re-diagnose from chat memory.
+Resume from CURRENT evidence; do not re-diagnose from chat memory.
 
-1. **Project is FCM Broker.** Repo `n0namer/free-coding-models`; active branch `fix/fcm-long-stream-lifecycle`. Only FCM is in scope. Existing SWE-AF hardening stays but must not be expanded for this work.
-2. **Permanent DEV runtime is known and typed.** Coolify app `krhkfc6xjtreidxxbf8xdia3`, container `8ac7bb34...`, typed target `fcm-dev`, port `19280`. `wgifzaww... / broker-dev` is LAN Ops DEV and must not be touched.
-3. **Container-first rule remains mandatory.** Do not program by editing GitHub and redeploying. Live debugging/patching happens in `fcm-dev`; Git is durable write-back only after verification.
-4. **P0 lifecycle behavior is already fixed live.** Post-reload router SHA256 is `fe087729a2f4d85d4e19e60a49b61af64d09144a7e14f6876b79654df40dd49c`. No post-byte model splicing; structured/tool attempts are atomic; terminal markers end the attempt; 16 MiB overflow fails before client commit; CLOSED outranks HALF_OPEN.
-5. **Deterministic P0 fault matrix is PASS.** Do not reopen the lifecycle design unless new evidence contradicts it. Product/regression write-back is already on the active branch; pre-PLAN code/test head was `8ed335f679d128cf8ac3d0b25ddcabfe4395d9a0`.
-6. **Live provider routing is intentionally Gonka-only.** Active set `fast-coding` contains exactly `gonka/deepseek-ai/DeepSeek-V4-Flash-0731` priority 1 and `gonka/MiniMaxAI/MiniMax-M2.7` priority 2. A real black-box chat request returned HTTP 200 through priority-1 DeepSeek; MiniMax is the only fallback.
-7. **No P0 validation blocker remains.** Canonical live-container `npm test` PASS: 814/814 tests, 159 suites, 0 failures. The prior benchmark suspicion did not reproduce; the first-run red was stale live issue-#137 expectation drift, while the active branch already encoded the safe no-splice contract.
-8. **Git hygiene is clean for this scope.** Product/regression changes and the corrected issue-#137 expectation are durably present on `fix/fcm-long-stream-lifecycle`; no main-branch product change was made by this work.
-9. **Next move is release/branch hygiene only if explicitly desired:** reconcile the draft PR/branch with current `main` and its checks without reopening the already-PASS P0 lifecycle design.
-10. **Do not auto-start P1 schema-semantic enforcement.** P0 is proven live and green. Schema/business validation remains a separate architectural decision and is not FCM's default responsibility unless explicitly adopted.
-
-## Not Part of the Current Gate
-
-Optional future P1: for explicit `response_format=json_schema`, FCM could validate a completed atomic payload against the requested schema before client commit. That would make the broker schema-aware, not merely transport-atomic. Keep this out of the current scope unless a new explicit architecture decision assigns that responsibility to FCM.
+1. **Project / target.** Repo `n0namer/free-coding-models`, branch `fix/fcm-long-stream-lifecycle`; only FCM is in scope. Authoritative DEV is typed target `fcm-dev`, Coolify app `krhkfc6xjtreidxxbf8xdia3`, port `19280`. `wgifzaww... / broker-dev` is NON-TARGET.
+2. **Execution rule.** Container-first remains mandatory: debug/patch `fcm-dev`, verify there, then write verified durable deltas to Git. Do not use GitHub-first programming or redeploy as a debug loop.
+3. **P0 is stable.** No post-byte splicing, tool/structured attempts are atomic, terminal markers finish the attempt, 16 MiB overflow fails before client commit, and CLOSED routes outrank HALF_OPEN recovery probes.
+4. **P1 is adopted and functionally live.** `response_format=json_schema` is a machine-contract gate only; FCM builds one contract per client request, reuses it across attempts, validates complete output before client commit, and fails over on invalid attempts while safe. It does not validate business/factual truth.
+5. **Runtime gate is green.** Current repaired live router/normalizer/test harness pass syntax. P1 deterministic fault matrix is 4/4 PASS. Direct auth/P1/live suite is 7/7 PASS including plain-text and real Gonka JSON-schema canaries. Full `npm test` is 818 PASS / 0 FAIL / 2 intentional live-only skips across 159 suites.
+6. **Gonka routing.** Persisted active set remains DeepSeek-V4-Flash-0731 priority 1 and MiniMax-M2.7 priority 2. Runtime circuit health may temporarily cause CLOSED MiniMax to serve before HALF_OPEN DeepSeek; that is correct P0 behavior and must not be mistaken for priority drift.
+7. **Canonical code/test head.** Before PLAN-only reconciliation, verified code/test head is `855c0edbe6d911417ba91dde435101b7f72fbaff`. It includes the live-proven structured-provider compatibility and the fixed JSON-schema mock URL.
+8. **Do not copy runtime adaptation blindly.** The old image embeds structured-contract behavior in `schema-normalizer.js`; canonical Git correctly owns it in `src/core/structured-output-contract.js`. Runtime behavior and architecture are aligned, but filesystem bytes are not identical.
+9. **Remaining anti-drift.** Exact tested Git SHA == permanent DEV filesystem identity remains OPEN because the runtime is an older image/source layout. This is `DESIGN_RUNTIME_DRIFT`, not a functional failure. No redeploy is required merely to close the current functional P1 gate.
+10. **SourceLoop gap.** Journal/captures are visible but artifact retrieval for recent changes returns `capture_artifact_reference_invalid`; keep this explicitly `SOURCELOOP_GAP`. Do not claim SourceLoop write-back succeeded. Use canonical Git only for live-verified deltas while the artifact lane is unavailable.
+11. **Next bounded move.** Re-read canonical router/contract/tests against these live-proven invariants, write back only any genuinely missing verified delta, then report normal-start status. Optional fuzz/differential/mutation/adversarial-schema testing remains post-gate confidence work, not a blocker for the current runtime gate.
