@@ -359,3 +359,96 @@ export function validateSseAgainstStructuredContract(contract, raw) {
   if (!contract || contract.kind !== 'json_schema') return { ok: true }
   return validateStructuredChoices(contract, extractSseStructuredContents(raw))
 }
+
+export function validateStructuredValueAgainstContract(contract, value) {
+  if (!contract || contract.kind !== 'json_schema') return { ok: true }
+  if (!contract.ok) return fail(contract.error || 'invalid structured output contract')
+  return validateValue(value, contract.schema)
+}
+
+function schemaHasUnsafeRepairRef(schema) {
+  if (!schema || typeof schema !== 'object') return false
+  if (Array.isArray(schema)) return schema.some(schemaHasUnsafeRepairRef)
+  if (typeof schema.$ref === 'string' && !schema.$ref.startsWith('#/$defs/') && !schema.$ref.startsWith('#/definitions/')) return true
+  return Object.values(schema).some(schemaHasUnsafeRepairRef)
+}
+
+export function createStructuredRepairPlan(contract, failedContent, { maxPieces = 4 } = {}) {
+  if (!contract || contract.kind !== 'json_schema') return fail('repair requires json_schema contract')
+  const schema = contract.schema
+  if (!schema || typeof schema !== 'object' || Array.isArray(schema)) return fail('repair schema must be an object schema')
+  const types = schema.type === undefined ? [] : (Array.isArray(schema.type) ? schema.type : [schema.type])
+  if (types.length > 0 && !types.includes('object')) return fail('repair currently supports object roots only')
+  if (schema.$ref || schema.allOf || schema.anyOf || schema.oneOf || schema.not) return fail('repair skips cross-field root combinators')
+  const properties = schema.properties
+  const required = Array.isArray(schema.required) ? schema.required : []
+  if (!properties || typeof properties !== 'object' || Array.isArray(properties) || required.length === 0) return fail('repair requires object properties and required fields')
+  if (schema.minProperties !== undefined && schema.minProperties > required.length) return fail('repair skips minProperties beyond required fields')
+  const safeRequired = required.filter((key) => Object.prototype.hasOwnProperty.call(properties, key))
+  if (safeRequired.length !== required.length) return fail('repair required field missing from properties')
+
+  let draft = null
+  if (typeof failedContent === 'string' && failedContent.trim()) {
+    try {
+      const parsed = JSON.parse(failedContent)
+      if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) draft = parsed
+    } catch {}
+  }
+
+  const seed = {}
+  const needed = []
+  for (const key of required) {
+    const propertySchema = properties[key]
+    if (schemaHasUnsafeRepairRef(propertySchema)) return fail('repair skips property refs outside $defs/definitions')
+    if (draft && Object.prototype.hasOwnProperty.call(draft, key)) {
+      const check = validateValue(draft[key], propertySchema, schema, `root.${key}`)
+      if (check.ok) {
+        seed[key] = cloneJson(draft[key])
+        continue
+      }
+    }
+    needed.push(key)
+  }
+  if (needed.length === 0) return fail('repair found no independently invalid required fields')
+
+  const pieceLimit = Math.max(1, Math.min(8, Number.isInteger(maxPieces) ? maxPieces : 4))
+  const pieceCount = Math.min(pieceLimit, needed.length)
+  const groups = Array.from({ length: pieceCount }, () => [])
+  needed.forEach((key, index) => groups[index % pieceCount].push(key))
+  const parts = groups.filter((group) => group.length > 0).map((keys, index) => {
+    const partProperties = Object.fromEntries(keys.map((key) => [key, cloneJson(properties[key])]))
+    const partSchema = {
+      type: 'object',
+      properties: partProperties,
+      required: [...keys],
+      additionalProperties: false,
+      ...(schema.$defs ? { $defs: cloneJson(schema.$defs) } : {}),
+      ...(schema.definitions ? { definitions: cloneJson(schema.definitions) } : {}),
+    }
+    const partContract = buildStructuredOutputContract({
+      response_format: {
+        type: 'json_schema',
+        json_schema: {
+          name: `${contract.name || 'result'}_repair_${index + 1}`,
+          strict: contract.strict === true,
+          schema: partSchema,
+        },
+      },
+    })
+    return { keys: [...keys], contract: partContract }
+  })
+  if (parts.some((part) => !part.contract.ok)) return fail('repair fragment contract build failed')
+  return { ok: true, seed, parts }
+}
+
+export function extractSingleCompletionStructuredObject(payload) {
+  if (!Array.isArray(payload?.choices) || payload.choices.length !== 1) return null
+  const content = normalizeContentParts(payload.choices[0]?.message?.content)
+  if (typeof content !== 'string' || !content.trim()) return null
+  try {
+    const parsed = JSON.parse(content)
+    return parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? parsed : null
+  } catch {
+    return null
+  }
+}
