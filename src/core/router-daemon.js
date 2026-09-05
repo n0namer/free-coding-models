@@ -1785,6 +1785,7 @@ class RouterRuntime {
         model: r.model,
         current_model: r.current_model,
         attempts: r.attempts,
+        last_failover_reason: r.last_failover_reason || null,
         tokens: r.tokens,
         stalled: r.stalled
       })),
