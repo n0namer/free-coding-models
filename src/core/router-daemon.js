@@ -2398,9 +2398,10 @@ class RouterRuntime {
     // Re-materialize the immutable client structured-output contract for each
     // provider attempt before provider-specific request normalization.
     const bodyWithContract = applyStructuredOutputContract(bodyWithPrePrompt, structuredContract)
+    const bodyForProvider = applyStructuredProviderCompatibility(bodyWithContract, structuredContract, candidate.provider)
     // 📖 Apply per-provider schema normalization (GLM, Mistral, Codestral).
     // 📖 Returns the body unchanged for providers without a registered normalizer.
-    const bodyNormalized = normalizeRequestBody(bodyWithContract, candidate.provider)
+    const bodyNormalized = normalizeRequestBody(bodyForProvider, candidate.provider)
     const upstreamBody = {
       ...bodyNormalized,
       model: getApiModelId(candidate.provider, candidate.model),
