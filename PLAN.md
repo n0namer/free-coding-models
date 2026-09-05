@@ -50,7 +50,7 @@ Academic references:
 
 ## Broker Invariants — Do Not Weaken
 
-1. A client-visible response belongs to exactly one upstream attempt.
+1. A normal client-visible response belongs to exactly one upstream attempt. **Structured-repair exception:** before client commit, FCM may deterministically assemble validated JSON fragments from multiple hidden subrequests to the **same candidate model/provider** under one immutable original contract. Never merge fragments across different candidates/providers; if repair fails, discard the whole candidate repair transaction before failover.
 2. Transparent failover is allowed only before the first client-visible byte.
 3. After client-visible bytes have been emitted, FCM must not splice another model/provider into that stream.
 4. For tool/function-call and structured output, the upstream attempt is atomic: do not emit to the client until a terminal marker is proven.
