@@ -2195,6 +2195,97 @@ class RouterRuntime {
     }
   }
 
+  async tryProgressiveStructuredRepair({ req, res, body, structuredContract, candidate, requestId, failedPayload }) {
+    if (structuredContract?.kind !== 'json_schema') return { ok: false, reason: 'repair_not_json_schema' }
+    if (!Array.isArray(failedPayload?.choices) || failedPayload.choices.length !== 1) return { ok: false, reason: 'repair_requires_single_choice' }
+    if (failedPayload.choices[0]?.message?.refusal) return { ok: false, reason: 'repair_skips_refusal' }
+    if (Array.isArray(body?.tools) && body.tools.length > 0) return { ok: false, reason: 'repair_skips_tools' }
+    if (body?.tool_choice !== undefined && body.tool_choice !== null && body.tool_choice !== 'none') return { ok: false, reason: 'repair_skips_tool_choice' }
+
+    const failedContent = failedPayload.choices[0]?.message?.content
+    const plan = createStructuredRepairPlan(structuredContract, typeof failedContent === 'string' ? failedContent : null, { maxPieces: 4 })
+    if (!plan.ok) return { ok: false, reason: 'repair_not_decomposable', detail: plan.error }
+
+    const providerUrl = resolveProviderUrl(candidate.provider)
+    const apiKey = this.getApiKeyForProvider(candidate.provider)
+    if (!providerUrl || !apiKey) return { ok: false, reason: 'repair_provider_unavailable' }
+
+    const assembled = { ...plan.seed }
+    let totalLatencyMs = 0
+    for (let index = 0; index < plan.parts.length; index += 1) {
+      if (res.writableEnded) return { ok: false, reason: 'repair_client_closed' }
+      const part = plan.parts[index]
+      const repairInstruction = {
+        role: 'system',
+        content: `FCM structured-output recovery. Return only the JSON object required by response_format for this fragment. Generate exactly the requested ${part.keys.length === 1 ? 'field' : 'fields'} and no extra fields. This fragment will be validated and merged into a larger response.`,
+      }
+      const baseMessages = Array.isArray(body?.messages) ? body.messages : []
+      const repairBase = {
+        ...body,
+        stream: false,
+        n: 1,
+        messages: [repairInstruction, ...baseMessages],
+      }
+      const bodyWithPrePrompt = applyPrePromptToBody(repairBase, this.routerConfig().prePrompt)
+      const bodyWithContract = applyStructuredOutputContract(bodyWithPrePrompt, part.contract)
+      const bodyForProvider = applyStructuredProviderCompatibility(bodyWithContract, part.contract, candidate.provider)
+      const bodyNormalized = normalizeRequestBody(bodyForProvider, candidate.provider)
+      const upstreamBody = {
+        ...bodyNormalized,
+        model: getApiModelId(candidate.provider, candidate.model),
+        stream: false,
+      }
+      if (upstreamBody.add_generation_prompt !== undefined) delete upstreamBody.add_generation_prompt
+      if (upstreamBody.continue_final_message !== undefined) delete upstreamBody.continue_final_message
+      if (upstreamBody.tools !== undefined) delete upstreamBody.tools
+      if (upstreamBody.tool_choice !== undefined) delete upstreamBody.tool_choice
+      if (upstreamBody.parallel_tool_calls !== undefined) delete upstreamBody.parallel_tool_calls
+
+      const controller = new AbortController()
+      const timeoutMs = Math.min(this.routerConfig().failover.requestTimeoutMs, 10000)
+      const timeout = setTimeout(() => controller.abort(), timeoutMs)
+      const clientAbort = attachClientAbort(req, res, controller)
+      const started = performance.now()
+      try {
+        const response = await fetch(providerUrl, {
+          method: 'POST',
+          headers: {
+            ...cloneHeadersForUpstream(req.headers, apiKey, candidate.provider),
+            'X-Request-Id': `${requestId}-repair-${index + 1}`,
+          },
+          body: JSON.stringify(upstreamBody),
+          signal: controller.signal,
+        })
+        totalLatencyMs += Math.round(performance.now() - started)
+        if (!response.ok) return { ok: false, reason: `repair_http_${response.status}` }
+        const text = await response.text()
+        const parsed = parseJsonResult(text)
+        if (!parsed.ok || !parsed.value || typeof parsed.value !== 'object') return { ok: false, reason: 'repair_invalid_upstream_json' }
+        const validation = validateCompletionAgainstStructuredContract(part.contract, parsed.value)
+        if (!validation.ok) return { ok: false, reason: 'repair_fragment_schema_invalid', detail: validation.error }
+        const fragment = extractSingleCompletionStructuredObject(parsed.value)
+        if (!fragment) return { ok: false, reason: 'repair_fragment_missing_object' }
+        Object.assign(assembled, fragment)
+      } catch (error) {
+        if (clientAbort.aborted) return { ok: false, reason: 'repair_client_closed' }
+        return { ok: false, reason: error.name === 'AbortError' ? 'repair_timeout' : 'repair_transport_error' }
+      } finally {
+        clearTimeout(timeout)
+        clientAbort.dispose()
+      }
+    }
+
+    const finalValidation = validateStructuredValueAgainstContract(structuredContract, assembled)
+    if (!finalValidation.ok) return { ok: false, reason: 'repair_final_schema_invalid', detail: finalValidation.error }
+    this.logger.info(`Structured repair succeeded for ${candidate.key}`, {
+      request_id: requestId,
+      pieces: plan.parts.length,
+      reused_fields: Object.keys(plan.seed).length,
+      repair_latency_ms: totalLatencyMs,
+    })
+    return { ok: true, value: assembled, pieces: plan.parts.length, reusedFields: Object.keys(plan.seed).length, latencyMs: totalLatencyMs }
+  }
+
   async proxyJsonRequest({ req, res, body, structuredContract, candidate, requestId, attemptIndex }) {
     const key = candidate.key
     const apiKey = this.getApiKeyForProvider(candidate.provider)
