@@ -2528,9 +2528,10 @@ class RouterRuntime {
             this.recordRouterError(reason, requestId, { model: key, status: response.status, detail: schemaValidation.error, repair_reason: repair.reason })
             this.addRequestLog({ request_id: requestId, model: key, status: 'ERR', latency_ms: latencyMs, tokens: 0, failover: attemptIndex > 0, error: reason, repair_reason: repair.reason })
             this.recordRuntimeCall({ providerKey: candidate.provider, modelId: candidate.model, success: false, latencyMs, error: reason })
-            return { done: false, failoverToNext: true, reason }
+            return { done: false, failoverToNext: true, reason, structuredFailure: true }
           }
         }
+        if (structuredContract.kind === 'json_schema') this.clearStructuredRouteFailure(key)
         this.markSuccess(key, latencyMs + (repairMeta?.latencyMs || 0))
         const usage = extractUsage(successfulPayload)
         this.tokenTracker.record(candidate.provider, candidate.model, usage)
