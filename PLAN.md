@@ -39,7 +39,7 @@ Clients depend only on FCM. No second model router/control plane is introduced.
 - The live Windows container has a direct runtime patch that merges existing `config.router` and existing named sets before refreshing the active set. Syntax and restart/readback are green.
 - Persistent probe/runtime telemetry is fixed in the live Windows container: `atomicWriteJson()` now creates its parent directory. Both `probe-cache.json` and `runtime-telemetry.json` were created on the Docker volume and reloaded successfully after `docker restart fcm`.
 - Live `--sync-set` is hardened for unattended use: exact normalized `OK`, validated `echo(text="OK")`, disabled-provider filtering, same-refresh provider stop after 429, last-known-good protection, managed-mode handoff, and a larger plain-probe token budget to avoid false negatives on reasoning models. A real scan first preserved the old set when only 1 model passed, then succeeded with 7 models after the probe-budget fix.
-- Windows has no FCM Scheduled Task yet for periodic `--sync-set`.
+- Windows Scheduled Task `FCM Managed Set Refresh` is installed and verified: native `--sync-set fast-coding` every 4 hours, `StartWhenAvailable=true`, `IgnoreNew`, 3 retries at 5-minute intervals, 30-minute execution limit. A manual Task Scheduler launch completed with `LastTaskResult=0` and refreshed the managed set; next scheduled run is 2026-09-06 04:00:42 +03:00.
 - Running image source commit is not proven. Windows checkout and running container must not be assumed equivalent to GitHub `main`.
 
 ## Ratified architecture (BMad Fast Path / brownfield)
