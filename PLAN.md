@@ -92,19 +92,18 @@ Academic references:
 
 ## Current Stage
 
-**P1.5 PROGRESSIVE STRUCTURED REPAIR — REQUIRED / NOT YET IMPLEMENTED.**
+**P1.6 PROVIDER-DOMAIN REDUNDANCY — LIVE GATE PASS / ANTI-DRIFT ACTIVE.**
 
-The previously reported P1 runtime gate is green only for full-contract validation + failover. CURRENT live code builds one full contract, validates the completed attempt, and on `response_schema_validation_failed` marks that candidate failed and moves to the next candidate with the same full contract. It does **not** yet decompose a failing JSON contract into smaller schema-preserving fragments for a weaker model. That is a product gap against the clarified North Star, so the prior statement “functional North Star reached” is withdrawn.
+CURRENT live runtime has both previously missing behaviors: progressive `json_schema` repair is implemented, and `fast-coding` is no longer Gonka-only. Provider-level retryable failures (`429`, timeout, retryable `5xx`, maintenance) skip the remaining models behind that provider failure domain; structured-schema incompatibility is isolated to that route/role; enabled independent providers are eligible as fallbacks. The narrow legacy-set migration has persisted Kilo and LLM7 into `fast-coding` without removing Gonka priority 1/2.
 
 ### North Star progress / remaining closure tasks
 
-- **Functional North Star in DEV: NOT YET REACHED.** Existing P0/P1 behavior is green, but progressive schema decomposition/repair after structured validation failure is missing.
-- **Mandatory tasks now = 4:**
-  1. **Progressive structured repair:** for safely decomposable object schemas, preserve the immutable original contract; on structured validation failure, reuse independently valid fields, generate missing/invalid required fields under smaller subcontracts, merge deterministically, and require a final validation against the unchanged original contract before client commit. Bound retries/pieces; if repair cannot prove correctness, fall back to the existing candidate failover path.
-  2. **Exact-source full-suite evidence:** run the complete canonical suite from exact Git source in an environment that can perform normal install/build lifecycle. Focused exact-source owning suites are already 21/21 PASS; Coding Station full-suite attempts remain environment-blocked.
-  3. **Exact deployed source identity:** reconcile permanent DEV filesystem to the exact tested canonical source and prove tested Git SHA == deployed source identity. This remains `DESIGN_RUNTIME_DRIFT`; no GitHub-first programming/redeploy debug loop.
-  4. **SourceLoop closure:** recover a valid capture artifact and verify durable write-back/readback. Current capture artifact retrieval remains `capture_artifact_reference_invalid` => `SOURCELOOP_GAP`.
-- Optional fuzz/differential/mutation/adversarial-schema work remains post-gate confidence extension, except decomposition-specific limits/failure tests required by Task 1.
+- **Functional runtime goal for the current incident: REACHED.** FCM can recover a weak-model structured response by bounded subcontracts and can escape a failing Gonka failure domain to independent providers before client commit.
+- **Formal project closure still has 3 mandatory anti-drift tasks:**
+  1. **Exact-source full-suite evidence:** run the complete canonical suite from exact Git source in an environment that can perform the normal install/build lifecycle. Live-container full suite is green; exact-source focused gates have been green, but exact-source full-suite evidence remains incomplete.
+  2. **Exact deployed source identity:** prove tested Git SHA == permanent DEV filesystem identity. The permanent container still uses an older image/source layout, so this remains `DESIGN_RUNTIME_DRIFT`; no GitHub-first programming/redeploy debug loop.
+  3. **SourceLoop closure:** recover a valid capture artifact and verify durable write-back/readback. Current artifact retrieval remains `capture_artifact_reference_invalid` => `SOURCELOOP_GAP`.
+- Optional capability-registry/fuzz/differential/mutation work remains confidence/operability extension, not a blocker for the current live routing fix.
 
 ## DoD for Current Gate
 
