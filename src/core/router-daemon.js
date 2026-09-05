@@ -2600,7 +2600,7 @@ class RouterRuntime {
           providerKey: candidate.provider, modelId: candidate.model,
           success: false, latencyMs, error: `http_${response.status}`,
         })
-        return { done: false, failoverToNext: true, reason: `http_${response.status}` }
+        return { done: false, failoverToNext: true, reason: `http_${response.status}`, providerFailure: true }
       }
 
       // 📖 Provide failover fallback for non-retryable errors from the provider (like 400 Bad Request)
