@@ -151,7 +151,7 @@ CURRENT live runtime has progressive `json_schema` repair, provider-failure-doma
 
 ## P1 Structured Contract Validation — BMAD Test Architecture
 
-Status: ACTIVE / TEST-HARDENING. P0 lifecycle remains PASS and must not be weakened.
+Status: HISTORICAL TEST-ARCHITECTURE RECORD / CORE PASS. P0/P1 invariants below remain binding regression constraints, but the CURRENT execution stage is P1.7 above.
 
 BMad routing used for this phase:
 1. `bmad-help` — restored project/stage and routed the next mandatory move.
