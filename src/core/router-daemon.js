@@ -60,6 +60,7 @@ import {
   createStructuredRepairPlan,
   extractSingleCompletionStructuredObject,
   extractSseStructuredContents,
+  mergeStructuredRepairFragment,
   validateCompletionAgainstStructuredContract,
   validateSseAgainstStructuredContract,
   validateStructuredValueAgainstContract,
