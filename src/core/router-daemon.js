@@ -162,6 +162,13 @@ function requiresAtomicStream(body, structuredContract) {
   const hasToolChoice = toolChoice !== undefined && toolChoice !== null && toolChoice !== 'none'
   return hasTools || hasToolChoice || structuredContract?.atomic === true
 }
+
+function applyStructuredProviderCompatibility(body, structuredContract, providerKey) {
+  if (structuredContract?.kind !== 'json_schema') return body
+  if (body?.thinking !== undefined) return body
+  if (!shouldUseDisabledThinkingForProvider(providerKey)) return body
+  return { ...body, thinking: { type: 'disabled' } }
+}
 const TOKEN_FLUSH_INTERVAL_MS = 60000
 const CONFIG_RELOAD_INTERVAL_MS = 10000
 const STATS_RETENTION_DAYS = 90
