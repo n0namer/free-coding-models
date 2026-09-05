@@ -2266,11 +2266,11 @@ class RouterRuntime {
         const text = await response.text()
         const parsed = parseJsonResult(text)
         if (!parsed.ok || !parsed.value || typeof parsed.value !== 'object') return { ok: false, reason: 'repair_invalid_upstream_json' }
-        const validation = validateCompletionAgainstStructuredContract(part.contract, parsed.value)
-        if (!validation.ok) return { ok: false, reason: 'repair_fragment_schema_invalid', detail: validation.error }
         const fragment = extractSingleCompletionStructuredObject(parsed.value)
         if (!fragment) return { ok: false, reason: 'repair_fragment_missing_object' }
-        Object.assign(assembled, fragment)
+        const validation = validateStructuredValueAgainstContract(part.contract, fragment)
+        if (!validation.ok) return { ok: false, reason: 'repair_fragment_schema_invalid', detail: validation.error }
+        mergeStructuredRepairFragment(assembled, fragment)
       } catch (error) {
         if (clientAbort.aborted) return { ok: false, reason: 'repair_client_closed' }
         return { ok: false, reason: error.name === 'AbortError' ? 'repair_timeout' : 'repair_transport_error' }
