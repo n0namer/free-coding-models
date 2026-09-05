@@ -1691,6 +1691,9 @@ class RouterRuntime {
   statusPayload() {
     const router = this.routerConfig()
     const activeSet = this.getSet(router.activeSet)
+    const effectiveRouting = this.getEffectiveRoutingCandidates(activeSet || { models: [] })
+    const activeProviders = new Set((activeSet?.models || []).map((entry) => entry.provider))
+    const effectiveProviders = new Set(effectiveRouting.map((entry) => entry.provider))
     return {
       ok: true,
       // 📖 `running` mirrors `ok` so every consumer (Router view reads `ok`,
