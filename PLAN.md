@@ -94,7 +94,7 @@ Academic references:
 
 **P1.6 PROVIDER-DOMAIN REDUNDANCY — LIVE GATE PASS / ANTI-DRIFT ACTIVE.**
 
-CURRENT live runtime has both previously missing behaviors: progressive `json_schema` repair is implemented, and `fast-coding` is no longer Gonka-only. Provider-level retryable failures (`429`, timeout, retryable `5xx`, maintenance) skip the remaining models behind that provider failure domain; structured-schema incompatibility is isolated to that route/role; enabled independent providers are eligible as fallbacks. The narrow legacy-set migration has persisted Kilo and LLM7 into `fast-coding` without removing Gonka priority 1/2.
+CURRENT live runtime has both previously missing behaviors: progressive `json_schema` repair is implemented, and `fast-coding` is no longer Gonka-only. Provider-level retryable failures (`429`, timeout, retryable `5xx`, maintenance) skip the remaining models behind that provider failure domain; structured-schema incompatibility is isolated to that route/role. A bounded exhaustive discovery pass tested 131 routeable keyed candidates and persisted all 33 fresh chat-probe successes across 9 provider identities; this replaces the earlier four-route set without assuming unprobed catalog entries are healthy.
 
 ### North Star progress / remaining closure tasks
 
