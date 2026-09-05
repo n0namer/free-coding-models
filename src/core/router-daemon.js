@@ -2217,6 +2217,8 @@ class RouterRuntime {
     let totalLatencyMs = 0
     for (let index = 0; index < plan.parts.length; index += 1) {
       if (res.writableEnded) return { ok: false, reason: 'repair_client_closed' }
+      const remainingBudgetMs = Math.floor(repairDeadline - performance.now())
+      if (remainingBudgetMs <= 0) return { ok: false, reason: 'repair_budget_exhausted' }
       const part = plan.parts[index]
       const repairInstruction = {
         role: 'system',
