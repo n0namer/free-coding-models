@@ -1796,6 +1796,12 @@ class RouterRuntime {
         openedAt: value.openedAt ? new Date(value.openedAt).toISOString() : null,
         lastError: value.lastError,
       }])),
+      structuredRouteBlocks: Object.fromEntries([...this.structuredRouteBlocks.entries()]
+        .filter(([, value]) => value.until > Date.now())
+        .map(([key, value]) => [key, {
+          blocked_until: new Date(value.until).toISOString(),
+          last_error: value.lastError,
+        }])),
     }
   }
 
