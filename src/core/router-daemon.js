@@ -4176,7 +4176,11 @@ async function ensureRouterConfigForDaemon(config, skipSave = false) {
 
   let activeSet
   if (hasExistingNamedSet) {
-    activeSet = { name: existingActiveSet, models: existingSetData.models, created: existingSetData.created }
+    activeSet = expandLegacyGonkaOnlyFastCodingSet(config, {
+      name: existingActiveSet,
+      models: existingSetData.models,
+      created: existingSetData.created,
+    })
   } else {
     const favSet = buildRouterSetFromFavorites(config)
     // 📖 The async probed version of buildDefaultRouterSet is preferred;
