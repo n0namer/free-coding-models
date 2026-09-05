@@ -34,7 +34,7 @@ Clients depend only on FCM. No second model router/control plane is introduced.
 - `/api/models` exposes ~206 catalog models / 22 providers; 16 providers currently have credentials available without printing them.
 - `/v1/models` exposes `fcm` and named virtual models.
 - Real Windows daemon logs prove failover after 429, 502/503, timeout, and network failures, including circuit opening.
-- `docker restart fcm` preserved the config hash, active set, both named sets, `autoHeal=false`, and `userCustomized=true`.
+- `docker restart fcm` now preserves the managed config, both named sets, `autoHeal=true`, `userCustomized=false`, persistent probe cache, persistent runtime telemetry, and the live code patches.
 - CURRENT canonical `ensureRouterConfigForDaemon()` still overwrites non-active named sets and router-level customization. Upstream has not fixed this at current HEAD.
 - The live Windows container has a direct runtime patch that merges existing `config.router` and existing named sets before refreshing the active set. Syntax and restart/readback are green.
 - Persistent probe/runtime telemetry is currently broken on first use when `~/.free-coding-models/` does not exist: `atomicWriteJson()` does not create its parent directory. Probe/runtime state reset was observed across restart.
