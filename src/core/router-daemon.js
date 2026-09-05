@@ -1269,6 +1269,44 @@ class RouterRuntime {
     this.recordProbeResult(key, { ok: false, latencyMs: null, code: statusCode || 'ERR', error: detail })
   }
 
+  markStructuredRouteFailure(key, detail = 'response_schema_validation_failed') {
+    const cooldownMs = Math.max(30000, Math.min(300000, this.routerConfig().circuitBreaker.maxCooldownMs || 300000))
+    this.structuredRouteBlocks.set(key, { until: Date.now() + cooldownMs, lastError: detail })
+  }
+
+  clearStructuredRouteFailure(key) {
+    this.structuredRouteBlocks.delete(key)
+  }
+
+  isStructuredRouteBlocked(key) {
+    const state = this.structuredRouteBlocks.get(key)
+    if (!state) return false
+    if (state.until <= Date.now()) {
+      this.structuredRouteBlocks.delete(key)
+      return false
+    }
+    return true
+  }
+
+  ensureRouteState(provider, model) {
+    const key = modelKey(provider, model)
+    if (!this.probeWindows.has(key)) this.probeWindows.set(key, [])
+    if (!this.circuit.has(key)) {
+      const router = this.routerConfig()
+      this.circuit.set(key, {
+        state: 'CLOSED',
+        consecutiveFailures: 0,
+        cooldownMs: router.circuitBreaker.initialCooldownMs,
+        openedAt: null,
+        lastError: null,
+        authError: false,
+        stale: !this.modelCatalog.has(key),
+        unsupported: Boolean(this.modelCatalog.get(key) && !this.modelCatalog.get(key).routeable),
+      })
+    }
+    return this.circuit.get(key)
+  }
+
   quotaDetailsForKeys(keys) {
     return keys
       .filter((key) => this.quotaExhausted.has(key))
