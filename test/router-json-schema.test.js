@@ -164,7 +164,7 @@ describe('router json_schema contract validation', () => {
             assert.equal(response.status, 200)
             assert.equal(response.headers.get('x-fcm-router-model'), `nvidia/${MODELS.fallback}`)
             assert.equal(payload.id, 'good')
-            assert.equal(primary.requests.length, 1)
+            assert.equal(primary.requests.length, 2, 'full invalid response + failed same-candidate repair fragment')
             assert.equal(fallback.requests.length, 1)
           })
         })
