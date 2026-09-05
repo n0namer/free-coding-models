@@ -2729,10 +2729,67 @@ class RouterRuntime {
         const bufferedText = Buffer.concat(bufferedChunks).toString('utf8')
         const schemaValidation = validateSseAgainstStructuredContract(structuredContract, bufferedText)
         if (!schemaValidation.ok) {
+          const contents = extractSseStructuredContents(bufferedText)
+          const repair = contents.length === 1
+            ? await this.tryProgressiveStructuredRepair({
+                req,
+                res,
+                body,
+                structuredContract,
+                candidate,
+                requestId,
+                failedPayload: { choices: [{ message: { role: 'assistant', content: contents[0] } }] },
+              })
+            : { ok: false, reason: 'repair_requires_single_choice' }
+          if (repair.ok) {
+            const repairedContent = JSON.stringify(repair.value)
+            const repairedChunk = {
+              id: `chatcmpl-${requestId}`,
+              object: 'chat.completion.chunk',
+              created: Math.floor(Date.now() / 1000),
+              model: candidate.model,
+              choices: [{
+                index: 0,
+                delta: { role: 'assistant', content: repairedContent },
+                finish_reason: 'stop',
+              }],
+            }
+            if (!res.headersSent) {
+              res.writeHead(response.status, {
+                ...headerEntries(response.headers),
+                'content-type': 'text/event-stream; charset=utf-8',
+                'x-fcm-router-model': key,
+                'x-request-id': requestId,
+              })
+            }
+            sentToClient = true
+            res.write(`data: ${JSON.stringify(repairedChunk)}\n\n`)
+            res.write('data: [DONE]\n\n')
+            const repairedDurationMs = Math.round(performance.now() - started)
+            this.markSuccess(key, latencyMs + (repair.latencyMs || 0))
+            this.totalRequestsRouted += 1
+            this.addRequestLog({
+              request_id: requestId,
+              model: key,
+              status: response.status,
+              latency_ms: latencyMs + (repair.latencyMs || 0),
+              duration_ms: repairedDurationMs,
+              tokens: 0,
+              failover: attemptIndex > 0,
+              stream: true,
+              stream_outcome: 'completed',
+              structured_repair: 'success',
+              repair_pieces: repair.pieces,
+              repair_reused_fields: repair.reusedFields,
+            })
+            if (!res.writableEnded) res.end()
+            return { done: true }
+          }
+
           const reason = 'response_schema_validation_failed'
           this.markFailure(key, reason)
-          this.recordRouterError(reason, requestId, { model: key, status: response.status, detail: schemaValidation.error, stream: true })
-          this.addRequestLog({ request_id: requestId, model: key, status: 'ERR', latency_ms: latencyMs, duration_ms: durationMs, tokens: 0, failover: attemptIndex > 0, error: reason, stream: true, stream_outcome: 'schema_invalid' })
+          this.recordRouterError(reason, requestId, { model: key, status: response.status, detail: schemaValidation.error, repair_reason: repair.reason, stream: true })
+          this.addRequestLog({ request_id: requestId, model: key, status: 'ERR', latency_ms: latencyMs, duration_ms: durationMs, tokens: 0, failover: attemptIndex > 0, error: reason, repair_reason: repair.reason, stream: true, stream_outcome: 'schema_invalid' })
           return { done: false, failoverToNext: true, reason }
         }
       }
