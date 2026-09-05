@@ -2187,7 +2187,7 @@ class RouterRuntime {
       return
     }
 
-    const candidates = this.getRoutingCandidates(set)
+    const candidates = this.getEffectiveRoutingCandidates(set, { structured: structuredContract.kind === 'json_schema' })
     const maxRetries = this.routerConfig().failover.maxRetries
     const maxAttempts = 1 + maxRetries
     if (candidates.length === 0) {
