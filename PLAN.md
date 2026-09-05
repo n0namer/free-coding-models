@@ -25,7 +25,8 @@ Clients depend only on FCM. No second model router/control plane is introduced.
 
 ## CURRENT facts
 
-- GitHub default `main` HEAD re-verified on 2026-09-05: `6c3015737ebd6b204178cbd61550f0b8b17be23c`.
+- GitHub code baseline inspected on 2026-09-05: `6c3015737ebd6b204178cbd61550f0b8b17be23c`.
+- Current GitHub `main` HEAD after the PLAN-only SoT refresh: `52d0f44cbd74917c01ea83bd56c99110f98a44b2`; no runtime code was changed by that commit.
 - Windows container `fcm` is healthy, version `0.5.81`, bound to `127.0.0.1:19280`, restart policy `unless-stopped`.
 - Runtime config is `/home/fcm/.free-coding-models.json`.
 - Current active set is `fast-coding`; two named sets coexist.
