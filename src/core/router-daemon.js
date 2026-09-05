@@ -1549,9 +1549,25 @@ class RouterRuntime {
   }
 
   addRequestLog(entry) {
-    this.requestLog.unshift({ ...entry, at: nowIso() })
+    const active = entry?.request_id ? this.activeRequests.get(entry.request_id) : null
+    const key = typeof entry?.model === 'string' ? entry.model : ''
+    const slash = key.indexOf('/')
+    const selectedProvider = slash > 0 ? key.slice(0, slash) : null
+    const selectedModel = slash > 0 ? key.slice(slash + 1) : null
+    const numericStatus = typeof entry?.status === 'number' ? entry.status : null
+    const enriched = {
+      logical_model: active?.model || null,
+      selected_provider: selectedProvider,
+      selected_model: selectedModel,
+      attempt: active?.attempts || null,
+      fallback_reason: active?.last_failover_reason || null,
+      final_route: numericStatus !== null && numericStatus < 400 ? key || null : null,
+      ...entry,
+      at: nowIso(),
+    }
+    this.requestLog.unshift(enriched)
     while (this.requestLog.length > MAX_REQUEST_LOG) this.requestLog.pop()
-    this.broadcast('request', entry)
+    this.broadcast('request', enriched)
   }
 
   broadcast(event, payload) {
