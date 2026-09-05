@@ -94,6 +94,15 @@ Academic references:
 
 The functional/runtime gate is green: repaired live source is syntax-valid, P1 fault injection is green, canonical live `npm test` has zero failures, and direct live plain-text plus `json_schema` canaries both pass after reloading the same container. The remaining work is anti-drift, not feature debugging: keep only verified durable deltas in canonical Git, record the SourceLoop artifact gap, and do not claim exact-source identity because the permanent container still uses an older image/source layout with a runtime adaptation of the canonical P1 architecture.
 
+### North Star progress / remaining closure tasks
+
+- **Functional North Star in DEV: REACHED.** No known product-behavior defect remains in the current P0/P1 scope: failover boundaries, atomic structured output, plain text, live Gonka, and schema enforcement are all evidenced PASS.
+- **Formal P1/plan DONE still has 3 mandatory closure tasks:**
+  1. **Exact-source full-suite evidence:** run the complete canonical suite from the exact Git source in an environment that can perform the normal install/build lifecycle. Focused exact-source owning suites are already 21/21 PASS; current Coding Station full-suite attempts remain environment-blocked by filesystem/quota and missing build/self-link artifacts.
+  2. **Exact deployed source identity:** reconcile the permanent DEV filesystem to the exact tested canonical source and prove tested Git SHA == deployed source identity. This is `DESIGN_RUNTIME_DRIFT`; do not use GitHub-first programming or redeploy as a debug loop.
+  3. **SourceLoop closure:** recover a valid capture artifact and verify durable write-back status/readback. Current journal entries remain `PENDING` and artifact retrieval is `capture_artifact_reference_invalid`, so this remains `SOURCELOOP_GAP`.
+- Optional fuzz/differential/mutation/adversarial-schema work is confidence extension after the gate, not part of the 3-task mandatory closure count.
+
 ## DoD for Current Gate
 
 1. **PASS — live recovery.** `router-daemon.js`, `schema-normalizer.js`, and repaired live `test/test.js` all pass syntax checks; the same container was reloaded without rebuild/redeploy and remains healthy.
