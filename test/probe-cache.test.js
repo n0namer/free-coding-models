@@ -544,6 +544,51 @@ describe('flushCache concurrency (read-merge-write)', () => {
 
 // ─── Constants sanity ─────────────────────────────────────────────────────────
 
+describe('probe scheduler', () => {
+  it('does not starve a longer probe interval when config reload asks for the same schedule', async () => {
+    const router = normalizeRouterConfig({
+      ...DEFAULT_ROUTER_SETTINGS,
+      enabled: true,
+      onboardingSeen: true,
+      activeSet: 'probe-loop-test',
+      sets: {
+        'probe-loop-test': {
+          name: 'probe-loop-test',
+          created: '2026-09-05T00:00:00.000Z',
+          models: [{ provider: 'groq', model: 'openai/gpt-oss-120b', priority: 1 }],
+        },
+      },
+      probeMode: 'balanced',
+      probeIntervals: { ...DEFAULT_ROUTER_SETTINGS.probeIntervals, balanced: 5000, aggressive: 6000 },
+    })
+    const tokenPath = join(tmpdir(), `fcm-probe-loop-${process.pid}-${Date.now()}.json`)
+    const runtime = createRouterRuntimeForTest({
+      config: { telemetry: { enabled: false }, apiKeys: { groq: 'gsk-test' }, router },
+      tokenPath,
+    })
+    runtime.probeCandidate = async () => {}
+
+    try {
+      runtime.scheduleProbeLoop()
+      const originalTimer = runtime.probeTimer
+      await new Promise((resolve) => setTimeout(resolve, 10))
+      runtime.scheduleProbeLoop()
+      assert.strictEqual(runtime.probeTimer, originalTimer)
+
+      runtime.setRouterConfig({ ...runtime.routerConfig(), probeMode: 'aggressive' })
+      runtime.scheduleProbeLoop()
+      assert.notStrictEqual(runtime.probeTimer, originalTimer)
+    } finally {
+      if (runtime.probeTimer) clearInterval(runtime.probeTimer)
+      if (runtime.probeWatchdog) clearInterval(runtime.probeWatchdog)
+      for (const timeout of runtime.probeTimeouts) clearTimeout(timeout)
+      runtime.probeTimeouts.clear()
+      try { runtime.tokenTracker.flush({ force: true }) } catch {}
+      rmSync(tokenPath, { force: true })
+    }
+  })
+})
+
 describe('module constants', () => {
   it('DEFAULT_PROBE_TTL_MS is 24h', () => {
     assert.strictEqual(DEFAULT_PROBE_TTL_MS, 24 * 60 * 60 * 1000)
