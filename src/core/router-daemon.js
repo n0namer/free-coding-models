@@ -2285,10 +2285,11 @@ class RouterRuntime {
     this.logger.info(`Structured repair succeeded for ${candidate.key}`, {
       request_id: requestId,
       pieces: plan.parts.length,
-      reused_fields: Object.keys(plan.seed).length,
+      reused_fields: plan.reusedCount || 0,
       repair_latency_ms: totalLatencyMs,
+      repair_budget_ms: repairBudgetMs,
     })
-    return { ok: true, value: assembled, pieces: plan.parts.length, reusedFields: Object.keys(plan.seed).length, latencyMs: totalLatencyMs }
+    return { ok: true, value: assembled, pieces: plan.parts.length, reusedFields: plan.reusedCount || 0, latencyMs: totalLatencyMs, budgetMs: repairBudgetMs }
   }
 
   async proxyJsonRequest({ req, res, body, structuredContract, candidate, requestId, attemptIndex }) {
