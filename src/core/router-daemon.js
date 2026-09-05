@@ -2105,6 +2105,11 @@ class RouterRuntime {
   }
 
   scheduleProbeLoop() {
+    const router = this.routerConfig()
+    const interval = router.probeIntervals[router.probeMode] || DEFAULT_ROUTER_SETTINGS.probeIntervals.balanced
+    // Config reload runs every 10s; do not reset an unchanged longer probe
+    // interval or periodic inference probes never get a chance to fire.
+    if (this.probeTimer && this.probeScheduleMode === router.probeMode && this.probeScheduleInterval === interval) return
     // Clear any existing timers
     if (this.probeTimer) clearInterval(this.probeTimer)
     if (this.probeWatchdog) clearInterval(this.probeWatchdog)
