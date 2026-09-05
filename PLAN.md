@@ -142,10 +142,10 @@ CURRENT live runtime has progressive `json_schema` repair, provider-failure-doma
 
 ### Batch 4 — Durable write-back / anti-drift — PARTIAL
 
-- Product and regression delta written back to `fix/fcm-long-stream-lifecycle` and reread.
-- Test-only CLOSED/HALF_OPEN + telemetry-environment cleanup durably merged at code/test head `8ed335f...`.
-- PLAN reconciled after write-back.
-- Canonical live-container `npm test` is now green: 814/814 tests, 159 suites, 0 failures. The earlier benchmark suspicion did not reproduce; the actual first-run red was stale live test expectation drift, already represented correctly in the branch.
+- Live-proven product and regression deltas are written back to `fix/fcm-long-stream-lifecycle` and reread. Current canonical code/test head before PLAN-only commits is `60cbba2ffe2650c81cc86ee9a20f471a5d49ddd5`; the periodic-probe scheduler fix and durable regression are included.
+- Final live package gate is 832 discovered / 830 PASS / 0 FAIL / 2 intentional live-canary skips across 159 suites; direct live canaries are 2/2 PASS.
+- Exact-source full-suite and exact deployed-source identity remain open because the permanent runtime uses the older source layout; do not infer equality from behavior.
+- SourceLoop capture artifacts remain unavailable with `capture_artifact_reference_invalid`, so SourceLoop closure is blocked even though manual Git readback is verified.
 
 ---
 
