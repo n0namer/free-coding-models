@@ -36,6 +36,8 @@ import {
   DEFAULT_PROBE_TTL_MS,
   CURRENT_PROBE_VERSION,
 } from '../src/core/probe-cache.js'
+import { createRouterRuntimeForTest } from '../src/core/router-daemon.js'
+import { normalizeRouterConfig, DEFAULT_ROUTER_SETTINGS } from '../src/core/config.js'
 
 // ─── Test helpers ────────────────────────────────────────────────────────────
 
