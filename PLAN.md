@@ -226,9 +226,11 @@ Executed as container-first Pareto batches using `bmad-help`, `bmad-testarch-tes
 - isolated the live-only canaries from package-test auth sanitization: `test/clear-client-auth-env.js` intentionally removes the client token, so package tests skip those two canaries while direct runtime execution proves both PASS;
 - traced the earlier four JSON-schema integration reds to the test harness itself: mock URL omitted `:` before the random port. Canonical fix is included at code/test head `855c0edbe6d911417ba91dde435101b7f72fbaff`;
 - live-proven structured provider compatibility is also captured canonically: structured requests disable provider thinking only when the client did not specify a thinking policy and the provider supports that field;
+- exact canonical code/test head `855c0edbe6d911417ba91dde435101b7f72fbaff` was revalidated in an isolated repo session after installing the locked pnpm dependencies into workspace-local cache/store: `structured-output-contract` + `router-json-schema` + `router-stream-lifecycle` are **21/21 PASS, 3 suites, 0 failures**;
+- a direct full exact-source test command then hit the known Coding Station filesystem/quota blocker: 29 failures were dominated by `ENOSPC` temp-file writes, plus expected environment-preparation gaps from `--ignore-scripts` (missing local package self-link and unbuilt `web/dist`). This is **VALIDATION_BLOCKER/environment evidence**, not a P1 regression; the P1-focused exact-source suites stayed green in the same session;
 - SourceLoop journal remains readable, but artifact retrieval for recent captures fails with `capture_artifact_reference_invalid`; this is recorded as `SOURCELOOP_GAP` rather than silently claiming write-back success.
 
-Current nearest mandatory move: anti-drift closure only — verify canonical source retains all live-proven durable behavior, avoid copying old-runtime adaptation/diagnostic-only drift into Git, record SourceLoop gap, and keep exact-source identity OPEN until a future controlled source-identity reconciliation is explicitly chosen. No redeploy is required for the current functional runtime gate.
+Current nearest mandatory move: anti-drift closure only — exact-source P1 behavior is now proven; keep exact deployed-filesystem identity OPEN, avoid copying old-runtime adaptation/diagnostic-only drift into Git, and preserve the SourceLoop gap explicitly. A future controlled source-identity reconciliation can close the remaining `DESIGN_RUNTIME_DRIFT`; no redeploy is required for the current functional runtime gate.
 
 ## Handoff for the Next LLM
 
