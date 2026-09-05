@@ -96,14 +96,15 @@ The functional/runtime gate is green: repaired live source is syntax-valid, P1 f
 
 ## DoD for Current Gate
 
-1. **PASS — live identity / anti-drift.** Actual FCM runtime is identified and the post-reload live router SHA256 is recorded (`fe087729...`). Image provenance is explicitly kept separate from live source identity.
-2. **PASS — container-first implementation.** All product changes were applied directly to the permanent FCM DEV container with stale-SHA guarded patches; no GitHub-first programming/redeploy was used.
-3. **PASS — canonical local validation.** `node --check` on the live router and live `test/test.js` PASS; canonical `npm test` PASS with 814/814 tests, 159 suites, 0 failures. The 10k `extended-benchmarks` sanity check passed in ~5.7 ms. The only first-run failure was a stale live issue-#137 assertion expecting post-byte failover; the active Git branch already contained the safe no-splice expectation at code/test head `8ed335f...`.
-4. **PASS — deterministic fault matrix.** CLOSED-before-HALF_OPEN, pre-byte failover, zero-byte atomic truncation retry, terminal-marker keepalive completion, no post-byte plain-text splicing, and clean atomic buffer overflow are covered and pass.
-5. **PASS — plain-text semantics.** Low-latency streaming remains client-visible and a second model is never appended after client commit.
-6. **PASS — telemetry contract.** Attempt failures and stream outcomes are distinguished (`completed`, `truncated`, `buffer_overflow`, `idle_timeout`, `upstream_error`) without logging prompt/response bodies.
-7. **PASS — successful real black-box generation.** Live config uses only Gonka DeepSeek priority 1 and Gonka MiniMax priority 2; an unmodified OpenAI-compatible request returned HTTP 200 and `x-fcm-router-model: gonka/deepseek-ai/DeepSeek-V4-Flash-0731`.
-8. **PASS — durable Git capture.** Product and regression changes are on `fix/fcm-long-stream-lifecycle`; the code/test head before PLAN-only reconciliation was `8ed335f679d128cf8ac3d0b25ddcabfe4395d9a0`. The accidental publication PR against `main` was closed unmerged; no main-branch product change was made.
+1. **PASS — live recovery.** `router-daemon.js`, `schema-normalizer.js`, and repaired live `test/test.js` all pass syntax checks; the same container was reloaded without rebuild/redeploy and remains healthy.
+2. **PASS — P0 lifecycle invariants.** CLOSED-before-HALF_OPEN, pre-byte failover, zero-byte atomic truncation retry, terminal-marker keepalive completion, no post-byte splicing, and bounded atomic overflow remain covered and green.
+3. **PASS — P1 deterministic contract matrix.** Invalid primary -> valid fallback, both-invalid -> fail-closed/no leak, malformed client schema -> 400 before upstream, and invalid streaming attempt -> atomic valid fallback all pass.
+4. **PASS — canonical live suite.** `npm test` PASS: 820 tests discovered, 818 passed, 0 failed, 2 intentional live-canary skips, 159 suites. The same focused auth/P1 file run directly with runtime env intact is 7/7 PASS, so the two skips are test-isolation behavior rather than missing functional evidence.
+5. **PASS — real black-box semantics.** Live ordinary text and `response_format=json_schema` requests both return HTTP 200 through Gonka after reload; schema output validates before client commit.
+6. **PASS — provider compatibility / harness RCA.** Structured requests disable thinking only on compatible providers when the client did not choose a thinking policy; the earlier four JSON integration failures were a missing-colon mock URL defect and are fixed in canonical Git.
+7. **PASS — verified canonical deltas.** Live-proven structured provider compatibility and the JSON-schema test URL fix are present on `fix/fcm-long-stream-lifecycle`; current pre-PLAN code/test head is `855c0edbe6d911417ba91dde435101b7f72fbaff`.
+8. **OPEN — exact-source anti-drift.** The permanent DEV container still has an older image/source layout and runtime adaptation (`structured-output` logic embedded in the old normalizer), so exact tested Git SHA == deployed filesystem identity is **not** proven. Do not call this criterion PASS by inference.
+9. **BLOCKED — SourceLoop artifact write-back.** FVE journal capture is readable, but recent capture artifacts are invalid/unavailable (`capture_artifact_reference_invalid`). Canonical Git write-back is therefore verified manually for live-proven deltas; SourceLoop itself remains a `SOURCELOOP_GAP`.
 
 ## 30-minute Batches — Pareto 80/20
 
