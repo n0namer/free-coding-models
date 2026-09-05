@@ -2654,7 +2654,7 @@ class RouterRuntime {
     if (!providerUrl) {
       this.markFailure(key, 'provider URL unresolvable')
       this.addRequestLog({ request_id: requestId, model: key, status: 'ERR', latency_ms: null, tokens: 0, failover: attemptIndex > 0, error: 'provider_url_unresolvable', stream: true })
-      return { done: false, failoverToNext: true, reason: 'provider_url_unresolvable' }
+      return { done: false, failoverToNext: true, reason: 'provider_url_unresolvable', providerFailure: true }
     }
     const controller = new AbortController()
     const started = performance.now()
