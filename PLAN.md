@@ -92,7 +92,7 @@ Academic references:
 
 ## Current Stage
 
-**P1.7 QUALITY-FIRST HEALTH-AWARE ROUTING — LIVE GATE PASS / ANTI-DRIFT ACTIVE.**
+**P1.7 SWE-FIRST + PERIODIC REAL-INFERENCE HEALTH ROUTING — LIVE GATE PASS / ANTI-DRIFT ACTIVE.**
 
 CURRENT live runtime has both previously missing behaviors: progressive `json_schema` repair is implemented, and `fast-coding` is no longer Gonka-only. Provider-level retryable failures (`429`, timeout, retryable `5xx`, maintenance) skip the remaining models behind that provider failure domain; structured-schema incompatibility is isolated to that route/role. A bounded exhaustive discovery pass tested 131 routeable keyed candidates and persisted all 33 fresh chat-probe successes across 9 provider identities. The persisted set is now quality-first using the available SWE benchmark result as the primary strength signal: `SWE score descending → tier only as a tie-break → previous proven order as stable final tie-break`. No new model-quality evaluation is performed by FCM; the router consumes the existing `sources.js` benchmark metadata, which its regression suite treats as the score source of truth. Runtime health still filters unusable routes before selection, so latency is secondary and cannot outrank a stronger healthy priority.
 
