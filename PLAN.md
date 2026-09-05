@@ -149,14 +149,12 @@ If live patching is used, record base, delta, backup, syntax/runtime evidence, a
 
 ## Current Stop Point
 
-The project is no longer blocked on target discovery: the real Windows `fcm` container is reachable and has already been observed and restarted safely.
+The Windows runtime stabilization batch is green. `fast-coding` is a managed 7-model set, all currently selected models are live `up`, `autoHeal=true`, `userCustomized=false`, persistent probe/runtime state survives `docker restart fcm`, and the Windows Scheduled Task has executed successfully with `LastTaskResult=0`.
 
-A named-set preservation defect is proven and currently live-patched.
+Verified live patches currently exist only in the running container layer: named-set/router-setting preservation in `router-daemon.js`, parent-directory creation in `shared-helpers.js`, and unattended-safe `sync-set.js` hardening. Backups remain under `/home/fcm`.
 
-The next active defect is persistent state creation in `atomicWriteJson()`. A backup of `shared-helpers.js` exists at `/home/fcm/shared-helpers.js.bak-fcm-stability-20260905`; mutation has not yet been accepted until post-write readback succeeds.
-
-At the latest 2026-09-05 execution attempt the Windows edge returned `edge_unreachable` repeatedly. No ambiguous runtime mutation is accepted as applied; before retrying any write, reread the target file and current container state.
+Two DoD items remain open: a full Windows reboot/login/Docker Desktop startup proof, and canonicalization of the proven live code deltas into source/tests. Container recreation before canonicalization would lose the live code patches, although the persistent volume/config would remain.
 
 ## Exact Next Move
 
-Apply the one-line live persistence fix to `atomicWriteJson()`, verify it on the same container, then immediately harden and execute native `--sync-set fast-coding`. Do not add infrastructure until those runtime gates are green.
+Canonicalize the proven live deltas into the local source checkout with focused regression tests, without redeploying or recreating the current container. A full Windows reboot proof remains a separate disruptive verification step and requires explicit approval before execution.
