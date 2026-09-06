@@ -69,10 +69,10 @@ Make the existing Windows FCM runtime behave as its README intends:
 
 1. persistent probe/runtime state;
 2. safe managed `fast-coding` refresh;
-3. strong usable models ordered before weaker usable models;
-4. automatic request failover;
+3. the user-approved 20-route fallback contour with `gonka/deepseek-ai/DeepSeek-V4-Flash-0731` and `gonka/MiniMaxAI/MiniMax-M2.7` fixed at priorities 1–2, followed by the remaining 18 routes in the recorded order;
+4. automatic request failover/circuit breaking across the contour;
 5. restart persistence;
-6. scheduled refresh every 4 hours;
+6. scheduled refresh every 4 hours that validates health without shrinking or reordering the pinned 20-route contour;
 7. no normal-operation manual model picking.
 
 ## Definition of Done
