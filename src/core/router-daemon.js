@@ -2159,8 +2159,7 @@ class RouterRuntime {
       try {
         const set = this.getSet()
         if (!set || this.shuttingDown) return
-        const candidates = this.scoreCandidates(set)
-          .filter((candidate) => candidate.catalog?.routeable && !candidate.circuit?.stale)
+        const candidates = this.getScheduledProbeCandidates(set)
         const stagger = candidates.length > 0 ? Math.max(250, Math.floor(interval / candidates.length)) : interval
         candidates.forEach((candidate, index) => {
           const timeout = setTimeout(() => {
