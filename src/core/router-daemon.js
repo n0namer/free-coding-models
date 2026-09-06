@@ -4235,8 +4235,14 @@ async function ensureRouterConfigForDaemon(config, skipSave = false) {
       activeSet = favSet || buildDefaultRouterSetSync(config)
     }
   }
+  const persistedProbeIntervals = { ...(existingRouterSettings.probeIntervals || {}) }
   config.router = normalizeRouterConfig({
     ...DEFAULT_ROUTER_SETTINGS,
+    ...existingRouterSettings,
+    probeIntervals: {
+      ...DEFAULT_ROUTER_SETTINGS.probeIntervals,
+      ...persistedProbeIntervals,
+    },
     enabled: true,
     onboardingSeen: true,
     activeSet: activeSet.name,
