@@ -127,6 +127,16 @@ Only after live gates are green:
 3. run canonical tests on exact source;
 4. reconcile source/runtime identity.
 
+### Batch 4 — Gonka-first 20-route contour — COMPLETE
+
+1. [x] Verified all 20 requested provider/model routes exist in CURRENT `/api/models` and have configured credentials.
+2. [x] Created recovery points: `/home/fcm/.free-coding-models.json.bak-gonka20-20260906`, `/home/fcm/.free-coding-models.json.bak-before-maxretries19-20260906`, and `C:\WINDOWS\TEMP\FCM-Managed-Set-Refresh.before-gonka20.xml`.
+3. [x] Applied exact 20-route `fast-coding` order directly in the running container; Gonka is priority 1–2; `userCustomized=true`, `autoHeal=false` preserve membership while circuit breakers continue handling availability.
+4. [x] Set `router.failover.maxRetries=19`, matching the 20-route contour so a request can traverse up to all eligible routes.
+5. [x] Changed the existing 4-hour Scheduled Task action from membership-mutating `--sync-set fast-coding` to non-mutating `--daemon-status`; task verification returned `LastTaskResult=0` / `Ready`.
+6. [x] Verified exact order/flags after SIGHUP and after `docker restart fcm`; config persisted and second named set remained intact.
+7. [x] Real routed request returned `OK` through `gonka/deepseek-ai/DeepSeek-V4-Flash-0731`; daemon logs show Gonka DeepSeek → Gonka MiniMax failover on real 429/502 failures.
+
 ## Anti-Drift Contract
 
 Track independently:
