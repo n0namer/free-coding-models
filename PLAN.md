@@ -151,7 +151,7 @@ If live patching is used, record base, delta, backup, syntax/runtime evidence, a
 
 The live broker is healthy and CURRENT `fast-coding` has 8 managed models with `autoHeal=true` and `userCustomized=false`. Persistence/failover gates remain green. However, the latest automatic Windows Scheduled Task run returned exit code 1 after the FCM CLI process executed for ~4 minutes, so unattended refresh completion semantics are not yet closed.
 
-The FCM CLI currently exits non-zero whenever `syncSet().ok` is false. The live `sync-set` safety gate can deliberately preserve the existing last-known-good set with `reusedExisting=true`; for unattended operation this safe no-change must not be reported as an operational scheduler failure. This is the current bounded correction target; verify the exact result before accepting the patch.
+The live CLI correction is applied in `/app/bin/free-coding-models.js`: `--sync-set` now exits 0 when `result.ok === true` or `result.reusedExisting === true`, while genuine failures remain non-zero. Backup: `/home/fcm/free-coding-models.js.bak-scheduler-exit-20260906`; patched SHA-256 `7afdb1606d782e01282ce70080200fd6f84ff28bd3f25c5496d3085ec15dad0`; backup SHA-256 `a713ba2f9d393f748a77875602d2b67b92f1eba65cc21a6741fc3377682f4216`; `node --check` PASS. A Windows Task Scheduler verification run was started, but final readback is pending because the Personal Edge connection became unavailable during polling.
 
 A previously verified source canonicalization commit `388c858d442d47f062cf57a9f3fa338d01d62e32` exists locally, but publication is deferred until the CURRENT scheduler gate is green so source does not outrun runtime evidence.
 
