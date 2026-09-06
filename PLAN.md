@@ -1,6 +1,6 @@
 # FCM Broker — Project Plan
 
-**Status:** In Progress — publish verified canonicalization
+**Status:** In Progress — stabilize unattended scheduled refresh
 **Last verified:** 2026-09-06
 **Target repository:** `n0namer/free-coding-models`
 **Canonical project SoT:** this `PLAN.md` owns project stage, decisions, DoD, anti-drift state, and next move. Product/router details remain in the existing README/PRD/source owners.
