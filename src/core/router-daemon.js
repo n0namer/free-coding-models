@@ -2282,9 +2282,12 @@ class RouterRuntime {
       const providerFailureCounts = new Map()
       let attemptIndex = 0
       let preferredProvider = null
-      for (const candidate of candidates) {
-        if (attemptIndex >= maxAttempts) break
-        if (blockedProviders.has(candidate.provider)) continue
+      while (attemptIndex < maxAttempts) {
+        const candidate = (preferredProvider
+          ? candidates.find((entry) => entry.provider === preferredProvider && !tried.includes(entry.key) && !blockedProviders.has(entry.provider))
+          : null) || candidates.find((entry) => !tried.includes(entry.key) && !blockedProviders.has(entry.provider))
+        preferredProvider = null
+        if (!candidate) break
 
         const activeReq = this.activeRequests.get(requestId)
         if (activeReq) {
