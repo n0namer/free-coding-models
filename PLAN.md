@@ -9,7 +9,7 @@
 
 FCM on Windows is one autonomous OpenAI-compatible broker at `http://127.0.0.1:19280/v1` that requires no routine manual model picking:
 
-catalog/configured providers → live probes → strongest usable coding models ordered first → active named set → per-model circuit breakers/failover → periodic set refresh → persistent evidence across restarts.
+catalog/configured providers → continuous live health probes → pinned Gonka-first 20-route `fast-coding` contour → per-model circuit breakers/failover → non-mutating 4-hour guard → persistent evidence across restarts.
 
 Clients depend only on FCM. No second model router/control plane is introduced.
 
