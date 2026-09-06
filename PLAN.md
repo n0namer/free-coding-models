@@ -100,6 +100,28 @@ CURRENT live runtime has progressive `json_schema` repair, a persisted 33-route 
 
 A second OpenAI-compatibility defect was then confirmed and fixed container-first: `/v1/chat/completions` advertised virtual models as `fcm:<set>` but previously ignored that `body.model` form and routed through `activeSet`. The live router now resolves a non-empty `fcm:<set>` model into the existing named-set path while preserving explicit `/v1/sets/<set>/chat/completions` precedence. It also fails closed for malformed `model="fcm:"` with `400 invalid_model` before any upstream call instead of silently falling back to `activeSet`. Deterministic integration proof is PASS: `fcm:outreach-quality` routes only to the test named set and never to the active set; the empty virtual-set model is rejected with zero provider calls. After same-container restart, an authenticated black-box smoke using `model=fcm:__named-set-smoke-missing__` returns `404 set_not_found`, proving an unknown virtual set no longer silently falls back to `fast-coding`. Final live package gate after this edge hardening is PASS: 841 tests discovered, 837 passed, 0 failed, 4 intentional skips, 160 suites, ~18.5 s. No persistent outreach-specific set was created on this host, so this fix changes API semantics only and leaves the current 33-route `fast-coding` membership/order unchanged.
 
+### Upstream-first fork-drift audit — BMAD Technical Research
+
+Fresh source comparison uses four authorities: stock upstream `v0.5.81` (the live/fork base), current upstream `main`/`0.5.88` at `2610ddaa8c20c75a61778dffd25c6562913ef6a3`, our canonical branch, and CURRENT live readback. Findings:
+
+| Capability / behavior | Upstream `v0.5.81` | Upstream `main` / `0.5.88` | Our fork / CURRENT decision |
+|---|---|---|---|
+| Basic within-set failover | Present; ordinary failures advance through set order. Provider blocking is not applied to every retryable failure. | Present. | Keep semantics; our first-provider-wide blocking change was an accidental regression and is now corrected. |
+| Same-family cross-provider failover | Not present in the 0.5.81 base. | Present via `model-family.js`, `familyFailover`, `attemptChain`, and two-stage same-family-then-set-order selection; upstream task `t8` records it as merged after 0.5.83. | **ADOPT/CANDIDATE:** prefer upstream mechanism during source convergence rather than maintaining a parallel bespoke family policy. Do not live-migrate until exact-source tests prove compatibility with our structured-output invariants. |
+| Virtual models `fcm:<set>` in `/v1/models` | Advertised. | Advertised. | Contract is intended and retained. |
+| `body.model = fcm:<set>` resolution in `/v1/chat/completions` | Missing. | Still missing in current upstream; handler selects a set only from `/v1/sets/<set>/...`. | **KEEP CUSTOM:** this is a real upstream API-contract gap. Preserve our fail-closed resolver and its positive/negative regressions. |
+| Structured `json_schema` validation, atomic pre-commit buffering, progressive repair | Not present as our current contract machinery. | Current upstream router does not provide our structured-contract subsystem. | **KEEP CUSTOM:** this is deliberate product differentiation and a North-Star invariant, not fork noise. |
+| Provider quota / rate-limit handling | Basic retry/failover behavior. | More developed quota/rate-limit metadata plus current family routing. | **COMPARE/ADOPT SELECTIVELY:** prefer upstream primitives where they satisfy the same failure-domain evidence; retain our explicit 429/auth versus route-local distinction until equivalence is proven. |
+| Runtime/source identity | Live image and fork pinned to 0.5.81-era layout. | Current upstream is 0.5.88 and has materially evolved. | **DRIFT:** do not accumulate more custom router code before checking upstream first. |
+
+Decision policy from this audit:
+
+1. **Upstream-first, custom-last.** Before any new router mutation, compare the same-version stock behavior, current upstream, our canonical fork, and CURRENT runtime.
+2. Classify each delta as `UPSTREAM_NATIVE`, `UPSTREAM_SUPERSEDED`, `CUSTOM_REQUIRED`, or `ACCIDENTAL_REGRESSION`; only `CUSTOM_REQUIRED` should grow long-term fork surface.
+3. Prefer deleting/replacing fork code when current upstream provides equivalent or stronger behavior under our invariants. Preserve custom structured-output semantics and the named-set resolver because current upstream does not supply them.
+4. Do not mass-upgrade/redeploy the permanent runtime as a debugging shortcut. Upstream convergence is a tested release boundary: exact-source tests first, then identity-controlled deployment only when the release gate is green.
+5. No new router patch is justified merely because a mechanism exists upstream; first prove a CURRENT gap. The next work is a bounded keep/adopt/drop convergence design, not additional live mutation.
+
 ### North Star progress / remaining closure tasks
 
 - **Functional runtime goal for the current incident: REACHED.** FCM can recover a weak-model structured response by bounded subcontracts and can escape a failing Gonka failure domain to independent providers before client commit.
