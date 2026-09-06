@@ -149,12 +149,12 @@ If live patching is used, record base, delta, backup, syntax/runtime evidence, a
 
 ## Current Stop Point
 
-The Windows runtime stabilization batch is green. `fast-coding` is a managed 7-model set, all currently selected models are live `up`, `autoHeal=true`, `userCustomized=false`, persistent probe/runtime state survives `docker restart fcm`, and the Windows Scheduled Task has executed successfully with `LastTaskResult=0`.
+The live broker is healthy and CURRENT `fast-coding` has 8 managed models with `autoHeal=true` and `userCustomized=false`. Persistence/failover gates remain green. However, the latest automatic Windows Scheduled Task run returned exit code 1 after the FCM CLI process executed for ~4 minutes, so unattended refresh completion semantics are not yet closed.
 
-The proven live deltas are also canonicalized in a clean local source commit `388c858d442d47f062cf57a9f3fa338d01d62e32` on branch `fix/windows-fcm-broker-stability`, based on GitHub `main` at `d33391292149784eb619364a618c9dd5f1f988e6`. Focused regression gates are green and full-suite comparison found no new failure names versus that exact baseline. The running container was not redeployed or recreated.
+The FCM CLI currently exits non-zero whenever `syncSet().ok` is false. The live `sync-set` safety gate can deliberately preserve the existing last-known-good set with `reusedExisting=true`; for unattended operation this safe no-change must not be reported as an operational scheduler failure. This is the current bounded correction target; verify the exact result before accepting the patch.
 
-Host-level Windows reboot/login/Docker Desktop startup proof is intentionally excluded from this phase by user decision. The only remaining DoD item is publishing the verified canonicalization into the canonical repository.
+A previously verified source canonicalization commit `388c858d442d47f062cf57a9f3fa338d01d62e32` exists locally, but publication is deferred until the CURRENT scheduler gate is green so source does not outrun runtime evidence.
 
 ## Exact Next Move
 
-Publish/review local commit `388c858d442d47f062cf57a9f3fa338d01d62e32` into the canonical repository without redeploying or recreating the current container. After publication, this stabilization phase is complete.
+On the live `fcm` container, reread and back up `/app/bin/free-coding-models.js`, then patch only `--sync-set` exit semantics so `result.ok === true` or `result.reusedExisting === true` returns process exit 0 while genuine failures remain non-zero. Verify syntax, run the native refresh through Windows Task Scheduler, require `LastTaskResult=0`, and confirm the managed set/config remain healthy before updating this PLAN again.
