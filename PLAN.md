@@ -122,6 +122,35 @@ Decision policy from this audit:
 4. Do not mass-upgrade/redeploy the permanent runtime as a debugging shortcut. Upstream convergence is a tested release boundary: exact-source tests first, then identity-controlled deployment only when the release gate is green.
 5. No new router patch is justified merely because a mechanism exists upstream; first prove a CURRENT gap. The next work is a bounded keep/adopt/drop convergence design, not additional live mutation.
 
+### Minimal convergence design — KEEP / ADOPT / DROP
+
+**KEEP — proven custom invariants that current upstream does not supply:**
+
+- Structured-output contract ownership (`json_schema` normalization/validation), fail-closed rejected payloads, atomic pre-client-commit buffering, progressive repair, and route/role-scoped structured incompatibility.
+- OpenAI-compatible `body.model = fcm:<set>` resolution, explicit URL-set precedence, `404 set_not_found` for unknown sets, and `400 invalid_model` for an empty `fcm:` selector.
+- Failure-domain evidence: auth and provider/key quota 429 are provider-wide; timeout/transport/retryable 5xx are not automatically provider-wide.
+- Existing 33-route durable set/order and real-inference health filtering until a separately tested release changes them.
+
+**ADOPT — upstream mechanisms to converge on rather than reimplement:**
+
+- `src/core/model-family.js` (`detectFamily`, pure `pickNextCandidate`) and the per-set `familyFailover` contract.
+- Upstream `attemptChain`/two-stage selection and `failover_reason` observability, adapted so our structured-contract and provider-failure-domain gates remain authoritative.
+- Long-term selection order after a route failure should prefer a healthy same-family candidate on a different provider when available, because this both changes the infrastructure failure domain and preserves model-family behavior. If no such candidate exists, fall back through the remaining eligible set order. The current same-provider-sibling preference is retained only as the already-verified incident fix until this upstream-based policy passes exact-source fault tests.
+
+**DROP / DO NOT REINTRODUCE:**
+
+- Blanket `blockedProviders.add(provider)` on the first timeout/5xx/transport failure.
+- Any second custom model-family taxonomy or parallel family-routing subsystem.
+- Silent fallback from an explicit invalid/unknown virtual set to `activeSet`.
+- Stale config-path assumptions (`/root/.free-coding-models.json` is not the CURRENT daemon config owner here), duplicate test-owner files, GitHub-first debugging, and redeploy-as-diagnosis.
+
+**Exact-source adoption gate before any runtime migration:**
+
+1. Add/port upstream family primitives in the canonical exact-source workspace, not in the live container.
+2. Preserve custom named-set and structured-output behavior without semantic weakening.
+3. Fault-injection matrix must prove: 429/auth skips the failed provider; route-local timeout/5xx never blanket-blocks a provider; same-family different-provider recovery wins when eligible; set-order fallback still works; streaming pre-commit and non-stream behavior agree; no post-byte splicing; named-set selectors remain fail-closed.
+4. Run canonical full suite on the exact candidate source. Only then is a deployment/release boundary allowed; after deployment verify tested SHA == deployed identity and rerun authenticated cadence.
+
 ### North Star progress / remaining closure tasks
 
 - **Functional runtime goal for the current incident: REACHED.** FCM can recover a weak-model structured response by bounded subcontracts and can escape a failing Gonka failure domain to independent providers before client commit.
