@@ -100,6 +100,16 @@ CURRENT live runtime has progressive `json_schema` repair, a persisted 33-route 
 
 A second OpenAI-compatibility defect was then confirmed and fixed container-first: `/v1/chat/completions` advertised virtual models as `fcm:<set>` but previously ignored that `body.model` form and routed through `activeSet`. The live router now resolves a non-empty `fcm:<set>` model into the existing named-set path while preserving explicit `/v1/sets/<set>/chat/completions` precedence. It also fails closed for malformed `model="fcm:"` with `400 invalid_model` before any upstream call instead of silently falling back to `activeSet`. Deterministic integration proof is PASS: `fcm:outreach-quality` routes only to the test named set and never to the active set; the empty virtual-set model is rejected with zero provider calls. After same-container restart, an authenticated black-box smoke using `model=fcm:__named-set-smoke-missing__` returns `404 set_not_found`, proving an unknown virtual set no longer silently falls back to `fast-coding`. Final live package gate after this edge hardening is PASS: 841 tests discovered, 837 passed, 0 failed, 4 intentional skips, 160 suites, ~18.5 s. No persistent outreach-specific set was created on this host, so this fix changes API semantics only and leaves the current 33-route `fast-coding` membership/order unchanged.
 
+### Operational acceptance — BMAD Test Design
+
+This is the acceptance view for the current FCM objective, kept in the existing SoT instead of creating a duplicate test-plan document.
+
+- **P0 runtime contract — PASS / sufficient for use.** Health/status, full live package suite, plain text, `json_schema`, named-set fail-closed behavior, and same-container restart are green.
+- **P0 reliability boundary — PASS.** The eight-turn reviewer-like `fast-coding` cadence completed end-to-end; the acceptance run delivered 10/10 successful client requests while real priority-1 Gonka 429 failures were absorbed by fallback. This directly covers the reported `All routed models failed` failure mode at the broker boundary.
+- **P1 consumer confidence — PASS at broker-simulated reviewer cadence; natural downstream run is observational only.** A real SWE/OpenCode/AgentField execution can add confidence, but it is not required to declare FCM usable because consumer implementations are NON-TARGET and the broker already passed an authenticated multi-turn cadence using the real OpenAI-compatible surface.
+- **Current consumer-orchestration lane — unavailable, non-blocking.** AgentField capability discovery returned `Bad Gateway` on two bounded attempts in this execution. This is not evidence of an FCM defect and must not trigger an FCM patch or redeploy.
+- **Exit decision for the current functional incident: DONE.** Further source/upstream convergence, exact deployed-source identity, and canonical test-layout cleanup are maintenance/release-hygiene tasks. They may block a future clean release, but they do not block using the CURRENT live FCM.
+
 ### Upstream-first fork-drift audit — BMAD Technical Research
 
 Fresh source comparison uses four authorities: stock upstream `v0.5.81` (the live/fork base), current upstream `main`/`0.5.88` at `2610ddaa8c20c75a61778dffd25c6562913ef6a3`, our canonical branch, and CURRENT live readback. Findings:
