@@ -1,6 +1,6 @@
 # FCM Broker — Project Plan
 
-**Status:** In Progress — apply Gonka-first 20-route `fast-coding` contour
+**Status:** Runtime Green — canonical source publication pending
 **Last verified:** 2026-09-06
 **Target repository:** `n0namer/free-coding-models`
 **Canonical project SoT:** this `PLAN.md` owns project stage, decisions, DoD, anti-drift state, and next move. Product/router details remain in the existing README/PRD/source owners.
