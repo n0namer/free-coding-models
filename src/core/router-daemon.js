@@ -3817,16 +3817,21 @@ class RouterRuntime {
         }
         const setMatch = url.pathname.match(/^\/v1\/sets\/([^/]+)\/chat\/completions$/)
         const body = await readJsonBody(req)
-        const bodySetName = !setMatch
+        const modelSelectsNamedSet = !setMatch
           && typeof body?.model === 'string'
           && body.model.startsWith('fcm:')
+        const bodySetName = modelSelectsNamedSet
           ? body.model.slice('fcm:'.length).trim()
           : null
+        if (modelSelectsNamedSet && !bodySetName) {
+          sendError(res, 400, 'Named set name is required after `fcm:`', 'invalid_request_error', 'invalid_model', requestId)
+          return
+        }
         await this.routeRequest({
           req,
           res,
           body,
-          setName: setMatch ? decodeURIComponent(setMatch[1]) : (bodySetName || null),
+          setName: setMatch ? decodeURIComponent(setMatch[1]) : bodySetName,
           requestId,
         })
         return
