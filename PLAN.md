@@ -88,8 +88,8 @@ Make the existing Windows FCM runtime behave as its README intends:
 - [x] Tool probe validates the expected `echo` call and `text="OK"`.
 - [x] A provider returning 429 is not repeatedly probed during the same refresh.
 - [x] A partial/degraded refresh cannot replace a substantially better last-known-good set.
-- [ ] Active `fast-coding` contains the user-approved 20-route fallback contour in the exact priority order, with Gonka routes fixed at priorities 1–2; live readback must prove all 20 routes are present.
-- [ ] Periodic automation preserves the 20-route contour and Gonka-first priority instead of shrinking it back to the previous 8-model managed target.
+- [x] Active `fast-coding` contains the user-approved 20-route fallback contour in the exact priority order, with Gonka routes fixed at priorities 1–2; live `/sets` readback proved all 20 routes are present before and after container restart.
+- [x] Periodic automation preserves the 20-route contour and Gonka-first priority: the 4-hour task no longer invokes `--sync-set`, and verified guard runs leave membership/order unchanged.
 - [x] Periodic Windows Task Scheduler refresh runs every 4 hours and completes with correct unattended success semantics; verified Task Scheduler run returned `LastTaskResult=0` after the live safe-no-change CLI exit fix.
 - [x] Container restart preserves config, sets, probe cache, and runtime telemetry.
 - Host-level Windows reboot/login/Docker Desktop startup proof is explicitly out of scope for this phase by user decision; container restart + verified Scheduled Task execution are sufficient operational evidence.
