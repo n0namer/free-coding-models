@@ -3817,7 +3817,18 @@ class RouterRuntime {
         }
         const setMatch = url.pathname.match(/^\/v1\/sets\/([^/]+)\/chat\/completions$/)
         const body = await readJsonBody(req)
-        await this.routeRequest({ req, res, body, setName: setMatch ? decodeURIComponent(setMatch[1]) : null, requestId })
+        const bodySetName = !setMatch
+          && typeof body?.model === 'string'
+          && body.model.startsWith('fcm:')
+          ? body.model.slice('fcm:'.length).trim()
+          : null
+        await this.routeRequest({
+          req,
+          res,
+          body,
+          setName: setMatch ? decodeURIComponent(setMatch[1]) : (bodySetName || null),
+          requestId,
+        })
         return
       }
       sendError(res, 404, 'Not found', 'invalid_request_error', 'not_found', requestId)
