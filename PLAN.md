@@ -147,6 +147,35 @@ If live patching is used, record base, delta, backup, syntax/runtime evidence, a
 - If a refresh produces insufficient evidence, retain the prior known-good set.
 - If a live code patch regresses startup, restore only the exact owned backup and restart the same container.
 
+## Suggested Review Order
+
+**Scheduler / refresh semantics**
+
+- Safe last-known-good refreshes return scheduler success without masking genuine failures.
+  [`bin/free-coding-models.js:198`](./bin/free-coding-models.js#L198)
+
+- Managed refresh gating owns strict probes, 429 provider stop, and last-known-good preservation.
+  [`src/core/sync-set.js:373`](./src/core/sync-set.js#L373)
+
+**Persistence / daemon config preservation**
+
+- Daemon startup preserves existing router settings and all named sets.
+  [`src/core/router-daemon.js:3690`](./src/core/router-daemon.js#L3690)
+
+- Atomic JSON persistence creates its parent directory before first write.
+  [`src/core/shared-helpers.js:77`](./src/core/shared-helpers.js#L77)
+
+**Regression evidence**
+
+- Sync-set behavior and CLI safe-no-change contract.
+  [`test/sync-set.test.js:241`](./test/sync-set.test.js#L241)
+
+- First-write cache persistence.
+  [`test/probe-cache.test.js:132`](./test/probe-cache.test.js#L132)
+
+- Named-set and router customization preservation.
+  [`test/test.js:2865`](./test/test.js#L2865)
+
 ## Current Stop Point
 
 The live broker is healthy and CURRENT `fast-coding` has 8 managed models with `autoHeal=true` and `userCustomized=false`. Persistence/failover gates remain green. The Windows Scheduled Task verification run completed at 2026-09-06 12:15:54 +03:00 with task state `Ready` and `LastTaskResult=0`; the managed set remained at 8 models and the managed-mode flags were preserved.
