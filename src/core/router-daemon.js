@@ -2127,6 +2127,15 @@ class RouterRuntime {
     return { ok: true, replaced: replacements.length, replacements }
   }
 
+  getScheduledProbeCandidates(set) {
+    return this.scoreCandidates(set).filter((candidate) => {
+      if (!candidate.catalog?.routeable || candidate.circuit?.stale || candidate.circuit?.unsupported || candidate.circuit?.authError) return false
+      if (isProviderQuotaPaused(candidate.provider)) return false
+      const circuit = this.updateCircuitForCooldown(candidate.key) || candidate.circuit
+      return circuit?.state === 'CLOSED' || circuit?.state === 'HALF_OPEN'
+    })
+  }
+
   scheduleProbeLoop() {
     const probeRouter = this.routerConfig()
     const probeInterval = probeRouter.probeIntervals[probeRouter.probeMode] || DEFAULT_ROUTER_SETTINGS.probeIntervals.balanced
