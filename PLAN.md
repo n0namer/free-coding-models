@@ -211,12 +211,19 @@ Decision policy from this audit:
 - Classified durable deltas into `UPSTREAM_NATIVE`, `UPSTREAM_SUPERSEDED`, `CUSTOM_REQUIRED`, and `ACCIDENTAL_REGRESSION`.
 - No live runtime mutation was performed for this audit; the already-green runtime remains the control.
 
-### Batch 6 — Minimal upstream convergence design — NEXT
+### Batch 6 — Minimal upstream convergence design — DONE
 
-- Produce a bounded keep/adopt/drop map for router/failure-domain/model-family/config/probe behavior, preserving structured-output invariants and the named-set resolver.
-- Prefer upstream `model-family`/`familyFailover` primitives where exact-source tests prove equivalence or improvement; remove redundant fork code instead of layering another routing subsystem.
-- Freeze any adopted behavior with focused fault-injection tests before release-boundary deployment.
-- Do not touch the permanent runtime unless this comparison exposes a concrete CURRENT defect; no speculative upgrade/redeploy.
+- KEEP/ADOPT/DROP map is now explicit in this SoT. Custom structured-output and named-set semantics are protected; blanket provider blocking and duplicate family logic are prohibited.
+- Current upstream `model-family.js` / `familyFailover` / `attemptChain` are the preferred adoption primitives for future exact-source convergence.
+- The convergence policy defines a combined failure hierarchy: provider-wide 429/auth changes provider immediately; other route failures must not blanket-block the provider; healthy same-family/different-provider recovery is preferred when eligible, then ordinary set order.
+- A release-boundary fault matrix is defined before any migration. The permanent runtime was not changed during this design batch.
+
+### Batch 7 — Exact-source convergence candidate — NEXT / ENVIRONMENT-GATED
+
+- Restore a writable exact-source workspace; Coding Station currently remains blocked by filesystem `ENOSPC`, so do not repeat identical write attempts without new storage evidence.
+- Build the smallest candidate that imports/adapts upstream family primitives while retaining custom structured-output, named-set, probe/quota, and failure-domain invariants.
+- Run focused family/failure-domain/streaming/named-set regressions plus the canonical full suite on that exact source.
+- Only after those gates pass may a controlled deployment be considered; verify deployed SHA == tested SHA and rerun authenticated reviewer cadence.
 
 ---
 
