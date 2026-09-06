@@ -51,7 +51,7 @@ Clients depend only on FCM. No second model router/control plane is introduced.
 3. **Failure isolation.** Per-model circuit breakers and provider-aware cooldown/backoff prevent repeatedly burning requests on known-bad routes.
 4. **Graceful degradation.** A bad refresh must not destroy the last known-good set.
 5. **Persistent evidence.** Probe cache and runtime telemetry must survive daemon/container restart.
-6. **Native automation.** Periodic refresh uses FCM `--sync-set` driven by Windows Task Scheduler; no new service/router.
+6. **Native automation without membership rewrite.** The FCM daemon continuously owns health probes/circuit state for the pinned contour. Windows Task Scheduler remains the existing 4-hour host automation but now runs `--daemon-status` as a guard; it must not call `--sync-set` for this pinned set. No new service/router is introduced.
 7. **Anti-drift identities remain separate:** Design/SoT, canonical Git source, Windows checkout/image, and live patched container.
 
 ## Evidence-based reliability principles
