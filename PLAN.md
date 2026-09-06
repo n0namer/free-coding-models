@@ -1,10 +1,10 @@
 # FCM Broker Plan / Source of Truth
 
 Status: ACTIVE
-Last reconciled: 2026-09-06
+Last reconciled: 2026-09-07
 Repository: `n0namer/free-coding-models`
 Active working branch: `fix/fcm-long-stream-lifecycle`
-Current live-verified canonical head before PLAN-only reconciliation: `d2467ac2922e55ae2b717e1ecec8b06b38af7818` — `fix(router): migrate fast-coding off Gonka-only routing`
+Current live-verified canonical code head before PLAN-only reconciliation: `382d9606268803cc86dfced5f8f639b737345457` — `fix(router): reject empty named-set virtual model`
 Execution rule: debug/implement directly in permanent `fcm-dev`; GitHub is SoT/write-back only after live verification. No GitHub-first programming or redeploy debug loop.
 
 ## North Star
