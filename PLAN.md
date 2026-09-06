@@ -1,7 +1,7 @@
 # FCM Broker Plan / Source of Truth
 
 Status: ACTIVE
-Last reconciled: 2026-09-05
+Last reconciled: 2026-09-06
 Repository: `n0namer/free-coding-models`
 Active working branch: `fix/fcm-long-stream-lifecycle`
 Current live-verified canonical head before PLAN-only reconciliation: `d2467ac2922e55ae2b717e1ecec8b06b38af7818` — `fix(router): migrate fast-coding off Gonka-only routing`
