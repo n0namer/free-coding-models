@@ -36,6 +36,8 @@ Activated for this work:
 1. `bmad-help` — restore project/stage and route the next bounded move.
 2. `bmad-testarch-test-design` — design fault-injection/acceptance gates for partial-failure boundaries.
 3. `bmad-quick-dev` — use only after a concrete owning defect is evidenced; patch the smallest owning surface.
+4. `bmad-review-edge-case-hunter` — adversarially check selector/failover/error boundaries before declaring a router fix closed.
+5. `bmad-technical-research` — compare the pinned upstream base, current upstream, our canonical fork, and CURRENT runtime before introducing new router behavior; current execution uses the technical overview/integration/architecture/synthesis stages.
 
 ## Evidence-based Debugging Model
 
