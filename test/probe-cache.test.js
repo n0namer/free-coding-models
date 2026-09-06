@@ -586,6 +586,50 @@ describe('probe scheduler', () => {
     }
   })
 
+  it('pauses a whole provider after a 429 probe and excludes its sibling routes from scheduled probing', async () => {
+    const router = normalizeRouterConfig({
+      ...DEFAULT_ROUTER_SETTINGS,
+      enabled: true,
+      onboardingSeen: true,
+      activeSet: 'probe-provider-test',
+      sets: {
+        'probe-provider-test': {
+          name: 'probe-provider-test',
+          created: '2026-09-06T00:00:00.000Z',
+          models: [
+            { provider: 'groq', model: 'openai/gpt-oss-120b', priority: 1 },
+            { provider: 'groq', model: 'llama-3.1-8b-instant', priority: 2 },
+          ],
+        },
+      },
+    })
+    const tokenPath = join(tmpdir(), `fcm-provider-pause-${process.pid}-${Date.now()}.json`)
+    const runtime = createRouterRuntimeForTest({
+      config: { telemetry: { enabled: false }, apiKeys: { groq: 'gsk-test' }, router },
+      tokenPath,
+    })
+    const originalFetch = globalThis.fetch
+
+    try {
+      clearProviderQuotaPause('groq')
+      globalThis.fetch = async () => new Response('rate limited', {
+        status: 429,
+        headers: { 'retry-after': '120' },
+      })
+      const set = runtime.getSet()
+      const [candidate] = runtime.scoreCandidates(set)
+      await runtime.probeCandidate(candidate)
+
+      assert.equal(isProviderQuotaPaused('groq'), true, '429 probe must pause the provider/key failure domain')
+      assert.deepEqual(runtime.getScheduledProbeCandidates(set), [], 'paused provider siblings must not be scheduled')
+    } finally {
+      globalThis.fetch = originalFetch
+      clearProviderQuotaPause('groq')
+      try { runtime.tokenTracker.flush({ force: true }) } catch {}
+      rmSync(tokenPath, { force: true })
+    }
+  })
+
   it('does not starve a longer probe interval when config reload asks for the same schedule', async () => {
     const router = normalizeRouterConfig({
       ...DEFAULT_ROUTER_SETTINGS,
