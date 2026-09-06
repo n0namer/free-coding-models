@@ -89,8 +89,8 @@ Make the existing Windows FCM runtime behave as its README intends:
 - [x] Active managed set contains a useful fallback depth and is ordered strongest usable → weaker usable.
 - [x] Periodic Windows Task Scheduler refresh runs every 4 hours and records bounded evidence.
 - [x] Container restart preserves config, sets, probe cache, and runtime telemetry.
-- [ ] Windows/Docker restart path is verified sufficiently for the chosen Docker Desktop startup mode.
-- [ ] Accepted live code deltas are canonicalized after runtime gate is green.
+- Host-level Windows reboot/login/Docker Desktop startup proof is explicitly out of scope for this phase by user decision; container restart + verified Scheduled Task execution are sufficient operational evidence.
+- [ ] Accepted live code deltas are published to the canonical repository after runtime gate is green.
 
 ## 30-Minute Batch Policy
 
