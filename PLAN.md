@@ -111,13 +111,13 @@ Each batch optimizes for 80/20 reliability gain and ends with readback evidence.
 4. Run `--sync-set fast-coding` using the native FCM mechanism.
 5. Verify active set size/order and router health/failover.
 
-### Batch 2 — Windows automation + restart
+### Batch 2 — Windows automation + restart — HISTORICAL / SUPERSEDED BY BATCH 4
 
-1. Create one Windows Scheduled Task for native `--sync-set fast-coding` every 4 hours.
-2. Ensure task does not run concurrently and runs missed executions after logon.
-3. Verify task history/result and config readback.
-4. Restart the `fcm` container and re-check endpoint/set/cache/telemetry.
-5. Record exact live deltas and recovery backups.
+1. The original 4-hour Scheduled Task used native `--sync-set fast-coding`; this validated unattended execution but was later superseded because it could shrink the user-pinned 20-route contour back to the default target of 8.
+2. Concurrency/missed-run/retry settings remain in place.
+3. Current task semantics are owned by Batch 4: non-mutating `--daemon-status` guard with verified `LastTaskResult=0`.
+4. Container restart/readback remains a valid persistence gate.
+5. Recovery backups and exact live deltas are recorded below.
 
 ### Batch 3 — canonicalization
 
