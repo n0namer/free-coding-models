@@ -87,7 +87,7 @@ Make the existing Windows FCM runtime behave as its README intends:
 - [x] A provider returning 429 is not repeatedly probed during the same refresh.
 - [x] A partial/degraded refresh cannot replace a substantially better last-known-good set.
 - [x] Active managed set contains a useful fallback depth and is ordered strongest usable → weaker usable.
-- [x] Periodic Windows Task Scheduler refresh runs every 4 hours and records bounded evidence.
+- [ ] Periodic Windows Task Scheduler refresh runs every 4 hours and completes with correct unattended success semantics; CURRENT latest run returned exit code 1 and requires closure.
 - [x] Container restart preserves config, sets, probe cache, and runtime telemetry.
 - Host-level Windows reboot/login/Docker Desktop startup proof is explicitly out of scope for this phase by user decision; container restart + verified Scheduled Task execution are sufficient operational evidence.
 - [ ] Accepted live code deltas are published to the canonical repository after runtime gate is green.
