@@ -2795,7 +2795,13 @@ class RouterRuntime {
         if (RETRYABLE_STATUS_CODES.has(response.status)) {
           this.markFailure(key, `HTTP ${response.status}`, response.status, upstreamMeta)
           this.addRequestLog({ request_id: requestId, model: key, status: response.status, latency_ms: latencyMs, tokens: 0, failover: attemptIndex > 0, error: `http_${response.status}`, stream: true })
-          return { done: false, failoverToNext: true, reason: `http_${response.status}` }
+          return {
+            done: false,
+            failoverToNext: true,
+            reason: `http_${response.status}`,
+            providerFailure: true,
+            providerWideFailure: response.status === 429,
+          }
         }
 
         // 📖 Provide failover fallback for non-retryable errors from the provider (like 400 Bad Request)
