@@ -1852,6 +1852,14 @@ class RouterRuntime {
       } else if (AUTH_STATUS_CODES.has(response.status)) {
         this.markAuthError(key, `HTTP ${response.status}`)
         this.recordProbeResult(key, { ok: false, latencyMs, code: response.status })
+      } else if (response.status === 429) {
+        const retryAfterMs = await extractRetryAfterFromResponse(response)
+        const fallbackPauseMs = Math.max(
+          this.routerConfig().circuitBreaker.initialCooldownMs,
+          this.routerConfig().probeIntervals?.[this.routerConfig().probeMode] || DEFAULT_ROUTER_SETTINGS.probeIntervals.balanced,
+        )
+        pauseProviderQuota(candidate.provider, retryAfterMs > 0 ? retryAfterMs : fallbackPauseMs)
+        this.markFailure(key, `HTTP ${response.status}`, response.status, { retryAfterMs })
       } else if (RETRYABLE_STATUS_CODES.has(response.status)) {
         this.markFailure(key, `HTTP ${response.status}`, response.status)
       } else {
