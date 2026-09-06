@@ -2164,6 +2164,7 @@ class RouterRuntime {
         candidates.forEach((candidate, index) => {
           const timeout = setTimeout(() => {
             this.probeTimeouts.delete(timeout)
+            if (isProviderQuotaPaused(candidate.provider)) return
             void this.probeCandidate(candidate, { eco: router.probeMode === 'eco' })
           }, index * stagger)
           timeout.unref?.()
