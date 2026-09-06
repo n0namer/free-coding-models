@@ -151,10 +151,10 @@ If live patching is used, record base, delta, backup, syntax/runtime evidence, a
 
 The Windows runtime stabilization batch is green. `fast-coding` is a managed 7-model set, all currently selected models are live `up`, `autoHeal=true`, `userCustomized=false`, persistent probe/runtime state survives `docker restart fcm`, and the Windows Scheduled Task has executed successfully with `LastTaskResult=0`.
 
-Verified live patches currently exist only in the running container layer: named-set/router-setting preservation in `router-daemon.js`, parent-directory creation in `shared-helpers.js`, and unattended-safe `sync-set.js` hardening. Backups remain under `/home/fcm`.
+The proven live deltas are also canonicalized in a clean local source commit `388c858d442d47f062cf57a9f3fa338d01d62e32` on branch `fix/windows-fcm-broker-stability`, based on GitHub `main` at `d33391292149784eb619364a618c9dd5f1f988e6`. Focused regression gates are green and full-suite comparison found no new failure names versus that exact baseline. The running container was not redeployed or recreated.
 
-Two DoD items remain open: a full Windows reboot/login/Docker Desktop startup proof, and canonicalization of the proven live code deltas into source/tests. Container recreation before canonicalization would lose the live code patches, although the persistent volume/config would remain.
+Host-level Windows reboot/login/Docker Desktop startup proof is intentionally excluded from this phase by user decision. The only remaining DoD item is publishing the verified canonicalization into the canonical repository.
 
 ## Exact Next Move
 
-Canonicalize the proven live deltas into the local source checkout with focused regression tests, without redeploying or recreating the current container. A full Windows reboot proof remains a separate disruptive verification step and requires explicit approval before execution.
+Publish/review local commit `388c858d442d47f062cf57a9f3fa338d01d62e32` into the canonical repository without redeploying or recreating the current container. After publication, this stabilization phase is complete.
