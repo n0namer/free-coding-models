@@ -546,6 +546,46 @@ describe('flushCache concurrency (read-merge-write)', () => {
 // ─── Constants sanity ─────────────────────────────────────────────────────────
 
 describe('probe scheduler', () => {
+  it('skips OPEN routes until their cooldown expires, then admits HALF_OPEN recovery probes', () => {
+    const router = normalizeRouterConfig({
+      ...DEFAULT_ROUTER_SETTINGS,
+      enabled: true,
+      onboardingSeen: true,
+      activeSet: 'probe-open-test',
+      sets: {
+        'probe-open-test': {
+          name: 'probe-open-test',
+          created: '2026-09-06T00:00:00.000Z',
+          models: [{ provider: 'groq', model: 'openai/gpt-oss-120b', priority: 1 }],
+        },
+      },
+    })
+    const tokenPath = join(tmpdir(), `fcm-probe-open-${process.pid}-${Date.now()}.json`)
+    const runtime = createRouterRuntimeForTest({
+      config: { telemetry: { enabled: false }, apiKeys: { groq: 'gsk-test' }, router },
+      tokenPath,
+    })
+
+    try {
+      const set = runtime.getSet()
+      const [candidate] = runtime.scoreCandidates(set)
+      const circuit = runtime.circuit.get(candidate.key)
+      circuit.state = 'OPEN'
+      circuit.openedAt = Date.now()
+      circuit.cooldownMs = 60_000
+
+      assert.deepEqual(runtime.getScheduledProbeCandidates(set), [], 'OPEN route must not be re-probed during cooldown')
+
+      circuit.openedAt = Date.now() - 60_001
+      const recovery = runtime.getScheduledProbeCandidates(set)
+      assert.equal(recovery.length, 1, 'expired OPEN route must become eligible for one recovery probe')
+      assert.equal(circuit.state, 'HALF_OPEN')
+    } finally {
+      try { runtime.tokenTracker.flush({ force: true }) } catch {}
+      rmSync(tokenPath, { force: true })
+    }
+  })
+
   it('does not starve a longer probe interval when config reload asks for the same schedule', async () => {
     const router = normalizeRouterConfig({
       ...DEFAULT_ROUTER_SETTINGS,
