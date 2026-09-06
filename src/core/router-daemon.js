@@ -80,6 +80,11 @@ import {
   STALENESS_MS as PASSIVE_QUOTA_STALENESS_MS,
 } from './provider-quota-fetchers.js'
 import {
+  extractRetryAfterFromResponse,
+  isProviderQuotaPaused,
+  pauseProviderQuota,
+} from './provider-cooldown.js'
+import {
   recordModelCall as recordRuntimeModelCall,
   getAllModelTelemetry as getAllRuntimeTelemetry,
   getRealWorldScore as getRuntimeRealWorldScore,
