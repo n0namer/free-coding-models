@@ -2305,12 +2305,18 @@ class RouterRuntime {
           authBlockedProviders.add(candidate.provider)
           blockedProviders.add(candidate.provider)
         } else if (result.providerFailure) {
-          blockedProviders.add(candidate.provider)
+          const providerFailures = (providerFailureCounts.get(candidate.provider) || 0) + 1
+          providerFailureCounts.set(candidate.provider, providerFailures)
+          const sibling = candidates.find((entry) => entry.provider === candidate.provider && !tried.includes(entry.key))
+          if (!result.providerWideFailure && providerFailures === 1 && sibling) preferredProvider = candidate.provider
+          else blockedProviders.add(candidate.provider)
         }
         const afterAttempt = this.activeRequests.get(requestId)
         if (afterAttempt) afterAttempt.last_failover_reason = result.reason || null
         if (result.failoverToNext && attemptIndex < maxAttempts) {
-          const next = candidates.find((entry) => !tried.includes(entry.key) && !blockedProviders.has(entry.provider))
+          const next = (preferredProvider
+            ? candidates.find((entry) => entry.provider === preferredProvider && !tried.includes(entry.key) && !blockedProviders.has(entry.provider))
+            : null) || candidates.find((entry) => !tried.includes(entry.key) && !blockedProviders.has(entry.provider))
           const failureDomain = result.providerFailure || result.authFailure ? 'provider' : result.structuredFailure ? 'structured_route' : 'model'
           this.logger.warn(`Failover ${candidate.key}${next ? ` -> ${next.key}` : ''}`, { request_id: requestId, reason: result.reason, failure_domain: failureDomain })
           void sendUsageTelemetry(this.config, {}, {
