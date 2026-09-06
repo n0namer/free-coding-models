@@ -169,10 +169,25 @@ Decision policy from this audit:
 
 ### Batch 4 — Durable write-back / anti-drift — PARTIAL
 
-- Live-proven product and regression deltas are written back to `fix/fcm-long-stream-lifecycle` and reread. Current canonical code/test head before PLAN-only commits is `60cbba2ffe2650c81cc86ee9a20f471a5d49ddd5`; the periodic-probe scheduler fix and durable regression are included.
-- Final live package gate is 832 discovered / 830 PASS / 0 FAIL / 2 intentional live-canary skips across 159 suites; direct live canaries are 2/2 PASS.
+- Live-proven product/router deltas are written back to `fix/fcm-long-stream-lifecycle` and reread; latest live-verified canonical router code head is `382d9606268803cc86dfced5f8f639b737345457`.
+- Final live package gate is 841 discovered / 837 PASS / 0 FAIL / 4 intentional skips across 160 suites; authenticated plain-text, `json_schema`, named-set negative smoke, and eight-turn cadence are PASS.
 - Exact-source full-suite and exact deployed-source identity remain open because the permanent runtime uses the older source layout; do not infer equality from behavior.
-- SourceLoop future-capture readiness is now PASS: `fcm-dev` has the runtime/canonical write-back mapping, the temporary privilege window is proven closed, and reversible forward/reverse non-loaded canaries both returned valid artifacts with exact file restoration. Historical pre-mapping rows remain historical; this does not close the separate deployed-source identity task.
+- SourceLoop future-capture readiness is PASS; canonical regression-test convergence remains PARTIAL because the old-runtime test layout differs and the exact-source workspace currently hits `ENOSPC`.
+
+### Batch 5 — Upstream/fork-drift technical audit — DONE
+
+- BMAD `bmad-technical-research` compared stock upstream `v0.5.81`, current upstream `0.5.88`, our canonical branch, and CURRENT runtime.
+- Confirmed the named-set `body.model` mismatch is still an upstream gap, while the fast-coding provider-blocking failure was introduced by our fork behavior.
+- Confirmed current upstream already provides family-preserving cross-provider failover; marked it `ADOPT_CANDIDATE` instead of building another parallel mechanism.
+- Classified durable deltas into `UPSTREAM_NATIVE`, `UPSTREAM_SUPERSEDED`, `CUSTOM_REQUIRED`, and `ACCIDENTAL_REGRESSION`.
+- No live runtime mutation was performed for this audit; the already-green runtime remains the control.
+
+### Batch 6 — Minimal upstream convergence design — NEXT
+
+- Produce a bounded keep/adopt/drop map for router/failure-domain/model-family/config/probe behavior, preserving structured-output invariants and the named-set resolver.
+- Prefer upstream `model-family`/`familyFailover` primitives where exact-source tests prove equivalence or improvement; remove redundant fork code instead of layering another routing subsystem.
+- Freeze any adopted behavior with focused fault-injection tests before release-boundary deployment.
+- Do not touch the permanent runtime unless this comparison exposes a concrete CURRENT defect; no speculative upgrade/redeploy.
 
 ---
 
