@@ -38,6 +38,7 @@ import {
 } from '../src/core/probe-cache.js'
 import { createRouterRuntimeForTest } from '../src/core/router-daemon.js'
 import { normalizeRouterConfig, DEFAULT_ROUTER_SETTINGS } from '../src/core/config.js'
+import { clearProviderQuotaPause, isProviderQuotaPaused } from '../src/core/provider-cooldown.js'
 
 // ─── Test helpers ────────────────────────────────────────────────────────────
 
