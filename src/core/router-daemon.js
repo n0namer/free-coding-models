@@ -2279,7 +2279,9 @@ class RouterRuntime {
       const tried = []
       const blockedProviders = new Set()
       const authBlockedProviders = new Set()
+      const providerFailureCounts = new Map()
       let attemptIndex = 0
+      let preferredProvider = null
       for (const candidate of candidates) {
         if (attemptIndex >= maxAttempts) break
         if (blockedProviders.has(candidate.provider)) continue
