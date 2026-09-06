@@ -47,7 +47,7 @@ Clients depend only on FCM. No second model router/control plane is introduced.
 ## Ratified architecture (BMad Fast Path / brownfield)
 
 1. **One broker, not layered routers.** FCM remains the only model-control plane.
-2. **Strength first, health gates second, runtime fallback always.** `--sync-set` pre-ranks by tier/SWE/coding affinity; only models that pass live capability probes enter the managed set. Router priority remains the primary order among eligible models.
+2. **Pinned user order first, health gates second, runtime fallback always.** The exact 20-route `fast-coding` priority order is authoritative, with Gonka fixed at 1–2. Health/circuit state may temporarily skip an unhealthy route, but automation must not rewrite membership or priority. `router.failover.maxRetries=19` permits traversal of the full 20-route eligible contour.
 3. **Failure isolation.** Per-model circuit breakers and provider-aware cooldown/backoff prevent repeatedly burning requests on known-bad routes.
 4. **Graceful degradation.** A bad refresh must not destroy the last known-good set.
 5. **Persistent evidence.** Probe cache and runtime telemetry must survive daemon/container restart.
