@@ -4208,8 +4208,9 @@ async function ensureRouterConfigForDaemon(config, skipSave = false) {
   // 📖 Preserve existing named sets (e.g., created by sync-set) to avoid overwriting
   // 📖 user-created configurations. Only rebuild from favorites/defaults when no
   // 📖 sets exist at all (fresh install).
-  const existingSets = config.router?.sets || {}
-  const existingActiveSet = config.router?.activeSet || DEFAULT_ROUTER_SETTINGS.activeSet
+  const existingRouterSettings = config.router || {}
+  const existingSets = existingRouterSettings.sets || {}
+  const existingActiveSet = existingRouterSettings.activeSet || DEFAULT_ROUTER_SETTINGS.activeSet
   const existingSetData = existingSets[existingActiveSet]
   const hasExistingNamedSet = existingSetData && Array.isArray(existingSetData.models) && existingSetData.models.length > 0
 
