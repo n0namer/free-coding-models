@@ -1885,9 +1885,19 @@ class RouterRuntime {
       if (!c.catalog) return true
       return !isProbeCacheFresh(c.catalog.providerKey, c.catalog.modelId)
     })
-    await Promise.allSettled(filtered.map((candidate) => this.probeCandidate(candidate, {
-      eco: this.routerConfig().probeMode === 'eco',
-    })))
+    const byProvider = new Map()
+    for (const candidate of filtered) {
+      if (!byProvider.has(candidate.provider)) byProvider.set(candidate.provider, [])
+      byProvider.get(candidate.provider).push(candidate)
+    }
+    await Promise.allSettled([...byProvider.values()].map(async (providerCandidates) => {
+      for (const candidate of providerCandidates) {
+        if (isProviderQuotaPaused(candidate.provider)) break
+        await this.probeCandidate(candidate, {
+          eco: this.routerConfig().probeMode === 'eco',
+        })
+      }
+    }))
   }
 
   /**
