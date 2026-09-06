@@ -92,7 +92,7 @@ Academic references:
 
 ## Current Stage
 
-**P1.7 SWE-FIRST + PERIODIC REAL-INFERENCE HEALTH ROUTING — LIVE GATE PASS / ANTI-DRIFT ACTIVE.**
+**P1.8 SWE-FIRST + PROVIDER-AWARE REAL-INFERENCE HEALTH ROUTING — LIVE GATE PASS / ANTI-DRIFT ACTIVE.**
 
 CURRENT live runtime has progressive `json_schema` repair, provider-failure-domain failover, and a 33-route `fast-coding` pool across 9 provider identities ordered by existing SWE benchmark metadata: `SWE score descending → tier tie-break → previous proven order`. FCM does not benchmark model quality itself. Runtime health is separate: `probeMode=balanced` performs real chat-completion probes, and the 30s periodic scheduler now survives the 10s config reload loop instead of being starved by timer resets. Evidence after the same-container reload shows fresh periodic `Probe ok` events beginning about 30s after startup, while live plain-text and `json_schema` canaries remain 2/2 PASS. Latency remains secondary; unhealthy routes are filtered without permanently changing durable SWE priority.
 
