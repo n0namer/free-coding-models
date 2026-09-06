@@ -228,12 +228,13 @@ Decision policy from this audit:
 - The convergence policy defines a combined failure hierarchy: provider-wide 429/auth changes provider immediately; other route failures must not blanket-block the provider; healthy same-family/different-provider recovery is preferred when eligible, then ordinary set order.
 - A release-boundary fault matrix is defined before any migration. The permanent runtime was not changed during this design batch.
 
-### Batch 7 — Exact-source convergence candidate — NEXT / ENVIRONMENT-GATED
+### Batch 7 — Exact-source convergence candidate — NON-BLOCKING MAINTENANCE / ENVIRONMENT-GATED
 
-- Restore a writable exact-source workspace; Coding Station currently remains blocked by filesystem `ENOSPC`, so do not repeat identical write attempts without new storage evidence.
-- Build the smallest candidate that imports/adapts upstream family primitives while retaining custom structured-output, named-set, probe/quota, and failure-domain invariants.
+- This batch is **not required for CURRENT FCM use**; the functional runtime gate is already DONE.
+- Resume only when writable exact-source capacity exists. Coding Station currently remains blocked by filesystem `ENOSPC`, so do not repeat identical write attempts without new storage evidence.
+- Then build the smallest candidate that imports/adapts upstream family primitives while retaining custom structured-output, named-set, probe/quota, and failure-domain invariants.
 - Run focused family/failure-domain/streaming/named-set regressions plus the canonical full suite on that exact source.
-- Only after those gates pass may a controlled deployment be considered; verify deployed SHA == tested SHA and rerun authenticated reviewer cadence.
+- Only after those gates pass may a future controlled release be considered; verify deployed SHA == tested SHA and rerun authenticated reviewer cadence. No deployment is needed to keep the current runtime operational.
 
 ---
 
