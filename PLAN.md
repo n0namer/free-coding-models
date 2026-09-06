@@ -92,7 +92,7 @@ Academic references:
 
 ## Current Stage
 
-**P1.8 SWE-FIRST + PROVIDER-AWARE REAL-INFERENCE HEALTH ROUTING — LIVE GATE PASS / ANTI-DRIFT ACTIVE.**
+**P1.9 GONKA-PINNED + PROVIDER-AWARE REAL-INFERENCE HEALTH ROUTING — LIVE ORDER GATE PASS / ANTI-DRIFT ACTIVE.**
 
 CURRENT live runtime has progressive `json_schema` repair, provider-failure-domain failover, and a 33-route `fast-coding` pool across 9 provider identities ordered by existing SWE benchmark metadata: `SWE score descending → tier tie-break → previous proven order`. FCM does not benchmark model quality itself. A provider-contaminated SWE canary exposed self-induced quota pressure in health checking: the 30s real-inference loop re-probed OPEN routes and sibling models behind the same 429-limited provider/key. The live fix remains real-inference based but is now provider-aware: HTTP 429 honors `Retry-After` through the shared provider cooldown, scheduled probes skip OPEN routes until HALF_OPEN recovery and skip paused providers again at dispatch, startup bursts serialize models within each provider, persisted router settings survive reloads, and balanced cadence is 120s. Final same-container evidence is 836 discovered / 834 PASS / 0 FAIL / 2 intentional skips across 160 suites; live plain-text and `json_schema` canaries are 2/2 PASS; post-reload logs show the recurring 120s cycle on healthy providers without the former OpenRouter/Requesty 429 storm. Latency remains secondary; unhealthy routes are filtered without permanently changing durable SWE priority.
 
