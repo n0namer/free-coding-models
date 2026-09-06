@@ -149,12 +149,12 @@ If live patching is used, record base, delta, backup, syntax/runtime evidence, a
 
 ## Current Stop Point
 
-The live broker is healthy and CURRENT `fast-coding` has 8 managed models with `autoHeal=true` and `userCustomized=false`. Persistence/failover gates remain green. However, the latest automatic Windows Scheduled Task run returned exit code 1 after the FCM CLI process executed for ~4 minutes, so unattended refresh completion semantics are not yet closed.
+The live broker is healthy and CURRENT `fast-coding` has 8 managed models with `autoHeal=true` and `userCustomized=false`. Persistence/failover gates remain green. The Windows Scheduled Task verification run completed at 2026-09-06 12:15:54 +03:00 with task state `Ready` and `LastTaskResult=0`; the managed set remained at 8 models and the managed-mode flags were preserved.
 
-The live CLI correction is applied in `/app/bin/free-coding-models.js`: `--sync-set` now exits 0 when `result.ok === true` or `result.reusedExisting === true`, while genuine failures remain non-zero. Backup: `/home/fcm/free-coding-models.js.bak-scheduler-exit-20260906`; patched SHA-256 `7afdb1606d782e01282ce70080200fd6f84ff28bd3f25c5496d3085ec15dad0`; backup SHA-256 `a713ba2f9d393f748a77875602d2b67b92f1eba65cc21a6741fc3377682f4216`; `node --check` PASS. A Windows Task Scheduler verification run was started, but final readback is pending because the Personal Edge connection became unavailable during polling.
+The live CLI correction in `/app/bin/free-coding-models.js` is therefore accepted: `--sync-set` exits 0 when `result.ok === true` or `result.reusedExisting === true`, while genuine failures remain non-zero. Backup: `/home/fcm/free-coding-models.js.bak-scheduler-exit-20260906`; patched SHA-256 `7afdb1606d782e01282ce70080200fd6f84ff28bd3f25c5496d3085ec15dad0`; backup SHA-256 `a713ba2f9d393f748a77875602d2b67b92f1eba65cc21a6741fc3377682f4216`; `node --check` PASS.
 
-A previously verified source canonicalization commit `388c858d442d47f062cf57a9f3fa338d01d62e32` exists locally, but publication is deferred until the CURRENT scheduler gate is green so source does not outrun runtime evidence.
+A clean reviewed canonical source commit `59288deb5d375d6db747ef7723a55789c4ee91ab` exists locally on `fix/windows-fcm-broker-stability`, based on remote `main` at `e5450ab63a8f56352a777c784ebe4f81835ddfea`. Focused gates are green (`sync-set` 9/9, probe-cache 41/41, router-config 6/6), and full-suite comparison found zero new failure names versus the exact reviewed baseline. The running container was not redeployed or recreated.
 
 ## Exact Next Move
 
-Do not start another refresh. Read back the already-started Windows Task Scheduler verification run as soon as Personal Edge is reachable. Require task state `Ready`, `LastTaskResult=0`, healthy FCM endpoint, managed `fast-coding`, and preserved `autoHeal=true` / `userCustomized=false`. If the result is non-zero, inspect post-state and the exact failure before any further mutation.
+Publish/review `59288deb5d375d6db747ef7723a55789c4ee91ab` into the canonical repository without redeploying or recreating the running container. Then reread remote `main`, the published source files, and this PLAN; mark the publication DoD complete only after that readback.
