@@ -157,4 +157,4 @@ A previously verified source canonicalization commit `388c858d442d47f062cf57a9f3
 
 ## Exact Next Move
 
-On the live `fcm` container, reread and back up `/app/bin/free-coding-models.js`, then patch only `--sync-set` exit semantics so `result.ok === true` or `result.reusedExisting === true` returns process exit 0 while genuine failures remain non-zero. Verify syntax, run the native refresh through Windows Task Scheduler, require `LastTaskResult=0`, and confirm the managed set/config remain healthy before updating this PLAN again.
+Do not start another refresh. Read back the already-started Windows Task Scheduler verification run as soon as Personal Edge is reachable. Require task state `Ready`, `LastTaskResult=0`, healthy FCM endpoint, managed `fast-coding`, and preserved `autoHeal=true` / `userCustomized=false`. If the result is non-zero, inspect post-state and the exact failure before any further mutation.
