@@ -147,6 +147,54 @@ describe('--config-dir / FCM_CONFIG_DIR', () => {
     }
   })
 
+  it('loadConfig bootstraps a missing config dir from FCM_BOOTSTRAP_CONFIG and persists it', async () => {
+    const dir = mkdtempSync(join(tmpdir(), 'fcm-cfgdir-'))
+    const seedDir = mkdtempSync(join(tmpdir(), 'fcm-seed-'))
+    try {
+      const seedPath = join(seedDir, 'production.json')
+      writeFileSync(seedPath, JSON.stringify({
+        router: {
+          activeSet: 'fast-coding',
+          sets: {
+            'fast-coding': {
+              name: 'fast-coding',
+              models: [{ provider: 'gonka', model: 'model-a', priority: 1 }],
+            },
+          },
+          failover: { maxRetries: 3, requestTimeoutMs: 60000, streamStallTimeoutMs: 30000 },
+        },
+      }))
+      process.env.FCM_CONFIG_DIR = dir
+      process.env.FCM_BOOTSTRAP_CONFIG = seedPath
+      const config = await freshConfigModule()
+      const loaded = config.loadConfig()
+      assert.equal(loaded.router.activeSet, 'fast-coding')
+      assert.equal(loaded.router.sets['fast-coding'].models[0].provider, 'gonka')
+      assert.equal(existsSync(join(dir, 'config.json')), true)
+    } finally {
+      rmSync(seedDir, { recursive: true, force: true })
+      rmSync(dir, { recursive: true, force: true })
+    }
+  })
+
+  it('loadConfig ignores FCM_BOOTSTRAP_CONFIG when config.json already exists', async () => {
+    const dir = mkdtempSync(join(tmpdir(), 'fcm-cfgdir-'))
+    const seedDir = mkdtempSync(join(tmpdir(), 'fcm-seed-'))
+    try {
+      const seedPath = join(seedDir, 'production.json')
+      writeFileSync(seedPath, JSON.stringify({ router: { activeSet: 'seed-set', sets: {} } }))
+      writeFileSync(join(dir, 'config.json'), JSON.stringify({ router: { activeSet: 'existing-set', sets: {} } }))
+      process.env.FCM_CONFIG_DIR = dir
+      process.env.FCM_BOOTSTRAP_CONFIG = seedPath
+      const config = await freshConfigModule()
+      const loaded = config.loadConfig()
+      assert.equal(loaded.router.activeSet, 'existing-set')
+    } finally {
+      rmSync(seedDir, { recursive: true, force: true })
+      rmSync(dir, { recursive: true, force: true })
+    }
+  })
+
   it('loadConfig starts fresh (empty) when the config dir has no config.json', async () => {
     const dir = mkdtempSync(join(tmpdir(), 'fcm-cfgdir-'))
     try {
