@@ -758,6 +758,23 @@ export function loadConfig() {
     }
   }
 
+  // 📖 Optional first-start bootstrap for reproducible container deployments.
+  // 📖 The seed must contain non-secret config only; provider credentials stay in env/shared secrets.
+  // 📖 It is consulted only when CONFIG_PATH does not exist, so existing installations are untouched.
+  const bootstrapPath = typeof process.env.FCM_BOOTSTRAP_CONFIG === 'string'
+    ? process.env.FCM_BOOTSTRAP_CONFIG.trim()
+    : ''
+  if (bootstrapPath) {
+    try {
+      const seed = normalizeConfigShape(JSON.parse(readFileSync(resolve(expandTilde(bootstrapPath)), 'utf8')))
+      const result = saveConfig(seed)
+      if (!result.success) throw new Error(result.error || 'bootstrap config save failed')
+      return seed
+    } catch (err) {
+      console.error(`⚠️  Warning: Failed to bootstrap config from ${bootstrapPath}: ${err?.message || String(err)}`)
+    }
+  }
+
   // 📖 Migration path: old plain-text file exists, new JSON doesn't
   if (existsSync(LEGACY_CONFIG_PATH)) {
     try {
