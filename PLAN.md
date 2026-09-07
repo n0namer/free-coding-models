@@ -233,7 +233,7 @@ Decision policy from this audit:
 ### Batch 7 — Exact-source convergence candidate — NON-BLOCKING MAINTENANCE / ENVIRONMENT-GATED
 
 - This batch is **not required for CURRENT FCM use**; the functional runtime gate is already DONE.
-- Resume only when writable exact-source capacity exists. Coding Station currently remains blocked by filesystem `ENOSPC`, so do not repeat identical write attempts without new storage evidence.
+- Resume only when the exact-source session lane is actually writable. CURRENT station health/readiness is green, but repository-session creation returned `Gateway Timeout` twice; earlier `ENOSPC` remains historical evidence, not the sole current blocker. Do not repeat identical session-creation attempts without new service/storage evidence.
 - Then build the smallest candidate that imports/adapts upstream family primitives while retaining custom structured-output, named-set, probe/quota, and failure-domain invariants.
 - Run focused family/failure-domain/streaming/named-set regressions plus the canonical full suite on that exact source.
 - Only after those gates pass may a future controlled release be considered; verify deployed SHA == tested SHA and rerun authenticated reviewer cadence. No deployment is needed to keep the current runtime operational.
