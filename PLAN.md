@@ -277,6 +277,15 @@ Decision policy from this audit:
 - Current daemon log still contains no `All routed models failed` / `No healthy routed models` terminal failure. Effective-provider recovery from 8 to 9 while individual route freshness fell from 13 to 12 demonstrates auto-heal/circuit churn, not a monotonic service-health metric.
 - **Intervention trigger:** reopen FCM code only when a direct broker request fails, all eligible routes for a set are exhausted, named-set/structured/lifecycle invariants break, or provider/circuit logic creates repeated client-visible errors. Probe-count movement alone does not meet the trigger. This keeps the next 30-minute batch focused on an owning defect instead of dashboard cosmetics.
 
+### Batch 13 — eight-turn resilience recheck under real 429 pressure — DONE
+
+- BMAD `bmad-testarch-test-design` + `bmad-review-edge-case-hunter` were applied to the same broker boundary. No code change was made before the test because the intervention trigger had not fired.
+- A fresh authenticated eight-turn reviewer-like `fast-coding` cadence ran directly against CURRENT `fcm-dev` and PASSed end-to-end: 8/8 turns, test exit 0, ~65.5 s total.
+- Post-run router telemetry is `requestsRouted=35`, `runtimeTelemetry.totalCalls=37`, `successCalls=35`, `errorCalls=2`. Both errors are real priority-1 Gonka `http_429` events; the client still received success for every routed request. This is exactly the failure class the broker is expected to absorb.
+- CURRENT pool after the cadence: 33 persisted routes, 9 configured providers, 8 effective providers, 12 probe-fresh healthy routes and 21 broken/hidden routes. The drop from 9 to 8 effective providers while the cadence still PASSed is additional evidence that broker reliability is not equivalent to every upstream provider being healthy at once.
+- Recent daemon logs continue to show recurring provider probe 429/timeouts on secondary routes alongside healthy probes for Gonka, LLM7, Kilo, Mistral and some GoogleAI routes. No current `All routed models failed` / `No healthy routed models` terminal request failure was observed.
+- Edge-case conclusion: the current broker is meeting its failure-containment contract under partial upstream degradation. No unhandled branch was evidenced by this batch, so changing routing/scheduler code now would be speculative rather than defect-driven.
+
 ---
 
 ## P1 Structured Contract Validation — BMAD Test Architecture
