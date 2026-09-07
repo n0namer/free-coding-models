@@ -312,7 +312,17 @@ Decision policy from this audit:
 - Target production role: `FCM LLM Gateway PROD` in `AI Platform / production`, built from canonical Git at an explicit commit SHA, with auto-deploy disabled, independent endpoint, health check `/health`, and no consumer traffic until acceptance completes.
 - Production acceptance DoD: running identity matches intended Git SHA; `/health`, `/sets`, `/api/router/status`, plain text, `json_schema`, `fcm:<set>`, explicit named-set path, timeout/5xx/429/auth failure-domain cases, streaming pre-commit behavior, full package suite, eight-turn cadence, restart persistence, and real upstream-failure containment all PASS. DEV remains available as rollback until post-cutover observation is complete.
 - SourceLoop/release rule: if PROD exposes a functional defect, fix and prove the smallest delta **in `fcm-dev` container first**, capture/write back through SourceLoop/Git, then rebuild/update PROD from that proven canonical SHA. Never hand-patch PROD as the development lane and never use GitHub-first redeploy as debugging.
-- Persistent-infrastructure gate: actually creating the production application/environment is a new infrastructure scope. PLAN is ready, but creation requires explicit user approval before mutation.
+- Persistent-infrastructure gate was explicitly approved by the user on 2026-09-07. Creation is now in progress under Batch 17; DEV remains untouched.
+
+### Batch 17 — create clean FCM Production in AI Platform / production — ACTIVE
+
+- User explicitly authorized: create `FCM LLM Gateway PROD` in `AI Platform / production`; do not touch DEV.
+- Created Coolify application `FCM LLM Gateway PROD` (`app_uuid=5llbaomtlttzsukhin6xgrgc`) in project `AI Platform` / environment `production` (`environment_uuid=s1tknsmbuntdqegrun8dyqs8`). DEV application `krhkfc6xjtreidxxbf8xdia3` remains running and unchanged.
+- PROD source is pinned to canonical Git branch `fix/fcm-long-stream-lifecycle` at explicit SHA `834e4c3b1c51fa3e229ba6b7944bc0e375d9963a`; auto-deploy is disabled. Port `19280`, health `GET /health`, health port `19280`, and start command `node bin/free-coding-models.js --daemon` are explicitly configured.
+- Added non-secret runtime/build config only: `FCM_HOST=0.0.0.0`, `FCM_PORT=19280`, `FCM_CONFIG_DIR=/config`, telemetry disabled, Nixpacks Node 22. Provider/API credentials were **not copied or exposed**; current typed Coolify readback exposes their keys/metadata but not secret values.
+- Deployment has been queued and is currently executing through Coolify helper deployment `dpkefswaer3etbztyv94sgjl`. Current application status still reads `exited:unhealthy` while the helper is running; do not classify the production runtime PASS/FAIL until the deployment completes and a post-state readback is available.
+- Secret/config hygiene blocker to resolve before functional acceptance: PROD must receive the required provider credentials and `FCM_CLIENT_TOKEN` through Coolify secret/shared-variable references or another non-exposing canonical secret path. Do not extract or print DEV secret values merely to clone them.
+- DoD for this batch: deployment completes → PROD container exists and `/health` PASSes → running source identity matches intended SHA → required secret references are present without exposure → `/sets` and router status are coherent. Full behavioral acceptance remains Batch 18; no consumer traffic or DEV shutdown before that gate.
 
 ---
 
