@@ -131,7 +131,7 @@ Decision policy from this audit:
 1. **Upstream-first, custom-last.** Before any new router mutation, compare the same-version stock behavior, current upstream, our canonical fork, and CURRENT runtime.
 2. Classify each delta as `UPSTREAM_NATIVE`, `UPSTREAM_SUPERSEDED`, `CUSTOM_REQUIRED`, or `ACCIDENTAL_REGRESSION`; only `CUSTOM_REQUIRED` should grow long-term fork surface.
 3. Prefer deleting/replacing fork code when current upstream provides equivalent or stronger behavior under our invariants. Preserve custom structured-output semantics and the named-set resolver because current upstream does not supply them.
-4. Do not mass-upgrade/redeploy the permanent runtime as a debugging shortcut. Upstream convergence is a tested release boundary: exact-source tests first, then identity-controlled deployment only when the release gate is green.
+4. Do not mass-upgrade/redeploy the permanent runtime as a debugging shortcut. Upstream convergence is container-first for implementation: prove any product-code delta in CURRENT `fcm-dev`, then canonicalize it. A future image/release still requires an exact-source canonical suite and tested-SHA/deployed-SHA identity before controlled deployment.
 5. No new router patch is justified merely because a mechanism exists upstream; first prove a CURRENT gap. The next work is a bounded keep/adopt/drop convergence design, not additional live mutation.
 
 ### Minimal convergence design — KEEP / ADOPT / DROP
