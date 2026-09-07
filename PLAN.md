@@ -205,7 +205,7 @@ Decision policy from this audit:
 ### Batch 3 — Black-box consumer — DONE
 
 - Real live daemon auth/OpenAI-compatible protocol surface — PASS.
-- Legacy Gonka-only `fast-coding` set is retired. A bounded exhaustive pass tested 131 routeable keyed candidates and persisted all 33 fresh chat-probe successes across 9 provider identities. The set is now explicitly ordered by the available SWE benchmark result: SWE score descending, tier only as a tie-break, then the previous proven order. Current priority 1 remains `llm7/minimax-m2.7`; weaker healthy routes remain available lower in the cascade. FCM does not run its own quality benchmark for this ordering.
+- Legacy Gonka-only `fast-coding` set was retired in this historical batch. A bounded exhaustive pass tested 131 routeable keyed candidates and persisted 33 fresh chat-probe successes across 9 provider identities. At that time the set was ordered by the then-available SWE benchmark result and priority 1 was `llm7/minimax-m2.7`; this ordering is **superseded**. CURRENT durable order is Gonka DeepSeek priority 1, Gonka MiniMax priority 2, then the remaining 31 routes as reported by `/sets`. FCM does not run its own quality benchmark for this ordering.
 - Real-model live acceptance remains PASS for ordinary text and `json_schema`; catalog-only or failed candidates were not added, and structured incompatibility remains route/role scoped rather than inferred from chat liveness.
 
 ### Batch 4 — Durable write-back / anti-drift — PARTIAL
