@@ -30,11 +30,14 @@ async function freshConfigModule() {
 
 let originalConfigDir
 let originalHome
+let originalBootstrapConfig
 
 beforeEach(() => {
   originalConfigDir = process.env.FCM_CONFIG_DIR
   originalHome = process.env.HOME
+  originalBootstrapConfig = process.env.FCM_BOOTSTRAP_CONFIG
   delete process.env.FCM_CONFIG_DIR
+  delete process.env.FCM_BOOTSTRAP_CONFIG
 })
 
 afterEach(() => {
@@ -42,6 +45,8 @@ afterEach(() => {
   else process.env.FCM_CONFIG_DIR = originalConfigDir
   if (originalHome === undefined) delete process.env.HOME
   else process.env.HOME = originalHome
+  if (originalBootstrapConfig === undefined) delete process.env.FCM_BOOTSTRAP_CONFIG
+  else process.env.FCM_BOOTSTRAP_CONFIG = originalBootstrapConfig
 })
 
 describe('--config-dir / FCM_CONFIG_DIR', () => {
