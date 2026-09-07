@@ -213,7 +213,7 @@ Decision policy from this audit:
 - Live-proven product/router deltas are written back to `fix/fcm-long-stream-lifecycle` and reread; latest live-verified canonical router code head is `382d9606268803cc86dfced5f8f639b737345457`.
 - Final live package gate is 841 discovered / 837 PASS / 0 FAIL / 4 intentional skips across 160 suites; authenticated plain-text, `json_schema`, named-set negative smoke, and eight-turn cadence are PASS.
 - Exact-source full-suite and exact deployed-source identity remain open because the permanent runtime uses the older source layout; do not infer equality from behavior.
-- SourceLoop future-capture readiness is PASS; canonical regression-test convergence remains PARTIAL because the old-runtime test layout differs and the exact-source workspace currently hits `ENOSPC`.
+- SourceLoop future-capture readiness is PASS; canonical regression-test convergence remains PARTIAL because the old-runtime test layout differs. CURRENT Coding Station health/readiness is green, but repository-session creation returned `Gateway Timeout` twice in the latest check; earlier `ENOSPC` remains historical evidence rather than the sole current blocker.
 
 ### Batch 5 — Upstream/fork-drift technical audit — DONE
 
