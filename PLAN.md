@@ -238,6 +238,14 @@ Decision policy from this audit:
 - Run focused family/failure-domain/streaming/named-set regressions plus the canonical full suite on that exact source.
 - Only after those gates pass may a future controlled release be considered; verify deployed SHA == tested SHA and rerun authenticated reviewer cadence. No deployment is needed to keep the current runtime operational.
 
+### Batch 8 — Post-fix natural-consumer observation — DONE
+
+- BMAD `bmad-testarch-test-design` system-level risk/testability and coverage steps were applied directly into this SoT; no duplicate test-design artifact was created.
+- OpenClaw `main` recent sessions were inspected through stored-session trajectories and audit metadata. Multiple runs completed successfully after the FCM functional gate.
+- One 90 s OpenClaw timeout was investigated instead of being attributed to FCM by association. Gateway evidence shows it used the direct Gonka transport (`provider=gonka`, `proxy.gonka.gg/v1/chat/completions`) and therefore lies outside the FCM broker boundary.
+- Current OpenClaw logs contain no `All routed models failed for set: fast-coding` signature, and the CURRENT FCM daemon log contains no `All routed models failed` occurrence.
+- Result: no new broker-layer defect is evidenced, so the working FCM remains unchanged. Reopen router debugging only on a future failure whose first divergence is proven at the FCM boundary.
+
 ---
 
 ## P1 Structured Contract Validation — BMAD Test Architecture
