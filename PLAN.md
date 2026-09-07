@@ -1,6 +1,6 @@
 # FCM Broker Plan / Source of Truth
 
-Status: ACTIVE — CURRENT FCM RUNTIME FUNCTIONAL GATE DONE; remaining P2 upstream/source convergence is non-blocking for use
+Status: ACTIVE — CURRENT FCM RUNTIME ACCEPTANCE DONE; P2 source/upstream convergence is trigger-gated maintenance, not an open implementation task
 Last reconciled: 2026-09-07
 Repository: `n0namer/free-coding-models`
 Active working branch: `fix/fcm-long-stream-lifecycle`
