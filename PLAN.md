@@ -233,8 +233,8 @@ Decision policy from this audit:
 ### Batch 7 — Exact-source convergence candidate — NON-BLOCKING MAINTENANCE / ENVIRONMENT-GATED
 
 - This batch is **not required for CURRENT FCM use**; the functional runtime gate is already DONE.
-- Resume only when the exact-source session lane is actually writable. CURRENT station health/readiness is green, but repository-session creation returned `Gateway Timeout` twice; earlier `ENOSPC` remains historical evidence, not the sole current blocker. Do not repeat identical session-creation attempts without new service/storage evidence.
-- Then build the smallest candidate that imports/adapts upstream family primitives while retaining custom structured-output, named-set, probe/quota, and failure-domain invariants.
+- The exact-source lane partially recovered on 2026-09-07: Coding Station health/readiness was green and repo session `csrepo_abde2c4c97124b36aab85f71b146f796` was successfully created at base `5b5d0e8614a5a80b0dc3cd56175ba5fd17e018f6`. However, subsequent session read/search/status operations returned `Gateway Timeout`, so workspace writability/readback is still not proven. No source mutation was applied.
+- Resume implementation only after repo file read/search succeeds in that lane. Then build the smallest candidate that imports/adapts upstream family primitives while retaining custom structured-output, named-set, probe/quota, and failure-domain invariants.
 - Run focused family/failure-domain/streaming/named-set regressions plus the canonical full suite on that exact source.
 - Only after those gates pass may a future controlled release be considered; verify deployed SHA == tested SHA and rerun authenticated reviewer cadence. No deployment is needed to keep the current runtime operational.
 
