@@ -66,7 +66,7 @@ Academic references:
 ## Current Source State
 
 - Active fix branch: `fix/fcm-long-stream-lifecycle`.
-- CURRENT branch head after the latest SoT reconciliation is `a59e56bcd78091cbff30fc9d1242ef4ac0a539b6` (PLAN-only). The latest live-verified product-code head remains `382d9606268803cc86dfced5f8f639b737345457`; later commits in this reconciliation are documentation/operational-ledger updates, not new runtime code.
+- The CURRENT branch head is the commit containing this SoT; do not hard-code it here because every PLAN reconciliation advances that value. The latest live-verified product-code head remains `382d9606268803cc86dfced5f8f639b737345457`; subsequent reconciliation commits are documentation/operational-ledger updates unless separately marked as live-verified code.
 - Owning stream-lifecycle commits include:
   - `67ee3f647ebabd157f58f5d080e67bf6a5c02b95` — prefer healthy CLOSED routes before HALF_OPEN probes.
   - `4a734e200fff1760c30ef45dadb28c07b4a288ef` — bound atomic first-chunk buffering.
