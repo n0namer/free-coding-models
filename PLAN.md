@@ -324,6 +324,16 @@ Decision policy from this audit:
 - Secret/config hygiene blocker to resolve before functional acceptance: PROD must receive the required provider credentials and `FCM_CLIENT_TOKEN` through Coolify secret/shared-variable references or another non-exposing canonical secret path. Do not extract or print DEV secret values merely to clone them.
 - DoD for this batch: deployment completes → PROD container exists and `/health` PASSes → running source identity matches intended SHA → required secret references are present without exposure → `/sets` and router status are coherent. Full behavioral acceptance remains Batch 18; no consumer traffic or DEV shutdown before that gate.
 
+### Batch 18 — reproducible bootstrap + shared-secret wiring — ACTIVE
+
+- First PROD restart exposed the owning release defect: `/config/config.json` was container-local, so recreate fell back from the intended 33-route set to built-in defaults.
+- Fix was implemented **container-first in `fcm-dev`**: optional `FCM_BOOTSTRAP_CONFIG` is read only when `config.json` is absent. Targeted config tests PASS (11/11), full live `npm test` PASS, authenticated DEV canary PASS.
+- Proven bootstrap code/tests are in canonical Git; code/test head before the seed is `9a3efccb1e937d2cb122200ad80cb1b69ec361d4`. SourceLoop captured the live delta; its `candidate` transition currently requires a PR number, so no artificial PR is being created before PROD acceptance.
+- Added canonical non-secret `config/production-seed.json` with the CURRENT 33-route `fast-coding` order and failover values. Seed commit: `739a06a7b704b9898a8fdfd821e23d0d961d6298`.
+- PROD now references project-shared variables for all nine providers used by the set (`GONKA`, `LLM7`, `GOOGLE`, `OPENCODE_ZEN`, `OPENROUTER`, `REQUESTY`, `ZAI`, `KILO`, `MISTRAL`) plus `FCM_CLIENT_TOKEN`; Coolify marks all ten references shared. No secret values were exposed or committed.
+- PROD is configured with `FCM_BOOTSTRAP_CONFIG=/app/config/production-seed.json`, pinned to `739a06a7b704b9898a8fdfd821e23d0d961d6298`, auto-deploy disabled. Force deployment `2uash2uevnmlhjncqsvwxgxh` is in progress. DEV remains untouched; no consumer traffic points at PROD.
+- DoD: running image SHA = `739a06...` → `/health` PASS → 33 routes restore without manual POST → shared provider/client secrets resolve → unauthenticated completion is rejected → authenticated plain/schema/named-set + 8-turn cadence PASS → restart/recreate repeats the same state. Only then mark PROD release-ready.
+
 ---
 
 ## P1 Structured Contract Validation — BMAD Test Architecture
