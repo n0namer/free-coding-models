@@ -254,6 +254,15 @@ Decision policy from this audit:
 - Deterministic provider-wide 429 regression is PASS. A direct isolated invocation of the same-provider-sibling test returned 401 only because it bypassed the package harness that intentionally clears `FCM_CLIENT_TOKEN`; this is a validation-invocation mismatch, not a router failure. The canonical `npm test` path, which imports `test/clear-client-auth-env.js`, was rerun fresh and exits 0.
 - Edge-case conclusion: no new unhandled broker boundary is evidenced in this batch. Do not increase load or mutate the router merely to manufacture more confidence; reopen only on a reproducible FCM-layer failure or a deliberate future release-convergence task.
 
+### Batch 10 — Upstream family-failover compatibility audit — DONE
+
+- BMAD `bmad-technical-research` + `bmad-review-edge-case-hunter` compared the CURRENT live request loop with upstream `main` family-routing code/tests instead of inferring behavior from docs alone.
+- CURRENT live behavior is exact and simple: after a route-local provider failure it prefers one untried **same-provider sibling**; provider-wide 429/auth blocks that provider for the current request. The live router SHA remains `9a5b407869e9d7697ed9b6bcbabefb0523fa1642d4317c86ed608d18768db058`.
+- Upstream `src/core/model-family.js` implements a pure two-stage picker: first same detected model family on a **different provider**, then ordinary eligible set order. Its tests explicitly cover cross-provider family hops, same-provider fallback via set order, blocked providers, disabled family failover, unknown families, and exhausted candidate sets.
+- CURRENT `fast-coding` topology proves this difference is materially relevant for a future release: priorities 6/7 are the same Nemotron family on `openrouter` and `requesty`, while priority 8 is a different-family `openrouter/poolside/laguna-xs-2.1:free`. Under the present same-provider-sibling rule, a route-local failure at priority 6 can prefer the priority-8 OpenRouter sibling before the priority-7 same-family Requesty route; upstream family failover would prefer priority 7. This is a **design-quality divergence**, not a CURRENT reliability failure.
+- Decision: keep the live runtime unchanged because its FCM reliability gate is green. For the next exact-source release candidate, use upstream `pickNextCandidate`/`detectFamily` semantics as the selection primitive, then layer our proven provider-wide 429/auth classification and structured-output invariants around it. Do not build a second family taxonomy or another bespoke selector.
+- Release test delta is now concrete: port upstream `model-family.test.js` coverage, add our 429/auth failure-domain cases, add a regression for the real Nemotron priority-6/7/8 topology, and require streaming/non-stream pre-commit parity plus named-set/structured-contract regression PASS before any deployment.
+
 ---
 
 ## P1 Structured Contract Validation — BMAD Test Architecture
