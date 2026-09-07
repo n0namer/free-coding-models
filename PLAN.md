@@ -246,6 +246,14 @@ Decision policy from this audit:
 - Current OpenClaw logs contain no `All routed models failed for set: fast-coding` signature, and the CURRENT FCM daemon log contains no `All routed models failed` occurrence. AgentField remains unavailable for a managed FCM-consuming replay.
 - Result: the prior authenticated broker cadence remains the authoritative functional proof; no new broker-layer defect is evidenced, so the working FCM remains unchanged. Reopen router debugging only on a future failure whose first divergence is proven at the FCM boundary.
 
+### Batch 9 — FCM-only repeated reliability soak — DONE
+
+- BMAD `bmad-testarch-test-design` + `bmad-review-edge-case-hunter` were applied to the broker boundary only; consumer integration was explicitly removed from the acceptance path.
+- Three independent authenticated eight-turn `fast-coding` cadences were run against the CURRENT live FCM without restart or config change. Result: 24/24 routed requests PASS, 0 runtime telemetry errors.
+- CURRENT post-soak status: 33 persisted routes / 9 configured providers, 8 effective providers, 21 probe-fresh healthy routes, 12 currently broken/hidden probe routes, `inFlight=0`, `shuttingDown=false`. The service remained fully usable while the pool was partially degraded.
+- Deterministic provider-wide 429 regression is PASS. A direct isolated invocation of the same-provider-sibling test returned 401 only because it bypassed the package harness that intentionally clears `FCM_CLIENT_TOKEN`; this is a validation-invocation mismatch, not a router failure. The canonical `npm test` path, which imports `test/clear-client-auth-env.js`, was rerun fresh and exits 0.
+- Edge-case conclusion: no new unhandled broker boundary is evidenced in this batch. Do not increase load or mutate the router merely to manufacture more confidence; reopen only on a reproducible FCM-layer failure or a deliberate future release-convergence task.
+
 ---
 
 ## P1 Structured Contract Validation — BMAD Test Architecture
