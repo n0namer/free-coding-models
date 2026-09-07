@@ -18,9 +18,10 @@ Verified, reusable operational lessons for this repository. Keep entries evidenc
 - **Prevention**: Never add a safety fix or migration based on a file path until the running process/status endpoint proves that path is authoritative.
 - **Verification**: CURRENT router status reports `configPath=/config/config.json`.
 
-## 2026-09-07 — exact-source workspace failure is an environment blocker, not an FCM test failure
+## 2026-09-07 — exact-source workspace failures are environment blockers, not FCM test failures
 
-- **Symptom**: Coding Station repository-session creation failed twice with Gateway Timeout in the current execution. Earlier write attempts had returned `ENOSPC`.
-- **Cause**: Current storage/session-service readiness is not proven; the station health endpoint can be green while repository-session creation is degraded.
-- **Fix**: Inspect station health/readiness, attempt session creation once, and after an ambiguous timeout allow at most one identical retry.
-- **Prevention**: Do not label FCM or its tests red because the exact-source runner could not start. Record this as an environment/validation blocker and keep already-verified live-runtime evidence separate.
+- **Symptom**: Earlier Coding Station repository-session creation failed twice with `Gateway Timeout` after older write attempts had returned `ENOSPC`. A later retry on the same day successfully created repo session `csrepo_abde2c4c97124b36aab85f71b146f796`, but subsequent session read/search/status operations again returned `Gateway Timeout`.
+- **Cause**: Coding Station readiness is layered: health/readiness and even session creation can succeed while repository file-operation service remains degraded. Earlier storage pressure may be related, but the current evidence does not prove one single root cause.
+- **Fix**: Treat each layer separately: check station health/readiness, create at most one repo session plus one evidence-based retry, then verify file read/search before mutation. If post-create file operations time out, stop rather than assuming the workspace is writable.
+- **Prevention**: Do not label FCM or its tests red because the exact-source runner cannot complete workspace operations. Record this as an environment/validation blocker, keep live-runtime evidence separate, and never claim an exact-source candidate exists until repo file operations and readback succeed.
+- **Verification**: The later session object was created successfully at base `5b5d0e8614a5a80b0dc3cd56175ba5fd17e018f6`, proving the service can partially recover, while follow-up file operations still timed out; no source mutation was applied.
