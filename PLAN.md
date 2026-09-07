@@ -9,7 +9,7 @@ Execution rule: debug/implement directly in permanent `fcm-dev`; GitHub is SoT/w
 
 ## North Star
 
-FCM is a generic, reusable OpenAI-compatible free-model broker. It must hide upstream failure when failover is still safe, but it must never corrupt client-visible semantics by splicing multiple upstream attempts into one response.
+FCM is a generic, reusable OpenAI-compatible free-model broker. The primary product goal is **FCM itself working reliably and predictably**: correct named-set selection, bounded failure-domain-aware failover, stable multi-turn request cadence, preserved client-visible semantics, and safe recovery while usable routes remain. Consumer integration is not part of the acceptance goal. FCM must hide upstream failure when failover is still safe, but it must never corrupt client-visible semantics by splicing multiple upstream attempts into one response.
 
 For `response_format=json_schema`, the client contract is the immutable acceptance SoT. If a model returns structurally invalid output while client commit is still zero-byte safe, FCM must not only retry the same full contract or immediately fail over: it should make the generation task easier for weaker models by decomposing the original schema into smaller schema-preserving subcontracts, validate each fragment, merge fragments deterministically, and validate the assembled value against the unchanged original full contract before any client-visible commit. Decomposition may simplify generation, but it must never weaken final acceptance semantics.
 
