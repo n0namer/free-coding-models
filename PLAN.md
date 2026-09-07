@@ -286,6 +286,15 @@ Decision policy from this audit:
 - Recent daemon logs continue to show recurring provider probe 429/timeouts on secondary routes alongside healthy probes for Gonka, LLM7, Kilo, Mistral and some GoogleAI routes. No current `All routed models failed` / `No healthy routed models` terminal request failure was observed.
 - Edge-case conclusion: the current broker is meeting its failure-containment contract under partial upstream degradation. No unhandled branch was evidenced by this batch, so changing routing/scheduler code now would be speculative rather than defect-driven.
 
+### Batch 14 — full live regression + source/runtime anti-drift checkpoint — DONE
+
+- BMAD `bmad-help` + `bmad-testarch-test-design` were used to close the loop on actual runtime state rather than create another speculative implementation task.
+- The permanent `fcm-dev` container ran the canonical live package gate `npm test` with the package-owned auth harness; result: **exit 0** in ~19.9 s. This is a fresh same-runtime regression pass, not a GitHub/CI proxy.
+- CURRENT router status after the gate remains stable: `requestsRouted=35`, `runtimeTelemetry.totalCalls=37`, `successCalls=35`, `errorCalls=2`; both errors are the previously observed absorbed Gonka `http_429` events. Pool state is 33 persisted routes, 9 configured providers, 8 effective providers, 12 probe-fresh healthy routes, 21 broken/hidden, `inFlight=0`, `shuttingDown=false`.
+- Live owner evidence is unchanged: `/app/src/core/router-daemon.js` SHA-256 is `9a5b407869e9d7697ed9b6bcbabefb0523fa1642d4317c86ed608d18768db058`. The latest canonical commit touching that owner is still `382d9606268803cc86dfced5f8f639b737345457` (`fix(router): reject empty named-set virtual model`). No later product-code commit exists on the branch; subsequent work is PLAN/ERRORS reconciliation only.
+- Anti-drift conclusion: runtime behavior is freshly green, but exact byte/source identity between the older live layout and current Git remains intentionally OPEN. Do not redeploy merely to eliminate that drift. Future product-code changes remain container-first: patch and validate `fcm-dev`, then write back only the proven delta to canonical Git.
+- 20/80 decision: with a fresh full regression PASS and no client-visible failure, the highest-value next action is **not more code**. The next 30-minute implementation batch starts only when the intervention trigger fires or a concrete product improvement has an explicit DoD.
+
 ---
 
 ## P1 Structured Contract Validation — BMAD Test Architecture
