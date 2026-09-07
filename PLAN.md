@@ -262,13 +262,20 @@ Decision policy from this audit:
 - Decision: keep the live runtime unchanged because its FCM reliability gate is green. For the next exact-source release candidate, use upstream `pickNextCandidate`/`detectFamily` semantics as the selection primitive, then layer our proven provider-wide 429/auth classification and structured-output invariants around it. Do not build a second family taxonomy or another bespoke selector.
 - Release test delta is now concrete: port upstream `model-family.test.js` coverage, add our 429/auth failure-domain cases, add a regression for the real Nemotron priority-6/7/8 topology, and require streaming/non-stream pre-commit parity plus named-set/structured-contract regression PASS before any deployment.
 
-### Batch 11 — CURRENT probe-pool degradation + anti-drift audit — DONE
+### Batch 11 — probe-pool degradation + anti-drift audit — DONE
 
 - BMAD `bmad-help` + `bmad-quick-dev` were used as an observe-first gate. No owning FCM code defect was evidenced, so no live code mutation was justified in this batch.
-- CURRENT `/api/router/status` after two fresh live canaries: 33 persisted routes, 9 configured providers, 8 effective providers, 13 probe-fresh healthy routes, 20 broken/hidden routes, `requestsRouted=26`, `successCalls=26`, `errorCalls=0`, `inFlight=0`, `shuttingDown=false`.
-- Daemon-log evidence localizes the degraded probe pool to recurring upstream HTTP 429 and probe timeouts on secondary providers/routes. Healthy recurring probes continue on Gonka, LLM7, Kilo, Mistral and some GoogleAI routes. No current `All routed models failed` / request-path terminal failure is present in the daemon log.
-- The probe subsystem is therefore behaving as a health filter under degraded upstream supply; the lower healthy-route count is an operability signal, not proof of broker failure. Do not patch the scheduler merely to make the dashboard greener or to force broken routes back into eligibility.
+- At Batch 11 time the broker had 8 effective providers and 13/33 fresh healthy routes; that snapshot is historical. Daemon-log evidence localized the degraded probe pool to recurring upstream HTTP 429 and probe timeouts on secondary providers/routes, with no `All routed models failed` terminal request-path failure.
+- The probe subsystem is therefore behaving as a health filter under degraded upstream supply; lower healthy-route count alone is an operability signal, not proof of broker failure. Do not patch the scheduler merely to make the dashboard greener or force broken routes back into eligibility.
 - Anti-drift correction: the old Coding Station family-failover candidate is reference-only and not an implementation authority. Latest user direction is container-first: future product-code changes are made/verified in permanent `fcm-dev`, then written back canonically. No GitHub-first programming or redeploy-debug loop.
+
+### Batch 12 — live operability refresh + intervention trigger — DONE
+
+- BMAD `bmad-help` + `bmad-testarch-test-design` were used to refresh the acceptance boundary rather than create another implementation task.
+- Fresh CURRENT readback after a new authenticated plain-text canary: 33 persisted routes, 9 configured providers, **9 effective providers**, 12/33 probe-fresh healthy routes, 21 broken/hidden routes, `requestsRouted=27`, `successCalls=27`, `errorCalls=0`, `inFlight=0`, `shuttingDown=false`. The canary itself PASSed in ~0.9 s.
+- `/sets` still preserves the intended durable head exactly: Gonka DeepSeek priority 1, Gonka MiniMax priority 2, then the existing remaining 31 routes. No durable set drift is evidenced.
+- Current daemon log still contains no `All routed models failed` / `No healthy routed models` terminal failure. Effective-provider recovery from 8 to 9 while individual route freshness fell from 13 to 12 demonstrates auto-heal/circuit churn, not a monotonic service-health metric.
+- **Intervention trigger:** reopen FCM code only when a direct broker request fails, all eligible routes for a set are exhausted, named-set/structured/lifecycle invariants break, or provider/circuit logic creates repeated client-visible errors. Probe-count movement alone does not meet the trigger. This keeps the next 30-minute batch focused on an owning defect instead of dashboard cosmetics.
 
 ---
 
