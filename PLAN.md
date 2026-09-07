@@ -303,6 +303,17 @@ Decision policy from this audit:
 - Execution rule remains authoritative: all future product-code work is container-first in permanent `fcm-dev`; GitHub is canonical write-back only after live verification. No GitHub-first programming and no redeploy-as-debug.
 - 30-minute batch DoD for the next code intervention is fixed: reproduce an owning FCM-layer failure or define an explicit product-improvement DoD → patch smallest owner in `fcm-dev` stale-safely → focused regression PASS → full live `npm test` PASS → same-runtime canary/readback PASS → write back only the proven delta to Git/SourceLoop.
 
+### Batch 16 — production topology + creation preflight — DONE
+
+- BMAD `bmad-help` + `bmad-quick-dev` were used to turn the runtime-hygiene discussion into an explicit release topology without touching the working broker.
+- Confirmed placement owner: current `FCM LLM Gateway DEV` lives in Coolify project **AI Platform** (`project_uuid=k2iwjjw7tend0ngkmukardt3`) under environment **development** (`environment_uuid=6hqwzbsgmreemwspa0zzq45i`). The production FCM belongs in the **same project** under a separate **production** environment, not in a new project.
+- Current DEV remains the control runtime and must stay running throughout production bring-up. It is not a migration source image; it is behavioral evidence and rollback safety.
+- No existing production FCM was confirmed in the bounded Coolify discovery: tag lookups for `fcm-prod` and `production` returned no applications. This is not an exhaustive proof that no differently named app exists; therefore creation must still verify the target environment/resource name immediately before mutation.
+- Target production role: `FCM LLM Gateway PROD` in `AI Platform / production`, built from canonical Git at an explicit commit SHA, with auto-deploy disabled, independent endpoint, health check `/health`, and no consumer traffic until acceptance completes.
+- Production acceptance DoD: running identity matches intended Git SHA; `/health`, `/sets`, `/api/router/status`, plain text, `json_schema`, `fcm:<set>`, explicit named-set path, timeout/5xx/429/auth failure-domain cases, streaming pre-commit behavior, full package suite, eight-turn cadence, restart persistence, and real upstream-failure containment all PASS. DEV remains available as rollback until post-cutover observation is complete.
+- SourceLoop/release rule: if PROD exposes a functional defect, fix and prove the smallest delta **in `fcm-dev` container first**, capture/write back through SourceLoop/Git, then rebuild/update PROD from that proven canonical SHA. Never hand-patch PROD as the development lane and never use GitHub-first redeploy as debugging.
+- Persistent-infrastructure gate: actually creating the production application/environment is a new infrastructure scope. PLAN is ready, but creation requires explicit user approval before mutation.
+
 ---
 
 ## P1 Structured Contract Validation — BMAD Test Architecture
