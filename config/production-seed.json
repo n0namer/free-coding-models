@@ -1,0 +1,50 @@
+{
+  "router": {
+    "activeSet": "fast-coding",
+    "sets": {
+      "fast-coding": {
+        "name": "fast-coding",
+        "models": [
+          {"provider":"gonka","model":"deepseek-ai/DeepSeek-V4-Flash-0731","priority":1},
+          {"provider":"gonka","model":"MiniMaxAI/MiniMax-M2.7","priority":2},
+          {"provider":"llm7","model":"minimax-m2.7","priority":3},
+          {"provider":"googleai","model":"gemini-3-flash-preview","priority":4},
+          {"provider":"opencode-zen","model":"big-pickle","priority":5},
+          {"provider":"openrouter","model":"nvidia/nemotron-3-ultra-550b-a55b:free","priority":6},
+          {"provider":"requesty","model":"nvidia/nemotron-3-ultra-550b-a55b","priority":7},
+          {"provider":"openrouter","model":"poolside/laguna-xs-2.1:free","priority":8},
+          {"provider":"googleai","model":"gemini-3.1-flash-lite","priority":9},
+          {"provider":"openrouter","model":"nvidia/nemotron-3-super-120b-a12b:free","priority":10},
+          {"provider":"requesty","model":"nvidia/nemotron-3-super-120b-a12b","priority":11},
+          {"provider":"zai","model":"zai/glm-4.5-flash","priority":12},
+          {"provider":"openrouter","model":"nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free","priority":13},
+          {"provider":"requesty","model":"google/gemma-4-31b-it","priority":14},
+          {"provider":"requesty","model":"nvidia/nemotron-3-nano-omni-30b-a3b-reasoning","priority":15},
+          {"provider":"llm7","model":"codestral-latest","priority":16},
+          {"provider":"googleai","model":"gemini-3.7-flash","priority":17},
+          {"provider":"opencode-zen","model":"mimo-v2.5-free","priority":18},
+          {"provider":"opencode-zen","model":"nemotron-3.5-lightning-free","priority":19},
+          {"provider":"openrouter","model":"cohere/north-mini-code:free","priority":20},
+          {"provider":"googleai","model":"gemini-3.5-flash-lite","priority":21},
+          {"provider":"kilo","model":"kilo-auto/free","priority":22},
+          {"provider":"zai","model":"zai/glm-4.6v-flash","priority":23},
+          {"provider":"llm7","model":"mistral-Nemo-Instruct-2407","priority":24},
+          {"provider":"kilo","model":"kilo-auto/small","priority":25},
+          {"provider":"openrouter","model":"nvidia/nemotron-3.5-lightning:free","priority":26},
+          {"provider":"mistral","model":"ministral-14b-2512","priority":27},
+          {"provider":"requesty","model":"nvidia/nemotron-3.5-lightning-30b-a3b","priority":28},
+          {"provider":"mistral","model":"ministral-8b-2512","priority":29},
+          {"provider":"mistral","model":"ministral-3b-2512","priority":30},
+          {"provider":"requesty","model":"mistral/leanstral-1-5","priority":31},
+          {"provider":"openrouter","model":"liquid/lfm-2.5-2.6b:free","priority":32},
+          {"provider":"requesty","model":"nvidia/muse-glimmer-30b","priority":33}
+        ]
+      }
+    },
+    "failover": {
+      "maxRetries": 3,
+      "requestTimeoutMs": 60000,
+      "streamStallTimeoutMs": 30000
+    }
+  }
+}
