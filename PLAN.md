@@ -230,13 +230,13 @@ Decision policy from this audit:
 - The convergence policy defines a combined failure hierarchy: provider-wide 429/auth changes provider immediately; other route failures must not blanket-block the provider; healthy same-family/different-provider recovery is preferred when eligible, then ordinary set order.
 - A release-boundary fault matrix is defined before any migration. The permanent runtime was not changed during this design batch.
 
-### Batch 7 — Exact-source convergence candidate — NON-BLOCKING MAINTENANCE / ENVIRONMENT-GATED
+### Batch 7 — Exact-source convergence candidate — ACTIVE / VALIDATION-GATED
 
-- This batch is **not required for CURRENT FCM use**; the functional runtime gate is already DONE.
-- The exact-source lane partially recovered on 2026-09-07: Coding Station health/readiness was green and repo session `csrepo_abde2c4c97124b36aab85f71b146f796` was successfully created at base `5b5d0e8614a5a80b0dc3cd56175ba5fd17e018f6`. However, subsequent session read/search/status operations returned `Gateway Timeout`, so workspace writability/readback is still not proven. No source mutation was applied.
-- Resume implementation only after repo file read/search succeeds in that lane. Then build the smallest candidate that imports/adapts upstream family primitives while retaining custom structured-output, named-set, probe/quota, and failure-domain invariants.
-- Run focused family/failure-domain/streaming/named-set regressions plus the canonical full suite on that exact source.
-- Only after those gates pass may a future controlled release be considered; verify deployed SHA == tested SHA and rerun authenticated reviewer cadence. No deployment is needed to keep the current runtime operational.
+- This batch is **not required for CURRENT FCM use**; the functional runtime gate is already DONE and the live runtime remains unchanged.
+- Coding Station partially recovered enough to build a real exact-source candidate in repo session `csrepo_abde2c4c97124b36aab85f71b146f796` based on canonical head `5b5d0e8614a5a80b0dc3cd56175ba5fd17e018f6`. File reads/searches and bounded workspace writes eventually succeeded after intermittent `Gateway Timeout`; no live/container mutation occurred.
+- Candidate delta now exists only in the isolated repo session: new upstream-derived `src/core/model-family.js`; `familyFailover` normalization in `src/core/config.js`; router selection switched to `pickNextCandidate()` with family-preserving cross-provider recovery while retaining provider-wide 429/auth blocking; telemetry adds `selection_reason`; focused router regressions cover same-family/different-provider recovery plus non-stream and streaming pre-commit provider-wide 429; `test/model-family.test.js` is included in the canonical test script.
+- Validation so far: `node --check` PASS for `model-family.js`, `router-daemon.js`, and `config.js`; standalone `node --test test/model-family.test.js` PASS 3/3. The focused router integration file could not execute because repository dependencies are not installed (`ERR_MODULE_NOT_FOUND: chalk`). Earlier `npm test`/workspace install attempts hit `ENOSPC`; this remains a **VALIDATION_BLOCKER**, not an FCM test failure.
+- No canonical publication, PR, deployment, or live reload is allowed until exact-source dependencies are available and the focused router matrix + full canonical suite pass on this exact candidate. After that, verify published/tested SHA identity before any future release.
 
 ### Batch 8 — Post-fix consumer-topology observation — DONE
 
