@@ -267,7 +267,7 @@ Decision policy from this audit:
 
 ## P1 Structured Contract Validation — BMAD Test Architecture
 
-Status: HISTORICAL TEST-ARCHITECTURE RECORD / CORE PASS. P0/P1 invariants below remain binding regression constraints, but the CURRENT execution stage is P1.7 above.
+Status: HISTORICAL TEST-ARCHITECTURE RECORD / CORE PASS. P0/P1 invariants below remain binding regression constraints, but the CURRENT execution stage is P2.0 runtime-DONE / non-blocking upstream-source convergence, as recorded above.
 
 BMad routing used for this phase:
 1. `bmad-help` — restored project/stage and routed the next mandatory move.
