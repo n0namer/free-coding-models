@@ -156,12 +156,12 @@ Decision policy from this audit:
 - Silent fallback from an explicit invalid/unknown virtual set to `activeSet`.
 - Stale config-path assumptions (`/root/.free-coding-models.json` is not the CURRENT daemon config owner here), duplicate test-owner files, GitHub-first debugging, and redeploy-as-diagnosis.
 
-**Exact-source adoption gate before any runtime migration:**
+**Container-first adoption gate for any future family-failover change:**
 
-1. Add/port upstream family primitives in the canonical exact-source workspace, not in the live container.
-2. Preserve custom named-set and structured-output behavior without semantic weakening.
-3. Fault-injection matrix must prove: 429/auth skips the failed provider; route-local timeout/5xx never blanket-blocks a provider; same-family different-provider recovery wins when eligible; set-order fallback still works; streaming pre-commit and non-stream behavior agree; no post-byte splicing; named-set selectors remain fail-closed.
-4. Run canonical full suite on the exact candidate source. Only then is a deployment/release boundary allowed; after deployment verify tested SHA == deployed identity and rerun authenticated cadence.
+1. Re-read CURRENT `/app` owner code and the relevant upstream primitive; define the smallest behavior delta against the permanent `fcm-dev` runtime.
+2. Apply the delta stale-safely in `fcm-dev` only after an owning requirement/defect is evidenced; preserve custom named-set and structured-output behavior without semantic weakening.
+3. Fault-injection matrix in the same runtime must prove: 429/auth skips the failed provider; route-local timeout/5xx never blanket-blocks a provider; same-family different-provider recovery wins when eligible; set-order fallback still works; streaming pre-commit and non-stream behavior agree; no post-byte splicing; named-set selectors remain fail-closed.
+4. Run focused tests, then the full live package gate, then authenticated same-runtime cadence. Only after PASS write back the proven delta to canonical Git/SourceLoop. A future image release additionally requires exact-source canonical tests and tested-SHA/deployed-SHA identity; redeploy is never the debugging primitive.
 
 ### North Star progress / remaining closure tasks
 
