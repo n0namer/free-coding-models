@@ -295,6 +295,14 @@ Decision policy from this audit:
 - Anti-drift conclusion: runtime behavior is freshly green, but exact byte/source identity between the older live layout and current Git remains intentionally OPEN. Do not redeploy merely to eliminate that drift. Future product-code changes remain container-first: patch and validate `fcm-dev`, then write back only the proven delta to canonical Git.
 - 20/80 decision: with a fresh full regression PASS and no client-visible failure, the highest-value next action is **not more code**. The next 30-minute implementation batch starts only when the intervention trigger fires or a concrete product improvement has an explicit DoD.
 
+### Batch 15 — SoT reconciliation / maintenance parking — DONE
+
+- BMAD `bmad-help` + `bmad-testarch-test-design` were used to re-check whether a new implementation batch is warranted. It is not: CURRENT runtime remains healthy and the last full live gate + eight-turn cadence are still the freshest functional evidence.
+- Fresh `/api/router/status` readback: `requestsRouted=35`, `successCalls=35`, `errorCalls=2`; both errors remain absorbed Gonka `http_429`. Provider availability has recovered to **9/9 effective providers** while route freshness remains 12/33 healthy and 21 broken/hidden. This is expected upstream-health churn, not durable-set drift or a client-visible broker failure.
+- SoT correction: P2 upstream/source convergence is now explicitly **trigger-gated maintenance**, not an open implementation task. Exact source/image identity remains OPEN for future release hygiene, but it is not a blocker for using the CURRENT FCM.
+- Execution rule remains authoritative: all future product-code work is container-first in permanent `fcm-dev`; GitHub is canonical write-back only after live verification. No GitHub-first programming and no redeploy-as-debug.
+- 30-minute batch DoD for the next code intervention is fixed: reproduce an owning FCM-layer failure or define an explicit product-improvement DoD → patch smallest owner in `fcm-dev` stale-safely → focused regression PASS → full live `npm test` PASS → same-runtime canary/readback PASS → write back only the proven delta to Git/SourceLoop.
+
 ---
 
 ## P1 Structured Contract Validation — BMAD Test Architecture
