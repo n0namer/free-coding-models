@@ -262,6 +262,14 @@ Decision policy from this audit:
 - Decision: keep the live runtime unchanged because its FCM reliability gate is green. For the next exact-source release candidate, use upstream `pickNextCandidate`/`detectFamily` semantics as the selection primitive, then layer our proven provider-wide 429/auth classification and structured-output invariants around it. Do not build a second family taxonomy or another bespoke selector.
 - Release test delta is now concrete: port upstream `model-family.test.js` coverage, add our 429/auth failure-domain cases, add a regression for the real Nemotron priority-6/7/8 topology, and require streaming/non-stream pre-commit parity plus named-set/structured-contract regression PASS before any deployment.
 
+### Batch 11 — CURRENT probe-pool degradation + anti-drift audit — DONE
+
+- BMAD `bmad-help` + `bmad-quick-dev` were used as an observe-first gate. No owning FCM code defect was evidenced, so no live code mutation was justified in this batch.
+- CURRENT `/api/router/status`: 33 persisted routes, 9 configured providers, 8 effective providers, 12 probe-fresh healthy routes, 21 broken/hidden routes, `requestsRouted=24`, `successCalls=24`, `errorCalls=0`, `inFlight=0`, `shuttingDown=false`.
+- Daemon-log evidence localizes the degraded probe pool to recurring upstream HTTP 429 and probe timeouts on secondary providers/routes. Healthy recurring probes continue on Gonka, LLM7, Kilo, Mistral and some GoogleAI routes. No current `All routed models failed` / request-path terminal failure is present in the daemon log.
+- The probe subsystem is therefore behaving as a health filter under degraded upstream supply; the lower healthy-route count is an operability signal, not proof of broker failure. Do not patch the scheduler merely to make the dashboard greener or to force broken routes back into eligibility.
+- Anti-drift correction: the old Coding Station family-failover candidate is reference-only and not an implementation authority. Latest user direction is container-first: future product-code changes are made/verified in permanent `fcm-dev`, then written back canonically. No GitHub-first programming or redeploy-debug loop.
+
 ---
 
 ## P1 Structured Contract Validation — BMAD Test Architecture
