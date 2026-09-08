@@ -360,7 +360,7 @@ Decision policy from this audit:
 - Fresh post-recreate eight-turn cadence is **8/8 PASS** (~35 s total). During the same accepted run the broker recorded 13 upstream errors, dominated by provider-wide HTTP 429 on LLM7/GoogleAI/OpenCode Zen/OpenRouter/Requesty, yet all 11 routed client requests succeeded. Later healthy Kilo/Z.AI fallbacks prove the fast-provider-skip budget fix closes the reported client-visible exhaustion boundary under real partial upstream degradation.
 - Canonical regression-test ownership remains **environment-gated maintenance**, not a functional release blocker: the live deterministic regression and full live suite PASS, SourceLoop captured the delta, but the canonical owner `test/test.js` is >200 KiB for the precise Git patch route and fresh Coding Station write failed `ENOSPC`. Do not create a duplicate sidecar test.
 
-### Batch 20 — release-ready declaration + cutover preflight — ACTIVE
+### Batch 20 — historical consumer-cutover work — OUT OF CURRENT FCM SCOPE / SUPERSEDED
 
 - Functional PROD release gate is **DONE**; no router mutation is currently justified. PROD remains isolated from consumer traffic and DEV remains running as rollback/control.
 - Cutover is a separate operational gate, not part of proving FCM correctness. Before any consumer change, discover which consumers actually point at FCM, record the exact current endpoint/config owner, define one reversible endpoint switch and one exact rollback back to DEV, then change only those consumers that are explicitly in scope.
