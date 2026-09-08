@@ -1,6 +1,6 @@
 # FCM Broker Plan / Source of Truth
 
-Status: ACTIVE — DEV control is green; PROD release acceptance is OPEN on the provider-wide fast-failure budget fix and final clean-recreate proof. No consumer cutover yet.
+Status: ACTIVE — FCM PROD functional release acceptance is DONE on exact SHA `fae89d7b4a91090c3a61bd361f2556315a830f0a`; DEV remains rollback/control and no consumer cutover has been performed. Canonical regression-test write-back remains an environment-gated hygiene item, not a functional PROD blocker.
 Last reconciled: 2026-09-08
 Repository: `n0namer/free-coding-models`
 Active working branch: `fix/fcm-long-stream-lifecycle`
