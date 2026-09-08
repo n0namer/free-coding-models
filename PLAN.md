@@ -1,10 +1,10 @@
 # FCM Broker Plan / Source of Truth
 
-Status: ACTIVE — CURRENT FCM RUNTIME ACCEPTANCE DONE; P2 source/upstream convergence is trigger-gated maintenance, not an open implementation task
-Last reconciled: 2026-09-07
+Status: ACTIVE — DEV control is green; PROD release acceptance is OPEN on the provider-wide fast-failure budget fix and final clean-recreate proof. No consumer cutover yet.
+Last reconciled: 2026-09-08
 Repository: `n0namer/free-coding-models`
 Active working branch: `fix/fcm-long-stream-lifecycle`
-Current live-verified canonical code head before PLAN-only reconciliation: `382d9606268803cc86dfced5f8f639b737345457` — `fix(router): reject empty named-set virtual model`
+Current live-verified canonical product-code head: `fae89d7b4a91090c3a61bd361f2556315a830f0a` — provider-wide fast 429/auth skips no longer consume the bounded retry opportunity before later providers can be tried. Canonical regression-test write-back for this exact edge remains environment-blocked by Coding Station `ENOSPC`; live regression + full live suite are PASS.
 Execution rule: debug/implement directly in permanent `fcm-dev`; GitHub is SoT/write-back only after live verification. No GitHub-first programming or redeploy debug loop.
 
 ## North Star
