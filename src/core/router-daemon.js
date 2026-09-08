@@ -3748,7 +3748,7 @@ class RouterRuntime {
             sendError(res, 404, 'Unknown provider', 'invalid_request_error', 'unknown_provider', requestId)
             return
           }
-          const rawKey = this.getApiKeyForProvider(providerKey)
+          const rawKey = this.getConfiguredApiKeyForProvider(providerKey)
           sendJson(res, 200, { key: rawKey || null }, { 'x-request-id': requestId })
           return
         }
