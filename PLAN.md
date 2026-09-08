@@ -1,6 +1,6 @@
 # FCM Broker Plan / Source of Truth
 
-Status: ACTIVE — FCM PROD functional release acceptance is DONE on exact SHA `fae89d7b4a91090c3a61bd361f2556315a830f0a`; the sole discovered FCM consumer has been redeployed with the shared endpoint owner switched to stable PROD alias `http://fcm-prod-internal:19280/v1`. DEV remains running as exact rollback/control. Consumer-stack health is green; AgentField reasoner/execution black-box verification is still blocked by its gateway returning `Bad Gateway`. Canonical regression-test write-back remains environment-gated hygiene, not a functional PROD blocker.
+Status: ACTIVE — **FCM-only scope.** FCM PROD functional release acceptance is DONE on exact SHA `fae89d7b4a91090c3a61bd361f2556315a830f0a`; FCM DEV remains running as rollback/control. No consumer integration, AgentField/OpenClaw/OpenCode work, or consumer cutover is part of the active FCM gate. No product-code mutation is currently justified. Canonical regression-test write-back remains environment-gated hygiene, not a functional PROD blocker.
 Last reconciled: 2026-09-08
 Repository: `n0namer/free-coding-models`
 Active working branch: `fix/fcm-long-stream-lifecycle`
