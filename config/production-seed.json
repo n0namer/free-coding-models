@@ -1,6 +1,7 @@
 {
   "router": {
     "activeSet": "fast-coding",
+    "autoHeal": false,
     "sets": {
       "fast-coding": {
         "name": "fast-coding",
