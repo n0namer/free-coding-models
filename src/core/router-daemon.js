@@ -2316,16 +2316,18 @@ class RouterRuntime {
         if (result.authFailure) {
           authBlockedProviders.add(candidate.provider)
           blockedProviders.add(candidate.provider)
+          fastProviderSkips += 1
         } else if (result.providerFailure) {
           const providerFailures = (providerFailureCounts.get(candidate.provider) || 0) + 1
           providerFailureCounts.set(candidate.provider, providerFailures)
           const sibling = candidates.find((entry) => entry.provider === candidate.provider && !tried.includes(entry.key))
+          if (result.providerWideFailure) fastProviderSkips += 1
           if (!result.providerWideFailure && providerFailures === 1 && sibling) preferredProvider = candidate.provider
           else blockedProviders.add(candidate.provider)
         }
         const afterAttempt = this.activeRequests.get(requestId)
         if (afterAttempt) afterAttempt.last_failover_reason = result.reason || null
-        if (result.failoverToNext && attemptIndex < maxAttempts) {
+        if (result.failoverToNext && attemptIndex < currentAttemptLimit()) {
           const next = (preferredProvider
             ? candidates.find((entry) => entry.provider === preferredProvider && !tried.includes(entry.key) && !blockedProviders.has(entry.provider))
             : null) || candidates.find((entry) => !tried.includes(entry.key) && !blockedProviders.has(entry.provider))
