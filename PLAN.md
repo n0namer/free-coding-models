@@ -371,6 +371,13 @@ Decision policy from this audit:
 - Historical external-consumer observation only. It is not an active FCM task, DoD, blocker, or source of authority for FCM correctness.
 - Scope-correct next move: keep DEV and PROD healthy; make no product-code change unless a direct FCM request/invariant fails or the user defines a new FCM-only product-improvement DoD. AgentField/OpenClaw/OpenCode/consumer runtime work is explicitly NON-TARGET.
 
+### Batch 22 — FCM-only SoT/runtime anti-drift refresh — DONE
+
+- BMAD `bmad-help` + `bmad-quick-dev` were used observe-first. No owning FCM defect is evidenced, so no code mutation was performed.
+- Fresh DEV readback: `running:healthy`, alias `fcm-dev-internal`, 33 models, 9 configured / 9 effective providers, `autoHeal=true`, one successful routed call, zero runtime errors, zero in-flight requests.
+- Fresh PROD readback: one healthy container `5llbaomtlttzsukhin6xgrgc-150717865958` on exact image `5llbaomtlttzsukhin6xgrgc:fae89d7b4a91090c3a61bd361f2556315a830f0a`; stable alias `fcm-prod-internal`; 33 models, 9 configured / 8 effective providers, `autoHeal=false`. `/sets` preserves the full 33-route durable order with Gonka DeepSeek priority 1 and Gonka MiniMax priority 2. Unauthenticated `/v1/chat/completions` still returns `401`.
+- 20/80 decision: the North Star is currently satisfied at the FCM boundary. Do not spend another batch on reassurance load, consumer systems, or speculative router changes. Reopen implementation only on a direct broker failure/invariant break or an explicit new FCM-only product DoD.
+
 ---
 
 ## P1 Structured Contract Validation — BMAD Test Architecture
