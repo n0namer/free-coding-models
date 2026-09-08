@@ -372,10 +372,10 @@ Decision policy from this audit:
 - Post-deploy consumer stack is green: postgres, diagnostics, control-plane, deep-research and workforce are running; workforce completed its documented cold-bootstrap window and is healthy. The shared `FCM_BASE_URL` readback remains exactly `http://fcm-prod-internal:19280/v1`, so rollback remains one guarded change back to `http://fcm-dev-internal:19280/v1` followed by the same supported full-deploy path. DEV remains running throughout.
 - Cutover control-plane gate is therefore **PASS**. Remaining verification is consumer-behavior observation only: AgentField gateway health returns healthy, but reasoner/capability queries still return `Bad Gateway`, so no reasoner-level request can yet be used as black-box evidence that a consumer execution traversed PROD. Do not mutate FCM for this; keep PROD release-ready and cut over, keep DEV as rollback, and treat AgentField gateway recovery as the current observation blocker.
 
-### Batch 21 — post-cutover observation — ACTIVE
+### Batch 21 — post-cutover observation — OUT OF CURRENT FCM SCOPE / SUPERSEDED
 
-- No product-code task is open. FCM PROD is release-ready and the sole discovered consumer stack has been recreated against the PROD shared endpoint owner.
-- P0 observation DoD: consumer stack remains healthy → AgentField gateway becomes queryable → run one bounded consumer execution → PROD `requestsRouted` increases and execution succeeds → retain DEV rollback through the observation window. If AgentField gateway remains unavailable, report the cutover as operationally applied but consumer black-box evidence missing; do not manufacture more FCM load or router changes.
+- Historical external-consumer observation only. It is not an active FCM task, DoD, blocker, or source of authority for FCM correctness.
+- Scope-correct next move: keep DEV and PROD healthy; make no product-code change unless a direct FCM request/invariant fails or the user defines a new FCM-only product-improvement DoD. AgentField/OpenClaw/OpenCode/consumer runtime work is explicitly NON-TARGET.
 
 ---
 
