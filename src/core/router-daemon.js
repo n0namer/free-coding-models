@@ -1126,10 +1126,20 @@ class RouterRuntime {
     }
   }
 
-  getApiKeyForProvider(providerKey) {
+  getConfiguredApiKeyForProvider(providerKey) {
     const configured = this.config?.apiKeys?.[providerKey]
     if (Array.isArray(configured)) return configured.find(Boolean) || null
     if (typeof configured === 'string' && configured.trim()) return configured.trim()
+    return null
+  }
+
+  getApiKeyForProvider(providerKey) {
+    const configured = this.getConfiguredApiKeyForProvider(providerKey)
+    if (configured) return configured
+
+    const fromEnv = getApiKey({ apiKeys: {} }, providerKey)
+    if (Array.isArray(fromEnv)) return fromEnv.find(Boolean) || null
+    if (typeof fromEnv === 'string' && fromEnv.trim()) return fromEnv.trim()
     return null
   }
 
