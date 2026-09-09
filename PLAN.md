@@ -98,12 +98,12 @@ Make the existing Windows FCM runtime behave as its README intends:
 - [x] Windows Task Scheduler guard runs every 4 hours via `--daemon-status` and completes with correct unattended success semantics; verified runs returned `LastTaskResult=0` / `Ready` without changing the pinned set.
 - [x] Container restart preserves config, sets, probe cache, and runtime telemetry.
 - Host-level Windows reboot/login/Docker Desktop startup proof is explicitly out of scope for this phase by user decision; container restart + verified Scheduled Task execution are sufficient operational evidence.
-- [ ] `outreach-quality` membership is rebuilt from the maximum CURRENT routes that pass the production-equivalent structured compatibility gate; no fixed model count is assumed.
-- [x] `outreach-quality` pins the two Gonka routes at priorities 1–2 as the fixed Tier-1 primary/recommendation race; health/circuit state may skip an unavailable route but must not reorder them.
-- [x] Non-streaming `outreach-quality` routing launches both Gonka candidates concurrently, cancels the loser after a successful JSON winner, and falls back from candidate #3 through the remaining pool using existing circuit/failover semantics. Fresh request `req-e885333f-70e3-4913-9744-778e6e75d537` proves concurrent launch and fallback after both Gonka connect failures. Outreach-specific business/evidence validation remains outside FCM.
-- [ ] A successful race-winner flush/header is still required after host outbound connectivity recovers; the first live smoke ended 503 because every external provider connection timed out.
-- [x] A separate non-Gonka `outreach-judge` virtual model exists and is exposed by `/v1/models`, using Codestral/Groq/llm7 families independently from the Gonka Tier-1 primary race.
-- [ ] A successful live `fcm:outreach-judge` provider response is still required after external connectivity recovers.
+- [x] Canonical `outreach-quality` contains all 116 CURRENT credentialed model routes; Gonka DeepSeek and Gonka MiniMax are fixed priorities 1–2 and the remaining 114 routes form the fallback contour.
+- [x] Non-streaming `outreach-quality` launches both Gonka candidates concurrently, cancels the loser after a successful JSON winner, and falls back from candidate #3 through the remaining pool using existing circuit/failover semantics. Fresh request `req-e885333f-70e3-4913-9744-778e6e75d537` proves concurrent launch and fallback after both Gonka connect failures. Outreach-specific business/evidence validation remains outside FCM.
+- [x] `router.failover.maxRetries=115` and the live config validation ceiling is 500, allowing traversal of the full 116-route contour rather than stopping at the former 20-attempt ceiling.
+- [x] `outreach-judge` is a compatibility alias with the same 116-route membership and Gonka #1–2 ordering; race behavior is enabled for both names during migration.
+- [ ] All Outreach consumers are migrated so primary, recommendation, judge, and recommendation-judge use the single canonical model `fcm:outreach-quality`.
+- [ ] A successful live race-winner response is still required after external provider connectivity recovers; the first live smoke ended 503 because every external provider connection timed out.
 - [ ] Accepted live code deltas are published to the canonical repository after runtime gates are green.
 
 ## 30-Minute Batch Policy
