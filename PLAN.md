@@ -202,7 +202,7 @@ If live patching is used, record base, delta, backup, syntax/runtime evidence, a
 
 ## Current Stop Point
 
-The live runtime target is green. `fast-coding` contains the exact user-approved 20-route contour, Gonka is fixed at priorities 1–2, `router.failover.maxRetries=19` permits up to 20 eligible attempts, `userCustomized=true` / `autoHeal=false` prevent membership replacement, and the single FCM endpoint remains healthy. Exact order survived SIGHUP and `docker restart fcm`; real traffic routed successfully through Gonka priority #1 and daemon logs show Gonka-to-Gonka failover on real 429/502 errors.
+The live runtime is green with two preserved contours: `fast-coding` remains the exact user-approved 20-route Gonka-first set, while canonical Outreach traffic now uses a unified 116-route `outreach-quality` pool built from every credentialed route. Gonka DeepSeek and Gonka MiniMax are fixed at priorities 1–2 and race concurrently for non-streaming Outreach requests; `router.failover.maxRetries=115` permits traversal of the remaining 114-route fallback contour. `outreach-judge` mirrors the same 116 routes only as a compatibility alias until consumers migrate to the single canonical `fcm:outreach-quality` name. The same-container restart returned healthy and preserved both the 20-route `fast-coding` set and the 116-route Outreach pool.
 
 The existing Windows Scheduled Task keeps its 4-hour trigger but is now a non-mutating `--daemon-status` guard. Verified runs return `LastTaskResult=0` / `Ready` and do not alter the pinned set. Continuous model-health probing and circuit-breaker state remain owned by the FCM daemon, so unhealthy routes are skipped dynamically without changing membership/order.
 
