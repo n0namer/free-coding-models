@@ -99,9 +99,11 @@ Make the existing Windows FCM runtime behave as its README intends:
 - [x] Container restart preserves config, sets, probe cache, and runtime telemetry.
 - Host-level Windows reboot/login/Docker Desktop startup proof is explicitly out of scope for this phase by user decision; container restart + verified Scheduled Task execution are sufficient operational evidence.
 - [ ] `outreach-quality` membership is rebuilt from the maximum CURRENT routes that pass the production-equivalent structured compatibility gate; no fixed model count is assumed.
-- [ ] At least two independent CURRENT contract-certified routes exist for primary quality traffic before race/hedge mode is enabled.
-- [ ] Non-streaming primary quality routing races/hedges the top two certified routes, cancels the loser after the first acceptable OpenAI response, and falls back through the remaining certified routes with existing circuit-breaker/scoring semantics. Outreach-specific business/evidence validation remains outside FCM.
-- [ ] A separate `outreach-judge` pool is verified with provider/model-family independence from the primary top tier where CURRENT inventory permits it.
+- [x] `outreach-quality` pins the two Gonka routes at priorities 1–2 as the fixed Tier-1 primary/recommendation race; health/circuit state may skip an unavailable route but must not reorder them.
+- [x] Non-streaming `outreach-quality` routing launches both Gonka candidates concurrently, cancels the loser after a successful JSON winner, and falls back from candidate #3 through the remaining pool using existing circuit/failover semantics. Fresh request `req-e885333f-70e3-4913-9744-778e6e75d537` proves concurrent launch and fallback after both Gonka connect failures. Outreach-specific business/evidence validation remains outside FCM.
+- [ ] A successful race-winner flush/header is still required after host outbound connectivity recovers; the first live smoke ended 503 because every external provider connection timed out.
+- [x] A separate non-Gonka `outreach-judge` virtual model exists and is exposed by `/v1/models`, using Codestral/Groq/llm7 families independently from the Gonka Tier-1 primary race.
+- [ ] A successful live `fcm:outreach-judge` provider response is still required after external connectivity recovers.
 - [ ] Accepted live code deltas are published to the canonical repository after runtime gates are green.
 
 ## 30-Minute Batch Policy
