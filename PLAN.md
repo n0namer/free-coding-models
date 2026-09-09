@@ -208,4 +208,4 @@ No new source-code change was required for the 20-route policy itself: its autho
 
 ## Exact Next Move
 
-Leave the verified 20-route runtime untouched. Rebase the reviewed source-only code delta over CURRENT `main`, require the same bounded source/test diff and focused regression gates, then handle the publication/review boundary without redeploying or recreating `fcm`. Mark the final publication DoD complete only after remote source and PLAN readback.
+Keep the verified 20-route Gonka-first `fast-coding` contour untouched. Complete a bounded production-equivalent eligibility inventory of the CURRENT `status=up` routes for Outreach quality traffic, recording contract PASS/FAIL without broad model roulette. Require at least two independent contract-certified routes before enabling race/hedge mode. Then build dynamic `outreach-quality` and independent `outreach-judge` named sets, patch race-first non-streaming routing directly in the live `fcm` container only if the eligibility gate is satisfied, and verify first-winner behavior plus fallback/circuit semantics before source canonicalization. Do not change Outreach semantic code as part of this FCM batch.
