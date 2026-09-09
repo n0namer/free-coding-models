@@ -1,7 +1,7 @@
 # FCM Broker — Project Plan
 
-**Status:** Runtime Green — canonical source publication pending
-**Last verified:** 2026-09-06
+**Status:** In Progress — widen Outreach quality routing and add race-first policy
+**Last verified:** 2026-09-09
 **Target repository:** `n0namer/free-coding-models`
 **Canonical project SoT:** this `PLAN.md` owns project stage, decisions, DoD, anti-drift state, and next move. Product/router details remain in the existing README/PRD/source owners.
 
