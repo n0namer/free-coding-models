@@ -98,7 +98,11 @@ Make the existing Windows FCM runtime behave as its README intends:
 - [x] Windows Task Scheduler guard runs every 4 hours via `--daemon-status` and completes with correct unattended success semantics; verified runs returned `LastTaskResult=0` / `Ready` without changing the pinned set.
 - [x] Container restart preserves config, sets, probe cache, and runtime telemetry.
 - Host-level Windows reboot/login/Docker Desktop startup proof is explicitly out of scope for this phase by user decision; container restart + verified Scheduled Task execution are sufficient operational evidence.
-- [ ] Accepted live code deltas are published to the canonical repository after runtime gate is green.
+- [ ] `outreach-quality` membership is rebuilt from the maximum CURRENT routes that pass the production-equivalent structured compatibility gate; no fixed model count is assumed.
+- [ ] At least two independent CURRENT contract-certified routes exist for primary quality traffic before race/hedge mode is enabled.
+- [ ] Non-streaming primary quality routing races/hedges the top two certified routes, cancels the loser after the first acceptable OpenAI response, and falls back through the remaining certified routes with existing circuit-breaker/scoring semantics. Outreach-specific business/evidence validation remains outside FCM.
+- [ ] A separate `outreach-judge` pool is verified with provider/model-family independence from the primary top tier where CURRENT inventory permits it.
+- [ ] Accepted live code deltas are published to the canonical repository after runtime gates are green.
 
 ## 30-Minute Batch Policy
 
