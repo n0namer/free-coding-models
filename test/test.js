@@ -370,6 +370,79 @@ function buildRouterTestConfig(models, overrides = {}) {
   }
 }
 
+async function withRouterAiTestEnv(fn) {
+  const keys = ['ROUTERAI_API_KEY', 'ROUTERAI_MODEL', 'ROUTERAI_ENDPOINT']
+  const previous = Object.fromEntries(keys.map((key) => [key, process.env[key]]))
+  process.env.ROUTERAI_API_KEY = 'routerai-test-key'
+  process.env.ROUTERAI_MODEL = 'routerai-test-model'
+  process.env.ROUTERAI_ENDPOINT = 'https://routerai.example.test/v1'
+  try {
+    return await fn()
+  } finally {
+    for (const key of keys) {
+      if (previous[key] === undefined) delete process.env[key]
+      else process.env[key] = previous[key]
+    }
+  }
+}
+
+describe('RouterAI primary routing policy', () => {
+  it('pins the env-backed RouterAI model at priority 1 in every set', async () => {
+    await withRouterAiTestEnv(async () => {
+      const router = normalizeRouterConfig({
+        ...DEFAULT_ROUTER_SETTINGS,
+        enabled: true,
+        activeSet: 'first',
+        sets: {
+          first: {
+            name: 'first',
+            models: [
+              { provider: 'gonka', model: 'deepseek-ai/DeepSeek-V4-Flash-0731', priority: 1 },
+              { provider: 'routerai', model: 'stale-router-model', priority: 2 },
+            ],
+          },
+          second: {
+            name: 'second',
+            models: [{ provider: 'groq', model: 'openai/gpt-oss-120b', priority: 1 }],
+          },
+        },
+      })
+
+      for (const set of Object.values(router.sets)) {
+        assert.deepEqual(set.models[0], { provider: 'routerai', model: 'routerai-test-model', priority: 1 })
+        assert.equal(set.models.filter((entry) => entry.provider === 'routerai').length, 1)
+      }
+      assert.equal(router.sets.first.models[1].provider, 'gonka')
+      assert.equal(getApiKey({ apiKeys: {} }, 'routerai'), 'routerai-test-key')
+      assert.equal(sources.routerai.url, 'https://routerai.example.test/v1/chat/completions')
+      assert.equal(sources.routerai.models[0][0], 'routerai-test-model')
+    })
+  })
+
+  it('keeps RouterAI pinned when auto-heal sees it as broken', async () => {
+    await withRouterAiTestEnv(async () => {
+      const config = buildRouterTestConfig([
+        { provider: 'gonka', model: 'deepseek-ai/DeepSeek-V4-Flash-0731', priority: 1 },
+        { provider: 'groq', model: 'openai/gpt-oss-120b', priority: 2 },
+      ])
+      await withRouterTestServer(config, async ({ runtime }) => {
+        const key = 'routerai/routerai-test-model'
+        const circuit = runtime.circuit.get(key)
+        assert.ok(circuit, 'RouterAI circuit should exist after normalization')
+        circuit.authError = true
+        circuit.state = 'OPEN'
+        circuit.lastErrorAt = Date.now()
+
+        await runtime.autoHealActiveSet()
+        const set = runtime.getSet('test-set')
+        assert.equal(set.models[0].provider, 'routerai')
+        assert.equal(set.models[0].model, 'routerai-test-model')
+        assert.equal(set.models[0].priority, 1)
+      })
+    })
+  })
+})
+
 async function withRouterTestServer(config, fn) {
   const tokenPath = join(tmpdir(), `fcm-router-test-${process.pid}-${Date.now()}-${Math.random().toString(16).slice(2)}.json`)
   const runtime = createRouterRuntimeForTest({
