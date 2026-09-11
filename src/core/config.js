@@ -375,15 +375,25 @@ function normalizePositiveInteger(value, fallback, { min = 1, max = Number.MAX_S
   return Math.max(min, Math.min(max, Math.round(numeric)))
 }
 
+function getPinnedRouterAiRouteFromEnv() {
+  const apiKey = typeof process.env.ROUTERAI_API_KEY === 'string' ? process.env.ROUTERAI_API_KEY.trim() : ''
+  const model = typeof process.env.ROUTERAI_MODEL === 'string' ? process.env.ROUTERAI_MODEL.trim() : ''
+  const endpoint = typeof process.env.ROUTERAI_ENDPOINT === 'string' ? process.env.ROUTERAI_ENDPOINT.trim() : ''
+  if (!apiKey || !model || !endpoint) return null
+  return { provider: 'routerai', model, priority: 1 }
+}
+
 function normalizeRouterSetModels(models) {
-  if (!Array.isArray(models)) return []
+  const pinnedRouterAi = getPinnedRouterAiRouteFromEnv()
+  const input = Array.isArray(models) ? models : []
   const seen = new Set()
   const normalized = []
-  for (const entry of models) {
+  for (const entry of input) {
     if (!isPlainObject(entry)) continue
     const provider = normalizeRouterName(entry.provider)
     const model = typeof entry.model === 'string' ? entry.model.trim() : ''
     if (!provider || !model) continue
+    if (pinnedRouterAi && provider === 'routerai') continue
     const key = `${provider}/${model}`
     if (seen.has(key)) continue
     seen.add(key)
@@ -393,9 +403,11 @@ function normalizeRouterSetModels(models) {
       priority: normalizePositiveInteger(entry.priority, normalized.length + 1, { min: 1, max: 999 }),
     })
   }
-  return normalized
+  const ordered = normalized
     .sort((a, b) => a.priority - b.priority)
     .map((entry, index) => ({ ...entry, priority: index + 1 }))
+  if (!pinnedRouterAi) return ordered
+  return [pinnedRouterAi, ...ordered].map((entry, index) => ({ ...entry, priority: index + 1 }))
 }
 
 function normalizeRouterSets(sets) {
