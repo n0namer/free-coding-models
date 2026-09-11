@@ -550,7 +550,25 @@ export const ollamaCloud = [
 // 📖 can render a sortable, filterable catalog without re-typing the rules in
 // 📖 a second file. The CLI ignores these fields, so this is fully backward-
 // 📖 compatible with the existing TUI / router-daemon / OpenCode integration.
+function normalizeRouterAiChatEndpoint(value) {
+  const raw = typeof value === 'string' ? value.trim().replace(/\/+$/, '') : ''
+  if (!raw) return ''
+  if (raw.endsWith('/chat/completions')) return raw
+  if (raw.endsWith('/v1')) return `${raw}/chat/completions`
+  return `${raw}/v1/chat/completions`
+}
+
 export const sources = {
+  routerai: {
+    name: 'RouterAI',
+    get url() { return normalizeRouterAiChatEndpoint(process.env.ROUTERAI_ENDPOINT) },
+    quota: 'Environment-configured primary route',
+    quotaCode: 'metered',
+    get models() {
+      const model = typeof process.env.ROUTERAI_MODEL === 'string' ? process.env.ROUTERAI_MODEL.trim() : ''
+      return model ? [[model, `RouterAI · ${model}`, '—', '—', '—']] : []
+    },
+  },
   nvidia: {
     name: 'NVIDIA NIM',
     url: 'https://integrate.api.nvidia.com/v1/chat/completions',
