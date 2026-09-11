@@ -2032,7 +2032,9 @@ class RouterRuntime {
       return health.authError === true || health.stale === true || health.state === 'STALE' || health.state === 'UNSUPPORTED'
     }
 
-    const broken = set.models.filter((m) => isBroken(`${m.provider}/${m.model}`))
+    // RouterAI is an environment-pinned primary. Circuit health may temporarily
+    // skip it for live traffic, but auto-heal must never rewrite durable priority #1.
+    const broken = set.models.filter((m) => m.provider !== 'routerai' && isBroken(`${m.provider}/${m.model}`))
     if (broken.length === 0) return { ok: true, replaced: 0, reason: 'no_broken_models' }
 
     // 📖 Build the replacement list. Same provider first, then any.
