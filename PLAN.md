@@ -1,213 +1,337 @@
 # FCM Broker — Project Plan
 
-**Status:** In Progress — widen Outreach quality routing and add race-first policy
-**Last verified:** 2026-09-09
+**Status:** In Progress — controlled host/runtime migration `DESKTOP-A55K2JN` → `DESKTOP-49VP0KH`
+**Last verified:** 2026-09-11
 **Target repository:** `n0namer/free-coding-models`
-**Canonical project SoT:** this `PLAN.md` owns project stage, decisions, DoD, anti-drift state, and next move. Product/router details remain in the existing README/PRD/source owners.
+**Canonical project SoT:** this `PLAN.md` owns current state, decisions, DoD, anti-drift identities, migration evidence, rollback state, and exact next move.
 
 ## North Star
 
-FCM on Windows is one autonomous OpenAI-compatible broker at `http://127.0.0.1:19280/v1` that requires no routine manual model picking:
+FCM is one autonomous OpenAI-compatible broker at `http://127.0.0.1:19280/v1` with no routine manual model picking. The current operational goal is to move the **actual verified Windows runtime**, not merely Git source, from A55 to the work laptop while preserving exact live code, persistent state, credentials/configuration, routing invariants, automation, and a fast rollback path.
 
-catalog/configured providers → continuous live health probes → pinned Gonka-first 20-route `fast-coding` contour → per-model circuit breakers/failover → non-mutating 4-hour guard → persistent evidence across restarts.
+Target end state:
 
-Clients depend only on FCM. No second model router/control plane is introduced.
+`DESKTOP-49VP0KH` → Docker Desktop → container `fcm` → `127.0.0.1:19280/v1` → exact source-current config/state → restart persistence → Scheduled Task guard → real consumer requests.
 
-## Scope
+`DESKTOP-A55K2JN` remains physically intact as rollback for at least 48 hours after successful cutover.
 
-- **Target:** local Windows FCM only.
-- **Runtime:** Docker Desktop container `fcm`, image `free-coding-models:local`.
-- **Persistent owner:** Docker volume `free-coding-models_fcm-data` mounted at `/home/fcm`.
-- **Non-target:** Outreach and all consumer business logic. Consumers are black-box clients only.
-- Debug/fix live runtime first. Do not use GitHub code edit → redeploy as a diagnostic primitive.
-- Canonicalize accepted code deltas only after live Windows verification.
-- Never expose credentials or delete/reset the FCM volume.
+## Value → State → Gap → Constraint
 
-## CURRENT facts
+### Value
 
-- GitHub code baseline inspected on 2026-09-05: `6c3015737ebd6b204178cbd61550f0b8b17be23c`.
-- `PLAN.md` was refreshed on `main` with documentation-only commits after that code baseline. These commits changed no runtime code; re-read CURRENT `main` HEAD before any future source canonicalization.
-- Windows container `fcm` is healthy, version `0.5.81`, bound to `127.0.0.1:19280`, restart policy `unless-stopped`.
-- Runtime config is `/home/fcm/.free-coding-models.json`.
-- Current active set is `fast-coding`; two named sets coexist.
-- CURRENT `fast-coding` is the verified 20-route user-pinned contour with `gonka/deepseek-ai/DeepSeek-V4-Flash-0731` and `gonka/MiniMaxAI/MiniMax-M2.7` at priorities 1–2, `router.failover.maxRetries=19`, `userCustomized=true`, and `autoHeal=false`. This allows up to 20 eligible routing attempts while preventing daemon membership replacement.
-- User-approved target course correction (2026-09-06): `fast-coding` must expose a 20-route fallback contour with Gonka pinned first: (1) `gonka/deepseek-ai/DeepSeek-V4-Flash-0731`, (2) `gonka/MiniMaxAI/MiniMax-M2.7`, then in order `llm7/minimax-m2.7`, `googleai/gemini-3-flash-preview`, `opencode-zen/big-pickle`, `openrouter/nvidia/nemotron-3-ultra-550b-a55b:free`, `requesty/nvidia/nemotron-3-ultra-550b-a55b`, `openrouter/poolside/laguna-xs-2.1:free`, `googleai/gemini-3.1-flash-lite`, `openrouter/nvidia/nemotron-3-super-120b-a12b:free`, `requesty/nvidia/nemotron-3-super-120b-a12b`, `zai/zai/glm-4.5-flash`, `openrouter/nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free`, `requesty/google/gemma-4-31b-it`, `requesty/nvidia/nemotron-3-nano-omni-30b-a3b-reasoning`, `llm7/codestral-latest`, `googleai/gemini-3.7-flash`, `opencode-zen/mimo-v2.5-free`, `opencode-zen/nemotron-3.5-lightning-free`, `openrouter/cohere/north-mini-code:free`.
-- The 20-route contour is VERIFIED CURRENT: `/api/models` contained all 20 requested routes and every route had configured credentials; `/sets` readback showed exact priority order, Gonka at 1–2, and 20 models after SIGHUP and after `docker restart fcm`. A real OpenAI-compatible request routed to `gonka/deepseek-ai/DeepSeek-V4-Flash-0731` and returned `OK`; daemon logs also show Gonka DeepSeek → Gonka MiniMax failover on real 429/502 failures.
-- `/api/models` exposes ~206 catalog models / 22 providers; 16 providers currently have credentials available without printing them.
-- `/v1/models` exposes `fcm` and named virtual models.
-- Real Windows daemon logs prove failover after 429, 502/503, timeout, and network failures, including circuit opening.
-- `docker restart fcm` preserves the exact 20-route `fast-coding` contour, both named sets, `router.failover.maxRetries=19`, `autoHeal=false`, `userCustomized=true`, persistent probe cache, persistent runtime telemetry, and the live code patches.
-- CURRENT canonical `ensureRouterConfigForDaemon()` still overwrites non-active named sets and router-level customization. Upstream has not fixed this at current HEAD.
-- The live Windows container has a direct runtime patch that merges existing `config.router` and existing named sets before refreshing the active set. Syntax and restart/readback are green.
-- A second live router defect was fixed directly in `/app/src/core/router-daemon.js`: OpenAI-compatible `POST /v1/chat/completions` now resolves `body.model=fcm:<named-set>` into the existing named-set route path instead of silently falling back to the active set. Backup: `/home/fcm/router-daemon.js.bak-named-model-routing-20260906`; patched SHA-256 `156642e1810ef06a154a2141cef618f978d4607a31e7504f06dbb1e3e418d73a`; `node --check` PASS; same-container restart PASS. Direct smoke proves `fcm:outreach-quality` routes to its own configured model while `fast-coding` remains the verified 20-route Gonka-first contour.
-- CURRENT canonical Outreach route is a single broad `outreach-quality` pool containing all 116 credentialed model routes discovered from `/api/models`. Its fixed first two priorities are `gonka/deepseek-ai/DeepSeek-V4-Flash-0731` and `gonka/MiniMaxAI/MiniMax-M2.7`; remaining routes follow the verified `fast-coding` order first and then the rest of the credentialed catalog ranked by SWE score/stability/latency. `router.failover.maxRetries=115` allows traversal of the full 116-route contour. The previous validation ceiling of 20 was raised to 500 in live `/app/src/core/config.js`; backup `/home/fcm/config.js.bak-max-retries-20260909` preserves the original. `outreach-judge` is retained only as a compatibility alias with the exact same 116-route membership and Gonka #1–2 ordering; new consumers must use `fcm:outreach-quality` for primary, recommendation, judge, and recommendation-judge traffic.
-- Fresh 2026-09-09 inventory: `/api/models` exposes 206 catalog models and 116 credentialed routes. Availability state is volatile; a later read showed zero routes marked `status=up`, so membership is based on configured credentialed reachability while daemon health/circuit state dynamically skips failing routes. Gonka priorities 1–2 remain architectural invariants regardless of transient health.
-- A live non-streaming race primitive is now implemented directly in `/app/src/core/router-daemon.js` for `outreach-quality`: the first two exact Gonka candidates launch concurrently through the existing `proxyJsonRequest()` transport using buffered responses and loser cancellation; if neither produces a successful JSON response, ordinary sequential fallback resumes from candidate #3. Backup: `/home/fcm/router-daemon.js.bak-gonka-race-20260909`; patched SHA-256 `55bc63a719e288f54a279bb451ec3f72fd099c9f01a339833cd2981eb5c1e9e3`; `node --check` PASS; same-container restart returned healthy with `fast-coding` count 20. Fresh request `req-e885333f-70e3-4913-9744-778e6e75d537` proves the two Gonka requests were launched concurrently: both failed at 12:41:16Z within 3 ms of each other, then fallback proceeded through Codestral → Groq 120B → Groq 20B → llm7. That request ended 503 because all external provider connections hit host-level connect timeouts; successful race-winner flush remains pending external connectivity recovery.
-- Course correction: one canonical `outreach-quality` virtual model owns all Outreach primary, recommendation, judge, and recommendation-judge traffic. Tier 1 is fixed: `gonka/deepseek-ai/DeepSeek-V4-Flash-0731` and `gonka/MiniMaxAI/MiniMax-M2.7` are always priorities 1–2 and race/hedge each other; health/circuit state may temporarily skip an unavailable Gonka route but must never reorder them. The remaining 114 credentialed routes form the broad fallback contour. `outreach-judge` is compatibility-only and mirrors the same 116-route membership until consumers migrate to the single canonical name. Outreach semantic/business validation remains outside FCM; FCM must not embed Outreach-specific `message_id` or evidence logic.
-- Persistent probe/runtime telemetry is fixed in the live Windows container: `atomicWriteJson()` now creates its parent directory. Both `probe-cache.json` and `runtime-telemetry.json` were created on the Docker volume and reloaded successfully after `docker restart fcm`.
-- Live `--sync-set` is hardened for unattended use: exact normalized `OK`, validated `echo(text="OK")`, disabled-provider filtering, same-refresh provider stop after 429, last-known-good protection, managed-mode handoff, and a larger plain-probe token budget to avoid false negatives on reasoning models. A real scan first preserved the old set when only 1 model passed, then succeeded with 7 models after the probe-budget fix.
-- Windows Scheduled Task `FCM Managed Set Refresh` keeps its existing 4-hour trigger/settings but its action is now a non-mutating guard: `docker exec fcm node /app/bin/free-coding-models.js --daemon-status`. The daemon continues its own model health probes/circuit breaking, while scheduled automation no longer rewrites membership. Verified task runs returned `LastTaskResult=0` / `Ready` and preserved the exact 20-route Gonka-first contour before and after `docker restart fcm`.
-- Running image source commit is not proven. Windows checkout and running container must not be assumed equivalent to GitHub `main`.
+- Remove A55 as the operational owner/single-host dependency for FCM.
+- Preserve live patches and persistent routing state that are not yet fully canonicalized in Git.
+- Make recovery testable: target must prove equivalent behavior before source is disabled.
 
-## Ratified architecture (BMad Fast Path / brownfield)
+### State — FACTS
 
-1. **One broker, not layered routers.** FCM remains the only model-control plane.
-2. **Pinned user order first, health gates second, runtime fallback always.** The exact 20-route `fast-coding` priority order is authoritative, with Gonka fixed at 1–2. Health/circuit state may temporarily skip an unhealthy route, but automation must not rewrite membership or priority. `router.failover.maxRetries=19` permits traversal of the full 20-route eligible contour.
-3. **Failure isolation.** Per-model circuit breakers and provider-aware cooldown/backoff prevent repeatedly burning requests on known-bad routes.
-4. **Graceful degradation.** A bad refresh must not destroy the last known-good set.
-5. **Persistent evidence.** Probe cache and runtime telemetry must survive daemon/container restart.
-6. **Native automation without membership rewrite.** The FCM daemon continuously owns health probes/circuit state for the pinned contour. Windows Task Scheduler remains the existing 4-hour host automation but now runs `--daemon-status` as a guard; it must not call `--sync-set` for this pinned set. No new service/router is introduced.
-7. **Anti-drift identities remain separate:** Design/SoT, canonical Git source, Windows checkout/image, and live patched container.
+#### Canonical SoT / Git
 
-## Evidence-based reliability principles
+- Canonical repository: `n0namer/free-coding-models`, branch `main`.
+- Last read `main` HEAD before this re-plan: `8a5a0387abcbd7f8c91c5468dc3013b3a5b9f5d8`; recent commits through that SHA are PLAN/documentation changes, not proof of live runtime identity.
+- Running image source commit remains unproven. Never infer live runtime from Git `main`.
 
-- Avoid tail-latency amplification and repeatedly selecting slow/unhealthy replicas; bounded failover/circuit isolation is preferred.
-- Failure suspicion should accumulate from observations rather than treating one transient miss as permanent death.
-- Backoff/cooldown after overload limits correlated retry pressure.
-- Preserve last-known-good service state when discovery evidence is incomplete.
+#### Source host — `DESKTOP-A55K2JN`
 
-These principles guide FCM hardening; they do not create requirements beyond the existing FCM scanner/prober/router design.
+- Windows 11 Pro, Docker Desktop installed, Docker CLI `29.6.1`.
+- Active/dirty FCM workspace found at `D:\Users\NIKITA\Documents\ChatGPT\AGENTS\free-coding-models`.
+- That workspace points to `vava-nessa/free-coding-models`, HEAD observed `4e51bf9ce44456fd93814e7ca23333527d094b13`, with modified/untracked local files including `Dockerfile`, `docker-compose.yml`, `scripts/docker-init.mjs`, `sources.js`, `src/core/config.js`, `src/core/ping.js`, `src/core/router-daemon.js`, `test/test.js`, plus local operational files.
+- `.env` and `.env.coolify-sync` exist. Secret values must never be printed; transfer/verification uses hashes and key names only.
+- Separate canonicalization checkout exists at `D:\Users\NIKITA\Documents\ChatGPT\AGENTS\free-coding-models-canonicalize` and points to `n0namer/free-coding-models`; its local PLAN was stale versus GitHub and is not current authority.
+- Docker Desktop failed on 2026-09-11 because standard Windows environment variable `ProgramData` was absent even though `C:\ProgramData` exists and Windows Shell Folders resolves Common AppData there.
+- Bounded recovery succeeded without persistent registry/environment mutation: Docker Desktop was relaunched with process environment `ProgramData=C:\ProgramData` plus standard user/system paths; engine then reported `29.6.1 linux/amd64` and `docker-desktop` WSL2 became Running.
+- Before attempting to restart FCM, `docker inspect fcm` proved:
+  - container ID `036059dcc829fac8379e5753e14ce6ec90afcc2a6eeb3adc0e469a35eb8d6652`;
+  - image tag `free-coding-models:local`;
+  - image ID `sha256:8b235d5a102cd641b4e5fed4bd282222a08b217dbe9fa45672fbeeb5ba7eba7d`;
+  - restart policy `unless-stopped`;
+  - network `free-coding-models_default`;
+  - bind `127.0.0.1:19280`;
+  - named volume `free-coding-models_fcm-data -> /home/fcm`;
+  - container state at that checkpoint: `Exited (137)`, not a current green runtime.
+- Redacted migration evidence saved under `D:\Users\NIKITA\Documents\DEV\.migration-to-49-20260911\fcm\`:
+  - `container-inspect.json`;
+  - `image-inspect.json`;
+  - `volume-inspect.json`;
+  - `FCM-Managed-Set-Refresh.xml`.
+- Windows Scheduled Task `FCM Managed Set Refresh` action remains `docker.exe exec fcm node /app/bin/free-coding-models.js --daemon-status`, 4-hour cadence, `StartWhenAvailable=true`, execution limit 30 minutes. Latest observed result before source recovery was `LastTaskResult=1`, consistent with the stopped Docker/runtime state; historical green result must not be treated as CURRENT.
+- After the source Docker engine recovery, an attempt was made to start `fcm`; before health/readback completed, A55 became unavailable through Desktop Commander. Therefore **current FCM health after that start attempt is UNKNOWN** and must be re-read before snapshot/cutover.
 
-## Phase Goal
+#### Target host — `DESKTOP-49VP0KH`
 
-Make the existing Windows FCM runtime behave as its README intends:
+- Exact target hostname is proven; there is only one matching `DESKTOP-49...` device.
+- Windows 11 Pro; target user DEV root is `C:\Users\Рафик\Documents\DEV`.
+- No `D:` volume; `C:` had about 150 GB free at inventory time.
+- No target FCM project/container/image/volume/Scheduled Task was discovered in the initial read-only inventory.
+- Docker Desktop / Docker CLI are not installed/discovered.
+- Firmware virtualization readback: `VirtualizationFirmwareEnabled=False`, `VMMonitorModeExtensions=False`, `SecondLevelAddressTranslationExtensions=False`.
+- `wsl --status` confirms WSL2 cannot currently run because the Virtual Machine Platform / firmware virtualization prerequisite is not available.
+- `winget` is present (`v1.29.290`). Git is not installed globally, but `MinGit-2.55.0.3-64-bit.zip` already exists in Downloads and can be used as a bounded portable verification tool.
 
-1. persistent probe/runtime state;
-2. safe live health probing for `fast-coding` without automatic membership rewrite;
-3. the user-approved 20-route fallback contour with `gonka/deepseek-ai/DeepSeek-V4-Flash-0731` and `gonka/MiniMaxAI/MiniMax-M2.7` fixed at priorities 1–2, followed by the remaining 18 routes in the recorded order;
-4. automatic request failover/circuit breaking across the contour;
-5. restart persistence;
-6. a non-mutating 4-hour Scheduled Task guard that validates daemon availability without shrinking or reordering the pinned 20-route contour;
-7. no normal-operation manual model picking.
+### Gap
 
-## Definition of Done
+Target is not yet capable of running the FCM Docker runtime. Source current application state also needs one fresh readback because the last captured container checkpoint was Exited 137 and A55 disconnected before post-start verification.
 
-- [x] One OpenAI-compatible endpoint is healthy at `127.0.0.1:19280/v1`.
-- [x] Catalog and configured providers are discoverable without exposing secrets.
-- [x] Router failover on real 429/5xx/timeout/network failures is evidenced.
-- [x] Existing live named-set preservation patch survives daemon/container reload.
-- [x] Probe cache persists across container restart.
-- [x] Runtime telemetry persists across container restart.
-- [x] The managed discovery/probe pipeline was validated against configured providers before the pinned-contour decision; CURRENT membership is the explicit verified 20-route user-pinned set while daemon health probes continue dynamically.
-- [x] Plain probe requires normalized exact `OK`.
-- [x] Tool probe validates the expected `echo` call and `text="OK"`.
-- [x] A provider returning 429 is not repeatedly probed during the same refresh.
-- [x] A partial/degraded refresh cannot replace a substantially better last-known-good set.
-- [x] Active `fast-coding` contains the user-approved 20-route fallback contour in the exact priority order, with Gonka routes fixed at priorities 1–2; live `/sets` readback proved all 20 routes are present before and after container restart.
-- [x] Periodic automation preserves the 20-route contour and Gonka-first priority: the 4-hour task no longer invokes `--sync-set`, and verified guard runs leave membership/order unchanged.
-- [x] Windows Task Scheduler guard runs every 4 hours via `--daemon-status` and completes with correct unattended success semantics; verified runs returned `LastTaskResult=0` / `Ready` without changing the pinned set.
-- [x] Container restart preserves config, sets, probe cache, and runtime telemetry.
-- Host-level Windows reboot/login/Docker Desktop startup proof is explicitly out of scope for this phase by user decision; container restart + verified Scheduled Task execution are sufficient operational evidence.
-- [x] Canonical `outreach-quality` contains all 116 CURRENT credentialed model routes; Gonka DeepSeek and Gonka MiniMax are fixed priorities 1–2 and the remaining 114 routes form the fallback contour.
-- [x] Non-streaming `outreach-quality` launches both Gonka candidates concurrently, cancels the loser after a successful JSON winner, and falls back from candidate #3 through the remaining pool using existing circuit/failover semantics. Fresh request `req-e885333f-70e3-4913-9744-778e6e75d537` proves concurrent launch and fallback after both Gonka connect failures. Outreach-specific business/evidence validation remains outside FCM.
-- [x] `router.failover.maxRetries=115` and the live config validation ceiling is 500, allowing traversal of the full 116-route contour rather than stopping at the former 20-attempt ceiling.
-- [x] `outreach-judge` is a compatibility alias with the same 116-route membership and Gonka #1–2 ordering; race behavior is enabled for both names during migration.
-- [ ] All Outreach consumers are migrated so primary, recommendation, judge, and recommendation-judge use the single canonical model `fcm:outreach-quality`.
-- [ ] A successful live race-winner response is still required after external provider connectivity recovers; the first live smoke ended 503 because every external provider connection timed out.
-- [ ] Accepted live code deltas are published to the canonical repository after runtime gates are green.
+### ONE active constraint
 
-## 30-Minute Batch Policy
+**Target firmware virtualization is disabled.** Until `DESKTOP-49VP0KH` reports virtualization enabled and WSL2/Virtual Machine Platform can operate, Docker runtime acceptance on target is impossible.
 
-Each batch optimizes for 80/20 reliability gain and ends with readback evidence.
+Do not hide this blocker by copying folders and calling migration complete.
 
-### Batch 1 — persistence + safe refresh
+## SMART Goal
 
-1. Patch live `/app/src/core/shared-helpers.js`: `atomicWriteJson()` creates parent directory.
-2. Verify syntax; restart same `fcm` container; prove probe/runtime files survive restart.
-3. Harden live `/app/src/core/sync-set.js` only enough for unattended operation:
-   - exact normalized plain `OK`;
-   - validate expected tool call/arguments;
-   - stop further same-provider probes after 429;
-   - preserve last-known-good set on materially incomplete scan.
-4. Run `--sync-set fast-coding` using the native FCM mechanism.
-5. Verify active set size/order and router health/failover.
+Within 72 hours of the target virtualization gate becoming green, make `DESKTOP-49VP0KH` the active FCM owner with:
 
-### Batch 2 — Windows automation + restart — HISTORICAL / SUPERSEDED BY BATCH 4
+1. exact live code/state/config transferred from source CURRENT;
+2. `127.0.0.1:19280/v1` healthy;
+3. source/target critical hashes and routing invariants matching;
+4. OpenAI-compatible smoke request PASS;
+5. `docker restart fcm` persistence PASS;
+6. Scheduled Task manual run `LastTaskResult=0`;
+7. real consumer reachability PASS;
+8. source preserved as rollback for ≥48 hours.
 
-1. The original 4-hour Scheduled Task used native `--sync-set fast-coding`; this validated unattended execution but was later superseded because it could shrink the user-pinned 20-route contour back to the default target of 8.
-2. Concurrency/missed-run/retry settings remain in place.
-3. Current task semantics are owned by Batch 4: non-mutating `--daemon-status` guard with verified `LastTaskResult=0`.
-4. Container restart/readback remains a valid persistence gate.
-5. Recovery backups and exact live deltas are recorded below.
+## Options
 
-### Batch 3 — canonicalization
+### A — targeted live-runtime migration — SELECTED
 
-Only after live gates are green:
-1. update canonical source with the proven minimal deltas;
-2. add focused existing-framework regression tests;
-3. run canonical tests on exact source;
-4. reconcile source/runtime identity.
+Transfer four owned layers separately:
 
-### Batch 4 — Gonka-first 20-route contour — COMPLETE
+1. actual live container writable layer as a private migration image;
+2. named volume `free-coding-models_fcm-data` as a consistent stopped-container snapshot;
+3. dirty source workspace including `.git` and ENV/config files, excluding reconstructable caches where safe;
+4. Windows host automation (Scheduled Task XML + startup lifecycle evidence).
 
-1. [x] Verified all 20 requested provider/model routes exist in CURRENT `/api/models` and have configured credentials.
-2. [x] Created recovery points: `/home/fcm/.free-coding-models.json.bak-gonka20-20260906`, `/home/fcm/.free-coding-models.json.bak-before-maxretries19-20260906`, and `C:\WINDOWS\TEMP\FCM-Managed-Set-Refresh.before-gonka20.xml`.
-3. [x] Applied exact 20-route `fast-coding` order directly in the running container; Gonka is priority 1–2; `userCustomized=true`, `autoHeal=false` preserve membership while circuit breakers continue handling availability.
-4. [x] Set `router.failover.maxRetries=19`, matching the 20-route contour so a request can traverse up to all eligible routes.
-5. [x] Changed the existing 4-hour Scheduled Task action from membership-mutating `--sync-set fast-coding` to non-mutating `--daemon-status`; task verification returned `LastTaskResult=0` / `Ready`.
-6. [x] Verified exact order/flags after SIGHUP and after `docker restart fcm`; config persisted and second named set remained intact.
-7. [x] Real routed request returned `OK` through `gonka/deepseek-ai/DeepSeek-V4-Flash-0731`; daemon logs show Gonka DeepSeek → Gonka MiniMax failover on real 429/502 failures.
+Why selected: preserves non-Git live patches while avoiding unrelated Docker Desktop VM state.
+
+### B — clone/build from canonical Git — REJECTED FOR MIGRATION
+
+Useful later for canonicalization, but unsafe now because live image/container and dirty workspace are not proven equivalent to Git `main`.
+
+### C — copy entire Docker Desktop VHDX — EMERGENCY FALLBACK ONLY
+
+A55 has `D:\docker-migration-snapshot-20260911\docker_data.vhdx`, but its underlying VHDX timestamp predates later September FCM runtime changes. Whole-Docker migration also carries unrelated state. Do not use it as primary source.
+
+## Cartesian critique of selected option
+
+- **If we do targeted migration:** target receives only FCM-owned runtime/state and can be verified independently.
+- **If we do not:** A55 remains the runtime dependency and host failure remains unrecovered.
+- **What targeted migration avoids:** assuming Git, an old VHDX, or Compose YAML is equivalent to the live broker.
+- **What not doing it avoids:** temporary migration effort, but at the cost of continuing single-host operational risk.
+
+## Hypothesis
+
+**If** target virtualization/Docker are made operational and we migrate the exact live image + exact persistent volume + dirty workspace/ENV + host automation, **then** `DESKTOP-49VP0KH` will reproduce source-current FCM behavior, **because** those four layers collectively own non-canonicalized code, durable state, credentials/config, and lifecycle; **metric** = hash/invariant equality plus health/smoke/restart/task/consumer PASS; **deadline** = 72 hours after virtualization gate PASS.
+
+## Preserved runtime invariants
+
+These are acceptance gates, not assumptions. Re-read source CURRENT before transfer; if source CURRENT differs, migrate CURRENT and update this section before cutover.
+
+### `fast-coding`
+
+Expected verified baseline: 20 routes, user-pinned order, `userCustomized=true`, `autoHeal=false`, `router.failover.maxRetries=19`.
+
+Priority 1–2 are architectural invariants:
+
+1. `gonka/deepseek-ai/DeepSeek-V4-Flash-0731`
+2. `gonka/MiniMaxAI/MiniMax-M2.7`
+
+Remaining verified order:
+
+3. `llm7/minimax-m2.7`
+4. `googleai/gemini-3-flash-preview`
+5. `opencode-zen/big-pickle`
+6. `openrouter/nvidia/nemotron-3-ultra-550b-a55b:free`
+7. `requesty/nvidia/nemotron-3-ultra-550b-a55b`
+8. `openrouter/poolside/laguna-xs-2.1:free`
+9. `googleai/gemini-3.1-flash-lite`
+10. `openrouter/nvidia/nemotron-3-super-120b-a12b:free`
+11. `requesty/nvidia/nemotron-3-super-120b-a12b`
+12. `zai/zai/glm-4.5-flash`
+13. `openrouter/nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free`
+14. `requesty/google/gemma-4-31b-it`
+15. `requesty/nvidia/nemotron-3-nano-omni-30b-a3b-reasoning`
+16. `llm7/codestral-latest`
+17. `googleai/gemini-3.7-flash`
+18. `opencode-zen/mimo-v2.5-free`
+19. `opencode-zen/nemotron-3.5-lightning-free`
+20. `openrouter/cohere/north-mini-code:free`
+
+### Outreach
+
+- Canonical consumer model: `fcm:outreach-quality`.
+- Expected source baseline: 116 credentialed routes.
+- Gonka DeepSeek and Gonka MiniMax fixed at priorities 1–2 and raced concurrently for non-streaming Outreach requests.
+- Expected `router.failover.maxRetries=115`; live validation ceiling was raised to 500.
+- `outreach-judge` is compatibility-only and mirrors the same 116-route membership during consumer migration.
+- A previous real smoke proved concurrent Gonka launch and fallback after both Tier-1 failures; one successful live `x-fcm-race-winner` response remains an outstanding functional gate when provider connectivity permits.
+
+## Live patch identities to preserve
+
+Do not rebuild away these deltas before target equivalence is proven:
+
+- `/app/src/core/router-daemon.js` named virtual model routing patch; historical patched SHA-256 `156642e1810ef06a154a2141cef618f978d4607a31e7504f06dbb1e3e418d73a`; backup `/home/fcm/router-daemon.js.bak-named-model-routing-20260906`.
+- Later `/app/src/core/router-daemon.js` Gonka race patch; historical patched SHA-256 `55bc63a719e288f54a279bb451ec3f72fd099c9f01a339833cd2981eb5c1e9e3`; backup `/home/fcm/router-daemon.js.bak-gonka-race-20260909`.
+- `/app/src/core/config.js` retry-ceiling change; backup `/home/fcm/config.js.bak-max-retries-20260909`.
+- Persistent telemetry/cache fix in `shared-helpers.js` and hardened `sync-set.js` behavior remain part of accepted live runtime.
+- Historical hashes are evidence only; migration manifest must record fresh source CURRENT hashes before snapshot.
+
+## 48–72 h Test
+
+### Critical task 1 — platform gate
+
+**Output:** target capable of running Docker Linux containers.
+
+**Done:** firmware virtualization enabled; WSL2/Virtual Machine Platform usable; Docker server answers; Compose v2 resolves configuration.
+
+**Risk:** requires firmware/BIOS change and likely reboot.
+
+**First bounded move:** enable Intel virtualization (and VT-d if exposed) in target firmware, reboot Windows, re-read `VirtualizationFirmwareEnabled` and `wsl --status` before installing/starting FCM.
+
+### Critical task 2 — source CURRENT snapshot and migration
+
+**Output:** verified FCM migration bundle and green target runtime.
+
+**Done:** source CURRENT manifest captured; exact live image/volume/workspace/task transferred with SHA-256 equality; target health/invariants/smoke/restart PASS.
+
+**Risk:** snapshot while persistent data is changing, or trusting stale historical state.
+
+**First bounded move:** when A55 Remote Commander returns, read container state/logs/endpoints first. Do not snapshot until source health and routing config are re-established or the exact degraded state is explicitly accepted as source CURRENT.
+
+### Support task 1 — workspace / ENV
+
+Target path: `C:\Users\Рафик\Documents\DEV\free-coding-models`.
+
+Preserve `.git`, dirty/untracked work, `.env`, `.env.coolify-sync`, Compose/Docker files, and operational scripts. Verify secret-bearing files by SHA-256; never echo values. Use target portable MinGit for status/HEAD verification if full Git is not yet installed.
+
+### Support task 2 — host automation
+
+Restore the Scheduled Task only after target runtime is green. Use exported source XML as template; adapt only target principal/path if required. Manual task run must return `LastTaskResult=0` and must not mutate pinned routing membership.
+
+### Support task 3 — observation / rollback
+
+After cutover, keep A55 container/image/volume/workspace/backups intact for ≥48 hours. Do not delete/decommission automatically.
+
+## Migration execution order / DoD
+
+- [x] Source exact hostname proven: `DESKTOP-A55K2JN`.
+- [x] Target exact hostname proven: `DESKTOP-49VP0KH`.
+- [x] Target existing FCM inventory checked; no active target FCM discovered.
+- [x] Source container/image/volume/task identities captured in redacted manifest files.
+- [x] Source Docker startup failure root cause narrowed to missing `ProgramData`; bounded process-environment recovery proved engine can run again.
+- [ ] A55 Remote Commander available again after the FCM start attempt.
+- [ ] Source `fcm` CURRENT health/state/endpoints re-read.
+- [ ] Fresh source live code/config SHA-256 manifest captured.
+- [ ] Fresh `/sets`, `/v1/models`, routing counts/order/maxRetries captured.
+- [ ] Target firmware virtualization enabled.
+- [ ] Target WSL2 / Virtual Machine Platform gate PASS.
+- [ ] Target Docker Desktop installed and engine healthy.
+- [ ] Target resolved Compose config validated before runtime creation.
+- [ ] Dirty workspace + ENV/config copied to target and hashes verified.
+- [ ] Live container writable layer committed to private migration image and image archive hash recorded.
+- [ ] Source `fcm` stopped for final consistent volume snapshot; source container not deleted.
+- [ ] Named volume archived separately; archive hash recorded.
+- [ ] Transfer artifact hashes equal source ↔ target.
+- [ ] Target volume restored without overwriting any unbacked pre-existing target state.
+- [ ] Target `fcm` created from source-equivalent inspect/Compose parameters; `127.0.0.1:19280` preserved.
+- [ ] Source/target critical live code/config hashes equal.
+- [ ] Target `/health`, `/sets`, `/v1/models` PASS.
+- [ ] `fast-coding` source/target count/order/Gonka #1–2/maxRetries equal.
+- [ ] `outreach-quality` source/target count/order/Gonka #1–2/maxRetries equal.
+- [ ] `fcm:outreach-quality` published on target.
+- [ ] OpenAI-compatible target smoke PASS or, if provider APIs are externally unavailable, deterministic internal routing/fallback evidence proves target parity.
+- [ ] `docker restart fcm` persistence PASS.
+- [ ] Target Scheduled Task imported/adapted, manual run `LastTaskResult=0`.
+- [ ] Actual consumer reachability to target PASS.
+- [ ] Source task disabled/container stopped only after target full DoD.
+- [ ] Rollback procedure tested logically and source remains recoverable without restoring from backup.
+- [ ] 48-hour target observation window complete before any source decommission proposal.
+
+## Edge-case guards — BMad review
+
+The migration must explicitly handle these branches:
+
+- source Remote Commander unavailable → no destructive/snapshot actions; preserve evidence and retry readback when source returns;
+- source container stopped/unhealthy → diagnose/re-establish CURRENT before declaring a migration baseline;
+- target already gains an FCM instance during migration → inventory/backup/compare first; never overwrite blindly;
+- port `19280` occupied on target → identify owner before any bind change;
+- image archive hash mismatch → halt restore;
+- volume archive hash mismatch → halt restore;
+- target volume name collision → backup or use timestamped migration volume; no blind overwrite;
+- source volume changes during snapshot → stop only `fcm` for final snapshot, then archive;
+- task principal differs on target → adapt principal only; preserve action/cadence semantics;
+- external provider outage → do not confuse external 503/connect timeout with target migration failure; verify routing/log semantics separately;
+- consumer is not local to target → discover current secure reachability before changing bind; never widen to `0.0.0.0` by default;
+- target restart policy works but Docker Desktop itself does not start in required user lifecycle → migration remains incomplete;
+- any required invariant is unproven → status is not DONE.
+
+## Evidence-based operating rules
+
+- Verify the resolved Compose model before runtime operations; rendered config is necessary but not sufficient — runtime inspect/health/end-to-end behavior are the acceptance evidence.
+- Never use `docker compose down -v`, volume deletion, factory reset, or image/container recreate as a diagnostic shortcut.
+- Container commit does not own mounted volume state; image and named volume are migrated separately.
+- Backups are useful only when restore/readback is tested. Hash transfer artifacts and prove target restore behavior.
+- Prefer blue/green cutover: old host stays intact until new host proves equivalence and observation stability.
 
 ## Anti-Drift Contract
 
 Track independently:
 
-- **Design / SoT:** `PLAN.md` + README/PRD.
-- **Canonical source:** GitHub `main` exact SHA.
-- **Windows source/image:** local checkout/image identity.
-- **Live runtime:** actual container plus direct patch hashes/backups.
-- **Observed state:** endpoint/config/cache/set/circuit/log readback.
+1. **Design / SoT:** this `PLAN.md`.
+2. **Canonical Git:** exact `n0namer/free-coding-models` `main` SHA.
+3. **Dirty Windows workspace:** exact A55 checkout/head/status + ENV hashes.
+4. **Image identity:** source/target image ID and migration archive hash.
+5. **Live container code:** selected `/app/...` hashes + backups.
+6. **Persistent state:** volume identity + config hash + archive hash.
+7. **Observed behavior:** endpoints, set membership/order, circuits/logs, real smoke.
+8. **Host lifecycle:** Docker Desktop readiness + Scheduled Task state/result.
 
-Never infer one identity from another.
+Never infer one identity from another. After every material mutation: verify → record evidence → update state → re-plan from CURRENT evidence.
 
-After every material mutation: verify → update state → re-plan from CURRENT evidence.
-If live patching is used, record base, delta, backup, syntax/runtime evidence, and eventual canonical owner.
+## Recovery / Rollback
 
-## Recovery
+- Never delete/recreate source FCM volume during migration.
+- Do not delete source container/image/workspace or local backups.
+- If target fails an obligatory gate: stop target `fcm`, preserve target evidence, restore any backed-up pre-existing target state, restart source Docker/`fcm`, re-enable source Scheduled Task, verify source health, and return consumers to source endpoint if they were switched.
+- Rollback should normally use the intact source host, not restore from an archive.
 
-- Do not delete/recreate the FCM volume.
-- Direct live file patches must have a backup under `/home/fcm`.
-- Container-only code patches survive `docker restart` but not container recreate/image rebuild.
-- If a refresh produces insufficient evidence, retain the prior known-good set.
-- If a live code patch regresses startup, restore only the exact owned backup and restart the same container.
+## PDCA — current cycle
 
-## Suggested Review Order
+### PLAN
 
-**Scheduler / refresh semantics**
+**Expected:** source readback → target platform ready → exact targeted transfer → target equivalence → cutover → 48 h observe.
 
-- Safe last-known-good refreshes return scheduler success without masking genuine failures.
-  [`bin/free-coding-models.js:198`](./bin/free-coding-models.js#L198)
+### DO — completed this cycle
 
-- Managed refresh gating owns strict probes, 429 provider stop, and last-known-good preservation.
-  [`src/core/sync-set.js:373`](./src/core/sync-set.js#L373)
+- Identified exact source and target hosts.
+- Re-read canonical Git PLAN and detected stale local canonicalization PLAN.
+- Inventoried target Docker/WSL/virtualization state.
+- Found source Docker Desktop startup failure root cause (`ProgramData` absent).
+- Recovered source Docker engine with a process-scoped environment fix; no persistent environment/registry change made.
+- Captured redacted container/image/volume/task evidence.
+- Attempted to start source `fcm`; source Remote Commander disconnected before post-start health proof.
 
-**Persistence / daemon config preservation**
+### STUDY
 
-- Daemon startup preserves existing router settings and all named sets.
-  [`src/core/router-daemon.js:3690`](./src/core/router-daemon.js#L3690)
+- **Expected:** source Docker recovery immediately yields green FCM readback.
+- **Actual:** Docker engine recovered, but source container had been Exited 137 at manifest time; source became inaccessible via Remote Commander during/after the start attempt.
+- **Variance cause:** current source application state remains unobserved after start; do not speculate that FCM is healthy or failed.
+- **Lesson:** snapshot/cutover must wait for a fresh source CURRENT readback. Historical green state is not enough.
+- **Hypothesis status:** still plausible, not yet tested end-to-end.
 
-- Atomic JSON persistence creates its parent directory before first write.
-  [`src/core/shared-helpers.js:77`](./src/core/shared-helpers.js#L77)
+### ACT
 
-**Regression evidence**
-
-- Sync-set behavior and CLI safe-no-change contract.
-  [`test/sync-set.test.js:241`](./test/sync-set.test.js#L241)
-
-- First-write cache persistence.
-  [`test/probe-cache.test.js:132`](./test/probe-cache.test.js#L132)
-
-- Named-set and router customization preservation.
-  [`test/test.js:2865`](./test/test.js#L2865)
+**Decision:** CONTINUE the targeted migration, but gate all source snapshot/cutover work on source reappearance and gate all target runtime work on firmware virtualization. No change to routing architecture.
 
 ## Current Stop Point
 
-The live runtime is green with two preserved contours: `fast-coding` remains the exact user-approved 20-route Gonka-first set, while canonical Outreach traffic now uses a unified 116-route `outreach-quality` pool built from every credentialed route. Gonka DeepSeek and Gonka MiniMax are fixed at priorities 1–2 and race concurrently for non-streaming Outreach requests; `router.failover.maxRetries=115` permits traversal of the remaining 114-route fallback contour. `outreach-judge` mirrors the same 116 routes only as a compatibility alias until consumers migrate to the single canonical `fcm:outreach-quality` name. The same-container restart returned healthy and preserved both the 20-route `fast-coding` set and the 116-route Outreach pool.
+Canonical plan is now aligned to the host migration. Target `DESKTOP-49VP0KH` is identified and has enough disk space but is not Docker-ready because firmware virtualization is disabled. Source Docker engine was recovered from the missing-`ProgramData` failure, and source container/image/volume/task identities were captured. At the captured checkpoint `fcm` was Exited 137; after attempting to start it, A55 became unavailable through Desktop Commander before health/routing readback completed.
 
-The existing Windows Scheduled Task keeps its 4-hour trigger but is now a non-mutating `--daemon-status` guard. Verified runs return `LastTaskResult=0` / `Ready` and do not alter the pinned set. Continuous model-health probing and circuit-breaker state remain owned by the FCM daemon, so unhealthy routes are skipped dynamically without changing membership/order.
-
-No new source-code change was required for the 20-route policy itself: its authoritative operational owners are the persistent FCM config and the existing Scheduled Task action. The previously reviewed source candidate `492f3e98176d8aa086103d2b39e3d819dec63131` still represents earlier accepted live code fixes, but `main` has advanced through PLAN-only SoT commits and the candidate must be rebased/reverified before publication.
+Therefore the last historically verified 20-route/116-route routing state remains the expected acceptance baseline, **not a claim about current source health**.
 
 ## Exact Next Move
 
-Keep the verified 20-route Gonka-first `fast-coding` contour untouched. Migrate every Outreach consumer role—primary, recommendation, judge, and recommendation-judge—to the single canonical virtual model `fcm:outreach-quality`; `outreach-judge` remains compatibility-only until that migration is complete. After external provider connectivity recovers, capture one successful `x-fcm-race-winner` response proving the Gonka Tier-1 winner flush on the live 116-route pool. Then canonicalize the accepted live `router-daemon.js` race delta and `config.js` retry-ceiling delta to source without redeploying/recreating the running container. Do not change Outreach semantic code as part of this FCM batch.
+1. Reconnect/read `DESKTOP-A55K2JN` as soon as Remote Commander is available; first action is read-only Docker/container/log/endpoint/config/hash evidence, not another restart/recreate.
+2. On `DESKTOP-49VP0KH`, enable firmware virtualization and reboot; then prove `VirtualizationFirmwareEnabled=True` and WSL2/Virtual Machine Platform readiness.
+3. Once both gates are green, take the final source CURRENT manifest and execute the selected targeted migration: live image + named volume + dirty workspace/ENV + Scheduled Task, with SHA-256 verification before restore.
+4. Do not advance the older Outreach-consumer/canonicalization backlog until the host migration reaches target equivalence or is explicitly stopped; migration risk reduction is the current priority.
