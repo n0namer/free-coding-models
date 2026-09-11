@@ -1,10 +1,10 @@
 # FCM Broker Plan / Source of Truth
 
-Status: ACTIVE — **FCM-only scope. RouterAI primary rollout in progress.** User-approved objective (2026-09-11): integrate env-backed `ROUTERAI_API_KEY` + `ROUTERAI_MODEL` + `ROUTERAI_ENDPOINT` as first-class provider `routerai` and enforce `routerai/<ROUTERAI_MODEL>` as durable priority #1 in every current/future router set; existing Gonka head shifts down without changing relative fallback order. Runtime failures must still fail over safely. Product-code work remains container-first in `fcm-dev`; PROD changes only after live DEV proof + canonical write-back.
-Last reconciled: 2026-09-08
+Status: ACTIVE — **FCM-only scope. RouterAI primary rollout: DEV PASS, PROD deployment unresolved.** User-approved objective (2026-09-11): env-backed `ROUTERAI_API_KEY` + `ROUTERAI_MODEL` + `ROUTERAI_ENDPOINT` form first-class provider `routerai`, with `routerai/<ROUTERAI_MODEL>` durably priority #1 in every current/future router set; Gonka shifts to #2/#3 while bounded failover remains authoritative on RouterAI failure.
+Last reconciled: 2026-09-11
 Repository: `n0namer/free-coding-models`
 Active working branch: `fix/fcm-long-stream-lifecycle`
-Current live-verified canonical product-code head: `fae89d7b4a91090c3a61bd361f2556315a830f0a` — provider-wide fast 429/auth skips no longer consume the bounded retry opportunity before later providers can be tried. Canonical regression-test write-back for this exact edge remains environment-blocked by Coding Station `ENOSPC`; live regression + full live suite are PASS.
+Current live-verified canonical product-code head: `6e17a250cd34469a14d575a45c20d0f2f6f8cfab` — RouterAI env-backed provider, global pin-first policy, auto-heal protection, and regression coverage. DEV runtime acceptance on this exact source is PASS; PROD force deployment `ztlptxssouuw6pjbl238zcwz` is still `in_progress` and must not be called PASS until replacement identity/readback proves it.
 Execution rule: debug/implement directly in permanent `fcm-dev`; GitHub is SoT/write-back only after live verification. No GitHub-first programming or redeploy debug loop.
 
 ## North Star
