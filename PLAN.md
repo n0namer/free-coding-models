@@ -1,10 +1,10 @@
 # FCM Broker Plan / Source of Truth
 
-Status: ACTIVE — **FCM-only scope. RouterAI primary rollout DONE in DEV and PROD.** User-approved objective (2026-09-11): env-backed `ROUTERAI_API_KEY` + `ROUTERAI_MODEL` + `ROUTERAI_ENDPOINT` form first-class provider `routerai`, with `routerai/<ROUTERAI_MODEL>` durably priority #1 in every current/future router set; Gonka is #2/#3 while bounded failover remains authoritative on RouterAI failure.
+Status: ACTIVE — **FCM-only scope. Routing-quality reprioritization requested; implementation blocked on DEV typed live-patch.** User-approved objective (2026-09-11): replace the former RouterAI-first policy with durable tiers: (1) Gonka first, (2) strongest proven free routes roughly DeepSeek-class, (3) paid RouterAI, (4) weaker free routes. Bounded health/circuit failover remains authoritative inside this durable preference policy; do not silently re-pin RouterAI to #1.
 Last reconciled: 2026-09-11
 Repository: `n0namer/free-coding-models`
 Active working branch: `fix/fcm-long-stream-lifecycle`
-Current live-verified canonical product-code head: `6e17a250cd34469a14d575a45c20d0f2f6f8cfab` — RouterAI env-backed provider, global pin-first policy, auto-heal protection, and regression coverage. DEV and PROD runtime acceptance on this exact source are PASS. PROD deployment `ztlptxssouuw6pjbl238zcwz` finished; replacement image identity is exact, RouterAI is priority #1, unauthenticated broker access remains 401, authenticated plain + strict `json_schema` route through RouterAI, and restart persistence is PASS.
+Current deployed product-code head in DEV and PROD remains `6e17a250cd34469a14d575a45c20d0f2f6f8cfab`. CURRENT DEV evidence localizes the obsolete behavior to `src/core/config.js`, where env-derived RouterAI is constructed at priority 1 and normalized ahead of all routes. Container-first mutation has NOT yet occurred: the typed `fileAction` path currently returns `live_patch_invalid_output`, while generic container mutation is correctly blocked by operator mediation. PROD therefore intentionally remains on the previously accepted RouterAI-first order until DEV can prove the new tier policy.
 Execution rule: debug/implement directly in permanent `fcm-dev`; GitHub is SoT/write-back only after live verification. No GitHub-first programming or redeploy debug loop.
 
 ## North Star
