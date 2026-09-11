@@ -3,93 +3,102 @@
 **Status:** In Progress — controlled host/runtime migration `DESKTOP-A55K2JN` → `DESKTOP-49VP0KH`
 **Last verified:** 2026-09-11
 **Target repository:** `n0namer/free-coding-models`
-**Canonical project SoT:** this `PLAN.md` owns current state, decisions, DoD, anti-drift identities, migration evidence, rollback state, and exact next move.
+**Canonical SoT:** this `PLAN.md` owns current state, decisions, DoD, anti-drift identities, migration evidence, rollback, and exact next move.
 
 ## North Star
 
-FCM is one autonomous OpenAI-compatible broker at `http://127.0.0.1:19280/v1` with no routine manual model picking. The current operational goal is to move the **actual verified Windows runtime**, not merely Git source, from A55 to the work laptop while preserving exact live code, persistent state, credentials/configuration, routing invariants, automation, and a fast rollback path.
+Make `DESKTOP-49VP0KH` the active owner of the **actual working FCM runtime**, not merely a Git checkout:
 
-Target end state:
+`DESKTOP-49VP0KH` → Docker Desktop → `fcm` → `127.0.0.1:19280/v1` → source-current code/config/state → restart persistence → Scheduled Task guard → real consumer traffic.
 
-`DESKTOP-49VP0KH` → Docker Desktop → container `fcm` → `127.0.0.1:19280/v1` → exact source-current config/state → restart persistence → Scheduled Task guard → real consumer requests.
-
-`DESKTOP-A55K2JN` remains physically intact as rollback for at least 48 hours after successful cutover.
+Keep `DESKTOP-A55K2JN` physically intact as rollback for at least 48 hours after successful cutover.
 
 ## Value → State → Gap → Constraint
 
 ### Value
 
-- Remove A55 as the operational owner/single-host dependency for FCM.
-- Preserve live patches and persistent routing state that are not yet fully canonicalized in Git.
-- Make recovery testable: target must prove equivalent behavior before source is disabled.
+- Remove A55 as the operational single-host dependency.
+- Preserve live patches, persistent routing state, ENV/config and automation that are not fully recoverable from Git alone.
+- Make recovery provable: target must pass equivalence gates before source is disabled.
 
 ### State — FACTS
 
-#### Canonical SoT / Git
+#### Canonical / anti-drift
 
 - Canonical repository: `n0namer/free-coding-models`, branch `main`.
-- Last read `main` HEAD before this re-plan: `8a5a0387abcbd7f8c91c5468dc3013b3a5b9f5d8`; recent commits through that SHA are PLAN/documentation changes, not proof of live runtime identity.
-- Running image source commit remains unproven. Never infer live runtime from Git `main`.
+- Git/PLAN, Windows checkout, Docker image, live container, persistent volume and observed endpoint state are **separate identities**. Never infer one from another.
+- Running image source commit is not proven.
+- The local canonicalization checkout on A55 has a stale PLAN and is not authority; GitHub `main/PLAN.md` is authority.
 
-#### Source host — `DESKTOP-A55K2JN`
+#### Source — `DESKTOP-A55K2JN`
 
-- Windows 11 Pro, Docker Desktop installed, Docker CLI `29.6.1`.
-- Active/dirty FCM workspace found at `D:\Users\NIKITA\Documents\ChatGPT\AGENTS\free-coding-models`.
-- That workspace points to `vava-nessa/free-coding-models`, HEAD observed `4e51bf9ce44456fd93814e7ca23333527d094b13`, with modified/untracked local files including `Dockerfile`, `docker-compose.yml`, `scripts/docker-init.mjs`, `sources.js`, `src/core/config.js`, `src/core/ping.js`, `src/core/router-daemon.js`, `test/test.js`, plus local operational files.
-- `.env` and `.env.coolify-sync` exist. Secret values must never be printed; transfer/verification uses hashes and key names only.
-- Separate canonicalization checkout exists at `D:\Users\NIKITA\Documents\ChatGPT\AGENTS\free-coding-models-canonicalize` and points to `n0namer/free-coding-models`; its local PLAN was stale versus GitHub and is not current authority.
-- Docker Desktop failed on 2026-09-11 because standard Windows environment variable `ProgramData` was absent even though `C:\ProgramData` exists and Windows Shell Folders resolves Common AppData there.
-- Bounded recovery succeeded without persistent registry/environment mutation: Docker Desktop was relaunched with process environment `ProgramData=C:\ProgramData` plus standard user/system paths; engine then reported `29.6.1 linux/amd64` and `docker-desktop` WSL2 became Running.
-- Before attempting to restart FCM, `docker inspect fcm` proved:
-  - container ID `036059dcc829fac8379e5753e14ce6ec90afcc2a6eeb3adc0e469a35eb8d6652`;
-  - image tag `free-coding-models:local`;
+- Windows 11 Pro.
+- Active dirty workspace: `D:\Users\NIKITA\Documents\ChatGPT\AGENTS\free-coding-models`.
+- Workspace remote observed: `vava-nessa/free-coding-models`; HEAD observed `4e51bf9ce44456fd93814e7ca23333527d094b13`.
+- Modified/untracked work exists in Docker/Compose/runtime/router files; migration must preserve the dirty workspace rather than reclone/rebuild it.
+- `.env` and `.env.coolify-sync` exist. Never print secret values; verify/transfer by SHA-256 and key names only.
+- Docker Desktop 4.81 / Docker CLI 29.6.1 are installed.
+- Container identity captured before recovery:
+  - name `fcm`;
+  - image `free-coding-models:local`;
   - image ID `sha256:8b235d5a102cd641b4e5fed4bd282222a08b217dbe9fa45672fbeeb5ba7eba7d`;
-  - restart policy `unless-stopped`;
+  - container ID `036059dcc829fac8379e5753e14ce6ec90afcc2a6eeb3adc0e469a35eb8d6652`;
+  - restart `unless-stopped`;
   - network `free-coding-models_default`;
   - bind `127.0.0.1:19280`;
-  - named volume `free-coding-models_fcm-data -> /home/fcm`;
-  - container state at that checkpoint: `Exited (137)`, not a current green runtime.
-- Redacted migration evidence saved under `D:\Users\NIKITA\Documents\DEV\.migration-to-49-20260911\fcm\`:
-  - `container-inspect.json`;
-  - `image-inspect.json`;
-  - `volume-inspect.json`;
-  - `FCM-Managed-Set-Refresh.xml`.
-- Windows Scheduled Task `FCM Managed Set Refresh` action remains `docker.exe exec fcm node /app/bin/free-coding-models.js --daemon-status`, 4-hour cadence, `StartWhenAvailable=true`, execution limit 30 minutes. Latest observed result before source recovery was `LastTaskResult=1`, consistent with the stopped Docker/runtime state; historical green result must not be treated as CURRENT.
-- After the source Docker engine recovery, an attempt was made to start `fcm`; before health/readback completed, A55 became unavailable through Desktop Commander. Therefore **current FCM health after that start attempt is UNKNOWN** and must be re-read before snapshot/cutover.
+  - named volume `free-coding-models_fcm-data -> /home/fcm`.
+- Scheduled Task `FCM Managed Set Refresh` still executes `docker.exe exec fcm node /app/bin/free-coding-models.js --daemon-status` every 4 hours.
+- Redacted evidence already saved under `D:\Users\NIKITA\Documents\DEV\.migration-to-49-20260911\fcm\`: `container-inspect.json`, `image-inspect.json`, `volume-inspect.json`, task XML, plus endpoint snapshots from a brief green interval.
+- Docker Desktop initially failed because `ProgramData` was absent from the effective environment. A bounded launch with `ProgramData=C:\ProgramData` temporarily restored engine `29.6.1 linux/amd64` and `fcm` reached healthy state.
+- The user-level `ProgramData=C:\ProgramData` variable was then restored and an environment-change broadcast sent.
+- **New evidence:** Docker/WSL became unstable again. A later restart reached Docker backend startup but Linux engine control API remained unavailable for >2 minutes; backend logs repeatedly reported engine/init ping timeouts and missing guest socket-forwarder endpoint.
+- During this second Docker/WSL startup, A55 became unreachable not only through Desktop Commander but also from another LAN machine (`Test-Connection DESKTOP-A55K2JN=False`). Therefore this is a **host/source stability issue**, not merely an FCM HTTP failure.
+- Current A55/FCM state after that event is UNKNOWN until the host returns. Do not claim a fresh snapshot exists.
 
-#### Target host — `DESKTOP-49VP0KH`
+#### Target — `DESKTOP-49VP0KH`
 
-- Exact target hostname is proven; there is only one matching `DESKTOP-49...` device.
-- Windows 11 Pro; target user DEV root is `C:\Users\Рафик\Documents\DEV`.
-- No `D:` volume; `C:` had about 150 GB free at inventory time.
-- No target FCM project/container/image/volume/Scheduled Task was discovered in the initial read-only inventory.
-- Docker Desktop / Docker CLI are not installed/discovered.
-- Firmware virtualization readback: `VirtualizationFirmwareEnabled=False`, `VMMonitorModeExtensions=False`, `SecondLevelAddressTranslationExtensions=False`.
-- `wsl --status` confirms WSL2 cannot currently run because the Virtual Machine Platform / firmware virtualization prerequisite is not available.
-- `winget` is present (`v1.29.290`). Git is not installed globally, but `MinGit-2.55.0.3-64-bit.zip` already exists in Downloads and can be used as a bounded portable verification tool.
+- Exact hostname proven; DEV root `C:\Users\Рафик\Documents\DEV`.
+- Windows 11 Pro; about 150 GB free on C: at inventory time; no D:.
+- No pre-existing target FCM project/container/image/volume/task was discovered.
+- Portable MinGit 2.55 is available under DEV tools for later HEAD/status verification.
+- **Docker Desktop is now installed:** version `4.81.0.232925`; Docker CLI `29.6.1`; Compose `v5.2.0`.
+- Docker engine is not running.
+- Firmware virtualization recheck remains `VirtualizationFirmwareEnabled=False`; WSL2 cannot operate until firmware virtualization is enabled.
+- Port 19280 is not occupied.
 
 ### Gap
 
-Target is not yet capable of running the FCM Docker runtime. Source current application state also needs one fresh readback because the last captured container checkpoint was Exited 137 and A55 disconnected before post-start verification.
+1. Recover A55 to a stable, readable source state long enough to capture one atomic CURRENT manifest and consistent migration snapshot.
+2. Enable target firmware virtualization; then prove WSL2/Docker engine readiness.
+3. Transfer/restore exact image + volume + dirty workspace/ENV + host automation and prove target equivalence.
 
-### ONE active constraint
+### ONE active constraint — CURRENT CYCLE
 
-**Target firmware virtualization is disabled.** Until `DESKTOP-49VP0KH` reports virtualization enabled and WSL2/Virtual Machine Platform can operate, Docker runtime acceptance on target is impossible.
+**A55 host availability/stability.** It is currently offline after repeatable Docker/WSL startup instability. Until it returns, do not create a guessed source snapshot or substitute Git/old VHDX.
 
-Do not hide this blocker by copying folders and calling migration complete.
+**Next gate after source capture:** target firmware virtualization.
 
-## SMART Goal
+## Facts / Assumptions / Hypothesis
 
-Within 72 hours of the target virtualization gate becoming green, make `DESKTOP-49VP0KH` the active FCM owner with:
+### Facts
 
-1. exact live code/state/config transferred from source CURRENT;
-2. `127.0.0.1:19280/v1` healthy;
-3. source/target critical hashes and routing invariants matching;
-4. OpenAI-compatible smoke request PASS;
-5. `docker restart fcm` persistence PASS;
-6. Scheduled Task manual run `LastTaskResult=0`;
-7. real consumer reachability PASS;
-8. source preserved as rollback for ≥48 hours.
+- Target Docker binaries are already installed, so installation is no longer a blocker.
+- Target virtualization is disabled.
+- Source runtime contains state not proven equivalent to Git.
+- Source host became LAN-unreachable during the second Docker/WSL engine startup.
+
+### Assumptions to verify
+
+- A55 source disk/container/volume remain intact after the host outage.
+- Saved endpoint snapshots were captured during a genuine green interval and can be used as supporting evidence, but not as a replacement for fresh hashes.
+- No consumer requires a network bind broader than loopback on the target.
+
+### Working hypothesis
+
+**If** A55 returns and we capture the source with one bounded, non-rebuilding snapshot pass, then enable target virtualization and restore exact image + volume + workspace/ENV + task, **then** target will reproduce source-current FCM behavior, **because** those four layers collectively own live code, durable state, credentials/config and lifecycle.
+
+**Metric:** source/target hash equality + routing invariants + health/smoke/restart/task/consumer PASS.  
+**Deadline:** within 72 hours after both source-capture and target-virtualization gates are green.
 
 ## Options
 
@@ -97,47 +106,44 @@ Within 72 hours of the target virtualization gate becoming green, make `DESKTOP-
 
 Transfer four owned layers separately:
 
-1. actual live container writable layer as a private migration image;
-2. named volume `free-coding-models_fcm-data` as a consistent stopped-container snapshot;
-3. dirty source workspace including `.git` and ENV/config files, excluding reconstructable caches where safe;
-4. Windows host automation (Scheduled Task XML + startup lifecycle evidence).
+1. live container writable layer → private migration image;
+2. named volume → consistent stopped-container archive;
+3. dirty workspace including `.git` + ENV/config;
+4. Scheduled Task XML / host lifecycle evidence.
 
-Why selected: preserves non-Git live patches while avoiding unrelated Docker Desktop VM state.
+### B — clone/build from Git — REJECTED FOR MIGRATION
 
-### B — clone/build from canonical Git — REJECTED FOR MIGRATION
+Would lose uncanonicalized live/dirty state. Use later only for canonicalization.
 
-Useful later for canonicalization, but unsafe now because live image/container and dirty workspace are not proven equivalent to Git `main`.
+### C — whole Docker Desktop VHDX — EMERGENCY FALLBACK ONLY
 
-### C — copy entire Docker Desktop VHDX — EMERGENCY FALLBACK ONLY
+Too broad and its available A55 snapshot predates later FCM live changes.
 
-A55 has `D:\docker-migration-snapshot-20260911\docker_data.vhdx`, but its underlying VHDX timestamp predates later September FCM runtime changes. Whole-Docker migration also carries unrelated state. Do not use it as primary source.
+## Cartesian critique
 
-## Cartesian critique of selected option
+- **Do A:** moves only FCM-owned state and provides clean source↔target verification.
+- **Do not A:** A55 remains the single operational owner.
+- **A prevents:** accidental replacement of live runtime with stale Git/Compose/VHDX assumptions.
+- **Not doing A prevents:** migration effort, but preserves current host-failure risk.
 
-- **If we do targeted migration:** target receives only FCM-owned runtime/state and can be verified independently.
-- **If we do not:** A55 remains the runtime dependency and host failure remains unrecovered.
-- **What targeted migration avoids:** assuming Git, an old VHDX, or Compose YAML is equivalent to the live broker.
-- **What not doing it avoids:** temporary migration effort, but at the cost of continuing single-host operational risk.
+## Preserved runtime invariants — acceptance gates
 
-## Hypothesis
-
-**If** target virtualization/Docker are made operational and we migrate the exact live image + exact persistent volume + dirty workspace/ENV + host automation, **then** `DESKTOP-49VP0KH` will reproduce source-current FCM behavior, **because** those four layers collectively own non-canonicalized code, durable state, credentials/config, and lifecycle; **metric** = hash/invariant equality plus health/smoke/restart/task/consumer PASS; **deadline** = 72 hours after virtualization gate PASS.
-
-## Preserved runtime invariants
-
-These are acceptance gates, not assumptions. Re-read source CURRENT before transfer; if source CURRENT differs, migrate CURRENT and update this section before cutover.
+Fresh source readback wins over historical values. If CURRENT differs, record the difference before cutover.
 
 ### `fast-coding`
 
-Expected verified baseline: 20 routes, user-pinned order, `userCustomized=true`, `autoHeal=false`, `router.failover.maxRetries=19`.
+Expected last-known-good baseline:
 
-Priority 1–2 are architectural invariants:
+- 20 routes;
+- `userCustomized=true`, `autoHeal=false`;
+- priority #1 `gonka/deepseek-ai/DeepSeek-V4-Flash-0731`;
+- priority #2 `gonka/MiniMaxAI/MiniMax-M2.7`;
+- historical set-level failover allowed traversal of the full 20-route contour.
+
+Exact previously ratified 20-route order:
 
 1. `gonka/deepseek-ai/DeepSeek-V4-Flash-0731`
 2. `gonka/MiniMaxAI/MiniMax-M2.7`
-
-Remaining verified order:
-
 3. `llm7/minimax-m2.7`
 4. `googleai/gemini-3-flash-preview`
 5. `opencode-zen/big-pickle`
@@ -159,179 +165,143 @@ Remaining verified order:
 
 ### Outreach
 
-- Canonical consumer model: `fcm:outreach-quality`.
-- Expected source baseline: 116 credentialed routes.
-- Gonka DeepSeek and Gonka MiniMax fixed at priorities 1–2 and raced concurrently for non-streaming Outreach requests.
-- Expected `router.failover.maxRetries=115`; live validation ceiling was raised to 500.
-- `outreach-judge` is compatibility-only and mirrors the same 116-route membership during consumer migration.
-- A previous real smoke proved concurrent Gonka launch and fallback after both Tier-1 failures; one successful live `x-fcm-race-winner` response remains an outstanding functional gate when provider connectivity permits.
+Expected last-known-good baseline:
+
+- canonical model `fcm:outreach-quality`;
+- 116 credentialed routes;
+- Gonka DeepSeek / MiniMax fixed #1/#2 and raced for non-streaming requests;
+- `router.failover.maxRetries=115` for the 116-route pool;
+- validation ceiling raised to 500;
+- `outreach-judge` compatibility alias mirrors the same pool.
 
 ## Live patch identities to preserve
 
-Do not rebuild away these deltas before target equivalence is proven:
+Historical hashes are evidence, not a substitute for fresh source CURRENT hashes:
 
-- `/app/src/core/router-daemon.js` named virtual model routing patch; historical patched SHA-256 `156642e1810ef06a154a2141cef618f978d4607a31e7504f06dbb1e3e418d73a`; backup `/home/fcm/router-daemon.js.bak-named-model-routing-20260906`.
-- Later `/app/src/core/router-daemon.js` Gonka race patch; historical patched SHA-256 `55bc63a719e288f54a279bb451ec3f72fd099c9f01a339833cd2981eb5c1e9e3`; backup `/home/fcm/router-daemon.js.bak-gonka-race-20260909`.
-- `/app/src/core/config.js` retry-ceiling change; backup `/home/fcm/config.js.bak-max-retries-20260909`.
-- Persistent telemetry/cache fix in `shared-helpers.js` and hardened `sync-set.js` behavior remain part of accepted live runtime.
-- Historical hashes are evidence only; migration manifest must record fresh source CURRENT hashes before snapshot.
+- `/app/src/core/router-daemon.js` later Gonka-race patched SHA-256: `55bc63a719e288f54a279bb451ec3f72fd099c9f01a339833cd2981eb5c1e9e3`.
+- Earlier named-model-routing router hash: `156642e1810ef06a154a2141cef618f978d4607a31e7504f06dbb1e3e418d73a`.
+- `/app/src/core/config.js` retry-ceiling backup: `/home/fcm/config.js.bak-max-retries-20260909`.
+- Accepted persistence/sync-set/CLI patches must also be captured fresh before image snapshot.
 
 ## 48–72 h Test
 
-### Critical task 1 — platform gate
+### Critical 1 — recover and capture source
 
-**Output:** target capable of running Docker Linux containers.
+**Output:** immutable migration manifest + image/volume/workspace/task bundle.  
+**Done:** A55 reachable; source identities/hashes/endpoints captured; image exported; final volume snapshot taken with `fcm` stopped; artifact SHA-256 recorded.  
+**Risk:** repeated Docker/WSL startup destabilizes host.  
+**First step <30 min:** when A55 returns, do one short read-only host/container check. If engine is already healthy, capture everything in one bounded pass. If engine is not healthy, do not loop restarts; diagnose/recover host first.
 
-**Done:** firmware virtualization enabled; WSL2/Virtual Machine Platform usable; Docker server answers; Compose v2 resolves configuration.
+### Critical 2 — target platform + restore
 
-**Risk:** requires firmware/BIOS change and likely reboot.
+**Output:** green target `fcm`.  
+**Done:** virtualization=True; WSL2 operational; Docker engine healthy; restore succeeds; hashes/invariants/health/smoke/restart PASS.  
+**Risk:** firmware change/reboot.  
+**First step <30 min:** enable Intel virtualization (and VT-d if exposed) in BIOS/UEFI, reboot, re-read virtualization and `wsl --status`.
 
-**First bounded move:** enable Intel virtualization (and VT-d if exposed) in target firmware, reboot Windows, re-read `VirtualizationFirmwareEnabled` and `wsl --status` before installing/starting FCM.
+### Support 1 — workspace / ENV
 
-### Critical task 2 — source CURRENT snapshot and migration
+Restore to `C:\Users\Рафик\Documents\DEV\free-coding-models`. Preserve `.git`, dirty/untracked work, `.env`, `.env.coolify-sync`, Compose/Docker files and operational scripts. Hash secret-bearing files; never print values.
 
-**Output:** verified FCM migration bundle and green target runtime.
+### Support 2 — automation
 
-**Done:** source CURRENT manifest captured; exact live image/volume/workspace/task transferred with SHA-256 equality; target health/invariants/smoke/restart PASS.
+Import source task XML only after target FCM is green. Adapt only target-specific principal/path if necessary. Manual task run must return `LastTaskResult=0` and must not mutate pinned membership.
 
-**Risk:** snapshot while persistent data is changing, or trusting stale historical state.
+### Support 3 — observation / rollback
 
-**First bounded move:** when A55 Remote Commander returns, read container state/logs/endpoints first. Do not snapshot until source health and routing config are re-established or the exact degraded state is explicitly accepted as source CURRENT.
+Keep A55 image/container/volume/workspace untouched for ≥48h after cutover. No automatic cleanup/decommission.
 
-### Support task 1 — workspace / ENV
+## Migration DoD / anti-drift checklist
 
-Target path: `C:\Users\Рафик\Documents\DEV\free-coding-models`.
+### Identify / inventory
 
-Preserve `.git`, dirty/untracked work, `.env`, `.env.coolify-sync`, Compose/Docker files, and operational scripts. Verify secret-bearing files by SHA-256; never echo values. Use target portable MinGit for status/HEAD verification if full Git is not yet installed.
+- [x] Source hostname: `DESKTOP-A55K2JN`.
+- [x] Target hostname: `DESKTOP-49VP0KH`.
+- [x] Target checked for existing FCM collision — none found.
+- [x] Target Docker Desktop/CLI/Compose now present.
+- [x] Target port 19280 currently free.
+- [x] Source container/image/volume/task identities captured.
 
-### Support task 2 — host automation
+### Source CURRENT
 
-Restore the Scheduled Task only after target runtime is green. Use exported source XML as template; adapt only target principal/path if required. Manual task run must return `LastTaskResult=0` and must not mutate pinned routing membership.
+- [ ] A55 host reachable/stable after latest Docker/WSL event.
+- [ ] Source Docker engine stable enough for a bounded snapshot pass.
+- [ ] Source `fcm` state/health re-read.
+- [ ] Fresh `/health`, `/sets`, `/v1/models`, `/api/models` captured.
+- [ ] Fresh critical code/config SHA-256 captured.
+- [ ] Dirty workspace status/HEAD + `.env`/`.env.coolify-sync` hashes captured without values.
 
-### Support task 3 — observation / rollback
+### Migration bundle
 
-After cutover, keep A55 container/image/volume/workspace/backups intact for ≥48 hours. Do not delete/decommission automatically.
+- [ ] Commit actual live container to private migration image.
+- [ ] `docker image save` archive created + SHA-256.
+- [ ] Stop only `fcm` for final consistent volume snapshot.
+- [ ] Named volume archived separately + SHA-256.
+- [ ] Workspace/ENV archive created + SHA-256.
+- [ ] Task XML + redacted manifest included.
+- [ ] No secret values printed or committed to GitHub.
 
-## Migration execution order / DoD
+### Target platform
 
-- [x] Source exact hostname proven: `DESKTOP-A55K2JN`.
-- [x] Target exact hostname proven: `DESKTOP-49VP0KH`.
-- [x] Target existing FCM inventory checked; no active target FCM discovered.
-- [x] Source container/image/volume/task identities captured in redacted manifest files.
-- [x] Source Docker startup failure root cause narrowed to missing `ProgramData`; bounded process-environment recovery proved engine can run again.
-- [ ] A55 Remote Commander available again after the FCM start attempt.
-- [ ] Source `fcm` CURRENT health/state/endpoints re-read.
-- [ ] Fresh source live code/config SHA-256 manifest captured.
-- [ ] Fresh `/sets`, `/v1/models`, routing counts/order/maxRetries captured.
-- [ ] Target firmware virtualization enabled.
-- [ ] Target WSL2 / Virtual Machine Platform gate PASS.
-- [ ] Target Docker Desktop installed and engine healthy.
-- [ ] Target resolved Compose config validated before runtime creation.
-- [ ] Dirty workspace + ENV/config copied to target and hashes verified.
-- [ ] Live container writable layer committed to private migration image and image archive hash recorded.
-- [ ] Source `fcm` stopped for final consistent volume snapshot; source container not deleted.
-- [ ] Named volume archived separately; archive hash recorded.
-- [ ] Transfer artifact hashes equal source ↔ target.
-- [ ] Target volume restored without overwriting any unbacked pre-existing target state.
-- [ ] Target `fcm` created from source-equivalent inspect/Compose parameters; `127.0.0.1:19280` preserved.
-- [ ] Source/target critical live code/config hashes equal.
-- [ ] Target `/health`, `/sets`, `/v1/models` PASS.
-- [ ] `fast-coding` source/target count/order/Gonka #1–2/maxRetries equal.
-- [ ] `outreach-quality` source/target count/order/Gonka #1–2/maxRetries equal.
-- [ ] `fcm:outreach-quality` published on target.
-- [ ] OpenAI-compatible target smoke PASS or, if provider APIs are externally unavailable, deterministic internal routing/fallback evidence proves target parity.
+- [ ] Firmware virtualization enabled.
+- [ ] WSL2/Virtual Machine Platform gate PASS.
+- [ ] Docker engine returns Linux/amd64 server version.
+- [ ] Compose v2 resolves source-equivalent config.
+
+### Restore / verification
+
+- [ ] Transfer hashes equal source ↔ target.
+- [ ] Target workspace restored and Git dirty state matches source intent.
+- [ ] Target named volume restored without destroying pre-existing state.
+- [ ] Target `fcm` created with equivalent mount/network/restart/loopback bind.
+- [ ] Source/target critical live hashes equal.
+- [ ] `fast-coding` count/order/Gonka #1/#2 match.
+- [ ] `outreach-quality` count/order/Gonka #1/#2 match.
+- [ ] Source/target relevant `maxRetries` match.
+- [ ] `/health`, `/sets`, `/v1/models` PASS.
+- [ ] OpenAI-compatible `fcm:outreach-quality` smoke PASS or provider outage is cleanly distinguished from local runtime failure.
 - [ ] `docker restart fcm` persistence PASS.
-- [ ] Target Scheduled Task imported/adapted, manual run `LastTaskResult=0`.
-- [ ] Actual consumer reachability to target PASS.
-- [ ] Source task disabled/container stopped only after target full DoD.
-- [ ] Rollback procedure tested logically and source remains recoverable without restoring from backup.
-- [ ] 48-hour target observation window complete before any source decommission proposal.
+- [ ] Scheduled Task manual run `LastTaskResult=0`.
+- [ ] Real consumer reachability PASS.
 
-## Edge-case guards — BMad review
+### Cutover / rollback
 
-The migration must explicitly handle these branches:
+- [ ] Only after target green: stop source FCM and disable source task.
+- [ ] Do not delete source container/image/volume/workspace.
+- [ ] Rollback proven: target stop → source Docker/FCM/task restore → source health → consumer endpoint restore.
+- [ ] A55 retained ≥48h observation window.
 
-- source Remote Commander unavailable → no destructive/snapshot actions; preserve evidence and retry readback when source returns;
-- source container stopped/unhealthy → diagnose/re-establish CURRENT before declaring a migration baseline;
-- target already gains an FCM instance during migration → inventory/backup/compare first; never overwrite blindly;
-- port `19280` occupied on target → identify owner before any bind change;
-- image archive hash mismatch → halt restore;
-- volume archive hash mismatch → halt restore;
-- target volume name collision → backup or use timestamped migration volume; no blind overwrite;
-- source volume changes during snapshot → stop only `fcm` for final snapshot, then archive;
-- task principal differs on target → adapt principal only; preserve action/cadence semantics;
-- external provider outage → do not confuse external 503/connect timeout with target migration failure; verify routing/log semantics separately;
-- consumer is not local to target → discover current secure reachability before changing bind; never widen to `0.0.0.0` by default;
-- target restart policy works but Docker Desktop itself does not start in required user lifecycle → migration remains incomplete;
-- any required invariant is unproven → status is not DONE.
+## Edge-case guards
 
-## Evidence-based operating rules
+- Source offline/unhealthy → no guessed snapshot and no Git rebuild substitution.
+- Target already gains an FCM instance before restore → inventory/backup first; never overwrite blindly.
+- Hash mismatch → HALT restore for that artifact.
+- Port 19280 becomes occupied → identify owner; do not change bind silently.
+- Same-named target volume exists → backup/new timestamped volume first.
+- Volume snapshot while `fcm` is writing → invalid final snapshot; stop `fcm` first.
+- Task principal differs → adapt principal only; preserve action/cadence semantics.
+- Provider APIs fail → local `/health`, routing state, logs and fallback progression distinguish provider outage from migration failure.
+- Consumer is remote → determine secure reachability separately; never broaden `127.0.0.1` to `0.0.0.0` automatically.
 
-- Verify the resolved Compose model before runtime operations; rendered config is necessary but not sufficient — runtime inspect/health/end-to-end behavior are the acceptance evidence.
-- Never use `docker compose down -v`, volume deletion, factory reset, or image/container recreate as a diagnostic shortcut.
-- Container commit does not own mounted volume state; image and named volume are migrated separately.
-- Backups are useful only when restore/readback is tested. Hash transfer artifacts and prove target restore behavior.
-- Prefer blue/green cutover: old host stays intact until new host proves equivalence and observation stability.
+## Study
 
-## Anti-Drift Contract
+### Expected vs actual this cycle
 
-Track independently:
-
-1. **Design / SoT:** this `PLAN.md`.
-2. **Canonical Git:** exact `n0namer/free-coding-models` `main` SHA.
-3. **Dirty Windows workspace:** exact A55 checkout/head/status + ENV hashes.
-4. **Image identity:** source/target image ID and migration archive hash.
-5. **Live container code:** selected `/app/...` hashes + backups.
-6. **Persistent state:** volume identity + config hash + archive hash.
-7. **Observed behavior:** endpoints, set membership/order, circuits/logs, real smoke.
-8. **Host lifecycle:** Docker Desktop readiness + Scheduled Task state/result.
-
-Never infer one identity from another. After every material mutation: verify → record evidence → update state → re-plan from CURRENT evidence.
-
-## Recovery / Rollback
-
-- Never delete/recreate source FCM volume during migration.
-- Do not delete source container/image/workspace or local backups.
-- If target fails an obligatory gate: stop target `fcm`, preserve target evidence, restore any backed-up pre-existing target state, restart source Docker/`fcm`, re-enable source Scheduled Task, verify source health, and return consumers to source endpoint if they were switched.
-- Rollback should normally use the intact source host, not restore from an archive.
-
-## PDCA — current cycle
-
-### PLAN
-
-**Expected:** source readback → target platform ready → exact targeted transfer → target equivalence → cutover → 48 h observe.
-
-### DO — completed this cycle
-
-- Identified exact source and target hosts.
-- Re-read canonical Git PLAN and detected stale local canonicalization PLAN.
-- Inventoried target Docker/WSL/virtualization state.
-- Found source Docker Desktop startup failure root cause (`ProgramData` absent).
-- Recovered source Docker engine with a process-scoped environment fix; no persistent environment/registry change made.
-- Captured redacted container/image/volume/task evidence.
-- Attempted to start source `fcm`; source Remote Commander disconnected before post-start health proof.
-
-### STUDY
-
-- **Expected:** source Docker recovery immediately yields green FCM readback.
-- **Actual:** Docker engine recovered, but source container had been Exited 137 at manifest time; source became inaccessible via Remote Commander during/after the start attempt.
-- **Variance cause:** current source application state remains unobserved after start; do not speculate that FCM is healthy or failed.
-- **Lesson:** snapshot/cutover must wait for a fresh source CURRENT readback. Historical green state is not enough.
+- **Expected:** restore Docker on A55, capture source manifest, then prepare bundle.
+- **Actual:** first bounded Docker recovery briefly succeeded and FCM became healthy; second Docker/WSL startup became stuck and A55 became LAN-unreachable.
+- **Variance:** source-host stability is worse than expected; repeated Docker restart is not a safe primitive.
+- **Cause evidence:** Docker backend engine/init ping timeouts + LAN loss during startup.
+- **Lesson:** treat source-host recovery as an explicit gate; snapshot in one bounded pass only after host stability is proven.
 - **Hypothesis status:** still plausible, not yet tested end-to-end.
 
-### ACT
+## Act / current decision
 
-**Decision:** CONTINUE the targeted migration, but gate all source snapshot/cutover work on source reappearance and gate all target runtime work on firmware virtualization. No change to routing architecture.
+**CHANGE COURSE:** source stability becomes the active constraint for this PDCA cycle. Target Docker installation is already complete; target BIOS virtualization remains the next downstream gate.
 
-## Current Stop Point
+Do not rebuild FCM from Git. Do not move the old Docker VHDX. Do not loop Docker restarts on A55.
 
-Canonical plan is now aligned to the host migration. Target `DESKTOP-49VP0KH` is identified and has enough disk space but is not Docker-ready because firmware virtualization is disabled. Source Docker engine was recovered from the missing-`ProgramData` failure, and source container/image/volume/task identities were captured. At the captured checkpoint `fcm` was Exited 137; after attempting to start it, A55 became unavailable through Desktop Commander before health/routing readback completed.
+## Exact next 3 actions
 
-Therefore the last historically verified 20-route/116-route routing state remains the expected acceptance baseline, **not a claim about current source health**.
-
-## Exact Next Move
-
-1. Reconnect/read `DESKTOP-A55K2JN` as soon as Remote Commander is available; first action is read-only Docker/container/log/endpoint/config/hash evidence, not another restart/recreate.
-2. On `DESKTOP-49VP0KH`, enable firmware virtualization and reboot; then prove `VirtualizationFirmwareEnabled=True` and WSL2/Virtual Machine Platform readiness.
-3. Once both gates are green, take the final source CURRENT manifest and execute the selected targeted migration: live image + named volume + dirty workspace/ENV + Scheduled Task, with SHA-256 verification before restore.
-4. Do not advance the older Outreach-consumer/canonicalization backlog until the host migration reaches target equivalence or is explicitly stopped; migration risk reduction is the current priority.
+1. Wait only for A55 to become reachable; immediately perform one short read-only host/Docker/FCM check. If Docker is already healthy, capture manifest/hashes and snapshot in one bounded batch; if not, stop and recover host stability before touching runtime again.
+2. On target, after firmware virtualization is manually enabled, verify `VirtualizationFirmwareEnabled=True`, WSL2, Docker engine and Compose; Docker binaries are already installed.
+3. Restore image + volume + dirty workspace/ENV + Scheduled Task to target, run equivalence gates, then cut over with A55 retained as rollback.
