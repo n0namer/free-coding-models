@@ -163,6 +163,7 @@ const LEGACY_CONFIG_PATH = join(homedir(), '.free-coding-models')
 // 📖 Environment variable names per provider
 // 📖 These allow users to override config via env vars (useful for CI/headless setups)
 const ENV_VARS = {
+  routerai:   'ROUTERAI_API_KEY',
   nvidia:     'NVIDIA_API_KEY',
   groq:       'GROQ_API_KEY',
   cerebras:   'CEREBRAS_API_KEY',
