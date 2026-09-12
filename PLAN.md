@@ -1,6 +1,6 @@
 # FCM Broker — Project Plan
 
-**Status:** Transfer complete — FCM payload is on `DESKTOP-49VP0KH`; runtime activation is a separate next phase  
+**Status:** PARTIAL — transfer to `DESKTOP-49VP0KH` is complete; A55 live runtime now has verified bounded plain-text continuation recovery, but source canonicalization and target propagation are still pending  
 **Last verified:** 2026-09-12  
 **Target repository:** `n0namer/free-coding-models`  
 **Canonical SoT:** this `PLAN.md` owns current state, decisions, DoD, anti-drift identities, migration evidence, rollback, and exact next move.
