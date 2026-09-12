@@ -1,7 +1,7 @@
 # FCM Broker — Project Plan
 
 **Status:** In Progress — controlled host/runtime migration `DESKTOP-A55K2JN` → `DESKTOP-49VP0KH`  
-**Last verified:** 2026-09-11  
+**Last verified:** 2026-09-12  
 **Target repository:** `n0namer/free-coding-models`  
 **Canonical SoT:** this `PLAN.md` owns current state, decisions, DoD, anti-drift identities, migration evidence, rollback, and exact next move.
 
@@ -32,109 +32,127 @@ Keep `DESKTOP-A55K2JN` physically intact as rollback for at least 48 hours after
 
 #### Source — `DESKTOP-A55K2JN`
 
-- Windows 11 Pro.
+- Windows 11 Pro; source is currently command-reachable again through Remote Desktop Commander.
+- LAN identity currently observed: Wi-Fi `172.20.20.187/…`; target name resolves from A55 to `172.20.20.254`.
 - Active dirty workspace: `D:\Users\NIKITA\Documents\ChatGPT\AGENTS\free-coding-models`.
-- Workspace remote observed: `vava-nessa/free-coding-models`; HEAD observed `4e51bf9ce44456fd93814e7ca23333527d094b13`.
-- Modified/untracked work exists in Docker/Compose/runtime/router files; migration must preserve the dirty workspace rather than rebuild from Git.
-- `.env` and `.env.coolify-sync` exist. Never print secret values; verify/transfer by SHA-256 and key names only.
-- Docker Desktop 4.81 / Docker CLI 29.6.1 are installed.
-- FCM identity captured before the latest instability:
-  - container `fcm`;
-  - image `free-coding-models:local`;
-  - image ID `sha256:8b235d5a102cd641b4e5fed4bd282222a08b217dbe9fa45672fbeeb5ba7eba7d`;
-  - container ID `036059dcc829fac8379e5753e14ce6ec90afcc2a6eeb3adc0e469a35eb8d6652`;
+- Workspace remote: `vava-nessa/free-coding-models`; branch `main`; HEAD `4e51bf9ce44456fd93814e7ca23333527d094b13`.
+- CURRENT dirty state re-read 2026-09-12: modified `Dockerfile`, `docker-compose.yml`, `scripts/docker-init.mjs`, `sources.js`, `src/core/config.js`, `src/core/ping.js`, `src/core/router-daemon.js`, `test/test.js`; untracked `FCM_CONNECTION.md`, `body.json`, `bodys.json`, `run-build.cmd`, `sync-fcm-coolify.ps1`.
+- Secret-bearing files exist and were hashed without printing values:
+  - `.env` SHA-256 `0044b753c9a091eaee23dcd559db7c13406e371e7bacccb28dece5041f19eac1`, 3183 bytes;
+  - `.env.coolify-sync` SHA-256 `2c23424326786f05f514119ed5e7a5726b2fa73ee9931feada9db3c4379afc5a`, 1540 bytes.
+- Compose/Docker identity hashes:
+  - `docker-compose.yml` SHA-256 `fcc39be57ef88298eb84aad5136b707f4fa72559e9bc4494b35e0ad55dd497c5`;
+  - `Dockerfile` SHA-256 `de1f814e9955b9505f1e9910ddf7934b582c1b86f9e0e3641039b9d920906513`.
+- Docker Desktop 4.81 / Docker CLI 29.6.1 installed.
+- Historical FCM identity before current Docker failure:
+  - container `fcm`, ID `036059dcc829fac8379e5753e14ce6ec90afcc2a6eeb3adc0e469a35eb8d6652`;
+  - image `free-coding-models:local`, image ID `sha256:8b235d5a102cd641b4e5fed4bd282222a08b217dbe9fa45672fbeeb5ba7eba7d`;
   - restart `unless-stopped`;
   - network `free-coding-models_default`;
   - loopback bind `127.0.0.1:19280`;
   - named volume `free-coding-models_fcm-data -> /home/fcm`.
-- Scheduled Task `FCM Managed Set Refresh` executes `docker.exe exec fcm node /app/bin/free-coding-models.js --daemon-status` every 4 hours.
-- Redacted evidence exists under `D:\Users\NIKITA\Documents\DEV\.migration-to-49-20260911\fcm\`: container/image/volume inspect, task XML and endpoint snapshots from a brief green interval.
-- Docker Desktop initially failed because effective `ProgramData` was absent. Launching with `ProgramData=C:\ProgramData` briefly restored engine `29.6.1 linux/amd64` and `fcm` reached healthy state.
-- User-level `ProgramData=C:\ProgramData` was restored and environment-change broadcast was sent.
-- A later Docker/WSL start became stuck: backend repeatedly reported engine/init ping timeouts and missing guest socket-forwarder endpoint.
-- During that event A55 became unavailable through Desktop Commander and from another LAN host.
-- **Latest availability evidence:** A55 may still be advertised as `online` by the connector, but direct Desktop Commander `ping` and command execution time out. From `DESKTOP-C439RQO`, hostname resolution/ping fail and TCP 22/445/3389/5985/8795 are unreachable. Therefore the host is **not operationally reachable**.
-- No fresh CURRENT manifest or consistent migration snapshot was produced after this outage.
+- Scheduled Task `FCM Managed Set Refresh` runs `docker.exe exec fcm node /app/bin/free-coding-models.js --daemon-status` every 4 hours.
+- Redacted evidence under `D:\Users\NIKITA\Documents\DEV\.migration-to-49-20260911\fcm\` includes container/image/volume inspect, task XML and endpoint snapshots from a brief green interval.
+
+#### Source Docker failure boundary — CURRENT
+
+- Docker Desktop Windows backend and WSL infrastructure are alive, but Linux Docker engine is not.
+- WSL version `2.2.4.0`, kernel `5.15.153.1-2`; Docker requires >=2.1.5 but recommends latest.
+- `docker-desktop` distro is Running and executable; `wsl -d docker-desktop -u root -- ...` succeeds.
+- `vpnkit-bridge` runs inside the distro, but `/run/guest-services` is empty.
+- Backend logs have waited for init control API for >11 hours and repeat:
+  - `GET /ping: context deadline exceeded`;
+  - `/run/guest-services/socketforwarder-receive-fds.sock: does not exist yet`.
+- Built-in `docker desktop diagnose` also blocks against the dead control-plane and produces no result; it was terminated without touching backend/WSL.
+- `com.docker.service` is `Stopped/Disabled`, while `hns`, `vmcompute`, `vmms`, and `WSLService` are Running. Do **not** infer `com.docker.service` is the cause: the observed Docker configuration previously had `RunWinServiceInWslMode=false`.
+- No relevant HCS/Hyper-V/WSL/VHD disk errors were found in Windows System/Application error/warning events for the failure interval.
+- Docker data root is deliberately relocated to D via `CustomWslDistroDir=D:\Users\NIKITA\AppData\Local\Docker\wsl\DockerDesktopWSL`.
+- Current VHDs:
+  - `...\disk\docker_data.vhdx` ≈23.939 GB, last write observed 2026-09-11 23:11;
+  - `...\main\ext4.vhdx` ≈0.102 GB.
+- WSL sees the data VHD as `/dev/sdc`, 1T ext4, UUID `f479bee8-68b6-416e-8eeb-7ec5d64020b2`.
+- Kernel log shows successful ext4 mount events for `/dev/sdc`; no ext4/I/O/buffer errors observed.
+- Therefore the data VHD is **present, attached and kernel-mountable**. Failure is downstream of disk attach/mount: `wsl-bootstrap`/LinuxKit/guest-services never reaches a usable engine state.
+- Current `wsl-bootstrap` process is absent while `vpnkit-bridge` remains; `/run/guest-services` never gets the expected socket.
+- Source disk pressure is high: C: ~7.6 GB free, D: ~6.5 GB free. Do not create a second 24-GB VHD locally.
+- Existing `D:\docker-migration-snapshot-20260911\docker_data.vhdx` is emergency-only; its underlying timestamp predates later FCM live changes and it is not accepted as CURRENT.
 
 #### Target — `DESKTOP-49VP0KH`
 
-- Exact hostname proven; DEV root `C:\Users\Рафик\Documents\DEV`.
-- Windows 11 Pro; latest C: free-space readback: about **146.6 GB**; no D:.
-- No pre-existing target FCM project/container/image/volume/task was discovered.
-- Incoming FCM staging directory prepared: `C:\Users\Рафик\Documents\DEV\.migration-incoming-20260911\fcm`.
-- Portable MinGit 2.55 is available under DEV tools for later HEAD/status verification.
-- Docker Desktop is installed: version `4.81.0.232925`; Docker CLI `29.6.1`; Compose `v5.2.0`.
-- Docker engine is not running.
-- Port 19280 is free.
-- Firmware virtualization remains `VirtualizationFirmwareEnabled=False`; SLAT/VM monitor flags are also false in current Windows readback.
-- No WSL distribution is installed/usable; WSL2 cannot become operational until firmware virtualization / Virtual Machine Platform prerequisites are enabled.
-- Current Remote Desktop Commander session is **not elevated administrator**, so Windows optional-feature changes cannot be safely completed through the current shell.
+- DEV root `C:\Users\Рафик\Documents\DEV`; incoming staging `...\.migration-incoming-20260911\fcm` exists.
+- Latest C: free-space readback ~146.6 GB; no D:.
+- Target is on the same LAN and resolves from A55 as `172.20.20.254`.
+- No target FCM collision discovered; port 19280 free.
+- Docker Desktop `4.81.0.232925`, Docker CLI `29.6.1`, Compose `v5.2.0` installed.
+- Target WSL is much newer: `2.7.13.0`, kernel `6.18.33.2-2`.
+- Firmware virtualization remains `VirtualizationFirmwareEnabled=False`; Docker engine therefore cannot run yet.
+- Current Remote Desktop Commander target shell is not elevated; BitLocker/Secure Boot status could not be read from it.
+- Portable MinGit 2.55 available for later source/target Git-state verification.
+- Target TCP 445/5985 are reachable from A55, but current A55 credentials cannot access target `C$`; no insecure credential bypass is permitted.
+- Python and OpenSSL are available on both hosts, so a one-shot TLS stream can be used for large sensitive recovery artifacts without public cloud or plaintext LAN transfer.
 
 ### Gap
 
-1. Recover A55 to a stable, readable source state long enough to capture one atomic CURRENT manifest and consistent migration snapshot.
-2. Enable target firmware virtualization; then prove WSL2/Docker engine readiness.
-3. Transfer/restore exact image + volume + dirty workspace/ENV + host automation and prove target equivalence.
+1. Create a **fresh protected recovery point** for the current Docker data VHD without needing 24 GB free on A55.
+2. Perform one controlled Docker/WSL reset of process state, not data, and test whether bootstrap/guest-services recover.
+3. Once engine is green, capture fresh FCM runtime hashes/routes and create normal image + named-volume migration artifacts.
+4. Enable target firmware virtualization and restore/verify target.
 
 ### ONE active constraint — CURRENT CYCLE
 
-**A55 source-host availability/stability.** Until A55 responds to an actual command, do not create a guessed source snapshot or substitute Git/old VHDX.
+**Source Docker WSL bootstrap is stuck after successful data-disk attach/mount.** The source host and VHD are alive; engine/FCM are not. Before any recovery mutation, protect the current VHD to target storage.
 
-**Next downstream gate:** target firmware virtualization / WSL2.
+**Next downstream gate:** target BIOS virtualization / WSL2 Docker engine.
 
 ## Facts / assumptions / hypothesis
 
 ### Facts
 
-- Target Docker binaries are already installed; installation is not the blocker.
-- Target virtualization is disabled and the current shell is non-elevated.
-- Source runtime contains state not proven equivalent to Git.
-- Source became LAN-unreachable during Docker/WSL startup and is still not command-reachable.
+- Data VHD is present and kernel-mountable; no observed ext4/I/O corruption signal.
+- Docker userspace bootstrap/guest-services is the current failure boundary.
+- Source WSL 2.2.4 meets Docker minimum but is older than current recommended/latest.
+- Target has ample storage and secure-stream tooling but cannot run Docker until virtualization is enabled.
 
 ### Assumptions to verify
 
-- A55 source disk/container/volume remain intact after the host outage.
-- Saved endpoint snapshots represent a genuine green interval but are supporting evidence only, not a replacement for fresh hashes.
-- Consumers can remain on loopback after moving to the target host; if not, secure reachability must be handled separately.
+- A clean Docker Desktop/`docker-desktop` WSL process reset will recreate guest-services without modifying the VHD contents materially.
+- Consumers can remain on loopback after moving to the target; if not, secure reachability must be handled separately.
+- The source VHD remains stable once Docker/WSL is fully stopped and detached.
 
 ### Working hypothesis
 
-**If** A55 returns and we capture the source with one bounded, non-rebuilding snapshot pass, then enable target virtualization and restore exact image + volume + workspace/ENV + task, **then** target will reproduce source-current FCM behavior, **because** those four layers collectively own live code, durable state, credentials/config and lifecycle.
-
-**Metric:** source/target hash equality + routing invariants + health/smoke/restart/task/consumer PASS.  
-**Deadline:** within 72 hours after both source-capture and target-platform gates are green.
+**If** we first protect the detached CURRENT data VHD to the target, then perform one clean Docker Desktop/WSL process-state restart with no reset/unregister/delete, **then** guest-services may recover and expose the existing FCM runtime, **because** disk attachment/ext4 are healthy and the observed failure is downstream bootstrap state; **metric** = Docker server `_ping`/`version` PASS, `fcm` visible, endpoint/runtime invariants readable; **deadline** = this recovery cycle before any WSL update or Docker factory action.
 
 ## Options
 
-### A — targeted live-runtime migration — SELECTED
+### A — protected clean process-state restart — SELECTED NEXT
 
-Transfer four owned layers separately:
+1. Stop Docker Desktop cleanly if possible.
+2. Terminate/shutdown only Docker WSL state so VHD is detached.
+3. Stream-copy the fresh VHD over authenticated/pinned TLS to target; record source/target SHA-256.
+4. Restart Docker Desktop once with correct effective environment.
+5. Verify engine before touching FCM.
 
-1. live container writable layer → private migration image;
-2. named volume → consistent stopped-container archive;
-3. dirty workspace including `.git` + ENV/config;
-4. Scheduled Task XML / host lifecycle evidence.
+Why selected: smallest reversible move with a fresh recovery point.
 
-### B — clone/build from Git — REJECTED FOR MIGRATION
+### B — update source WSL, then restart — SECOND
 
-Would lose or misrepresent uncanonicalized live/dirty state. Use later only for canonicalization.
+Docker recommends current WSL and source is 2.2.4 while target is 2.7.13. This is plausible remediation, but it changes the source platform. Only attempt after VHD protection and only if Option A fails.
 
-### C — whole Docker Desktop VHDX — EMERGENCY FALLBACK ONLY
+### C — Docker reset/reinstall/VHD replacement — REJECTED / EMERGENCY ONLY
 
-Available A55 VHDX is not proven current for September FCM changes and carries unrelated Docker state.
+Factory reset, unregister, delete/recreate VHD, old-VHD substitution, `down -v`, or destructive cleanup are prohibited while CURRENT state is recoverable.
 
-## BMad / recovery operating principles
+## Cartesian critique
 
-- Treat this as brownfield recovery/migration: inspect CURRENT callable/runtime surface before changing it.
-- A backup is not accepted until a restore path is exercised and verified.
-- Resolve Compose/config first, then verify actual container state, health, logs, mounts and published endpoint.
-- Use the narrowest runtime operation possible; never use `down -v` or delete/recreate the source volume during migration.
-- After every material mutation: verify → update state → re-plan from CURRENT evidence.
-- No duplicate planning documents: this PLAN remains the SoT.
+- **Do A:** protects current data first and tests the narrowest stale-process hypothesis.
+- **Do not A:** leaves FCM down and eventually forces a broader recovery with weaker evidence.
+- **A avoids:** changing WSL version or rebuilding Docker data before having a fresh rollback artifact.
+- **Not doing A avoids:** one controlled stop/start, but the engine has already been unusable >11h, so there is no working runtime to preserve in-place.
 
 ## Preserved runtime invariants — acceptance gates
 
-Fresh source readback wins over historical values. If CURRENT differs, record the difference before cutover.
+Fresh source readback wins over historical values. If CURRENT differs, record it before cutover.
 
 ### `fast-coding`
 
@@ -142,32 +160,9 @@ Expected last-known-good baseline:
 
 - 20 routes;
 - `userCustomized=true`, `autoHeal=false`;
-- priority #1 `gonka/deepseek-ai/DeepSeek-V4-Flash-0731`;
-- priority #2 `gonka/MiniMaxAI/MiniMax-M2.7`;
-- full contour expected to remain traversable by failover.
-
-Exact ratified order:
-
-1. `gonka/deepseek-ai/DeepSeek-V4-Flash-0731`
-2. `gonka/MiniMaxAI/MiniMax-M2.7`
-3. `llm7/minimax-m2.7`
-4. `googleai/gemini-3-flash-preview`
-5. `opencode-zen/big-pickle`
-6. `openrouter/nvidia/nemotron-3-ultra-550b-a55b:free`
-7. `requesty/nvidia/nemotron-3-ultra-550b-a55b`
-8. `openrouter/poolside/laguna-xs-2.1:free`
-9. `googleai/gemini-3.1-flash-lite`
-10. `openrouter/nvidia/nemotron-3-super-120b-a12b:free`
-11. `requesty/nvidia/nemotron-3-super-120b-a12b`
-12. `zai/zai/glm-4.5-flash`
-13. `openrouter/nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free`
-14. `requesty/google/gemma-4-31b-it`
-15. `requesty/nvidia/nemotron-3-nano-omni-30b-a3b-reasoning`
-16. `llm7/codestral-latest`
-17. `googleai/gemini-3.7-flash`
-18. `opencode-zen/mimo-v2.5-free`
-19. `opencode-zen/nemotron-3.5-lightning-free`
-20. `openrouter/cohere/north-mini-code:free`
+- #1 `gonka/deepseek-ai/DeepSeek-V4-Flash-0731`;
+- #2 `gonka/MiniMaxAI/MiniMax-M2.7`;
+- `router.failover.maxRetries=19`.
 
 ### Outreach
 
@@ -176,98 +171,99 @@ Expected last-known-good baseline:
 - canonical model `fcm:outreach-quality`;
 - 116 credentialed routes;
 - Gonka DeepSeek / MiniMax fixed #1/#2 and raced for non-streaming requests;
-- `router.failover.maxRetries=115` for the 116-route pool;
-- validation ceiling raised to 500;
+- `router.failover.maxRetries=115`;
+- validation ceiling 500;
 - `outreach-judge` compatibility alias mirrors the same pool.
 
 ## Live patch identities to preserve
 
-Historical hashes are evidence, not a substitute for fresh source CURRENT hashes:
+Historical hashes are evidence, not a substitute for fresh CURRENT hashes:
 
-- `/app/src/core/router-daemon.js` later Gonka-race patched SHA-256: `55bc63a719e288f54a279bb451ec3f72fd099c9f01a339833cd2981eb5c1e9e3`.
-- Earlier named-model-routing router hash: `156642e1810ef06a154a2141cef618f978d4607a31e7504f06dbb1e3e418d73a`.
-- `/app/src/core/config.js` retry-ceiling backup: `/home/fcm/config.js.bak-max-retries-20260909`.
-- Accepted persistence/sync-set/CLI patches must also be captured fresh before image snapshot.
+- `/app/src/core/router-daemon.js` race-patched SHA-256 `55bc63a719e288f54a279bb451ec3f72fd099c9f01a339833cd2981eb5c1e9e3`.
+- Earlier named-model-routing hash `156642e1810ef06a154a2141cef618f978d4607a31e7504f06dbb1e3e418d73a`.
+- `/app/src/core/config.js` retry-ceiling backup `/home/fcm/config.js.bak-max-retries-20260909`.
+- Persistence/sync-set/CLI live deltas must be freshly hashed after engine recovery.
 
 ## 48–72 h Test
 
-### Critical 1 — recover and capture source
+### Critical 1 — protect + recover source
 
-**Output:** immutable migration manifest + image/volume/workspace/task bundle.  
-**Done:** A55 command-reachable; source identities/hashes/endpoints captured; image exported; final volume snapshot taken with `fcm` stopped; artifact SHA-256 recorded.  
-**Risk:** repeated Docker/WSL startup destabilizes host.  
-**First step <30 min:** when A55 responds, run one minimal host check. If Docker is already healthy, capture manifest/hashes immediately. If Docker is not healthy, do not loop restarts; recover host stability first.
+**Output:** fresh VHD recovery copy plus green source Docker engine.  
+**Done:** Docker/WSL stopped cleanly; VHD detached; TLS-streamed source→target copy SHA-256 equal; one clean start yields Docker server response and `fcm` inventory.  
+**Deadline:** current recovery cycle.  
+**Risk:** process reset fails to recover bootstrap; mitigated by pre-reset VHD copy and no destructive operations.  
+**First step <30 min:** establish one-shot TLS receiver on target, stop/detach Docker WSL, hash and stream `docker_data.vhdx`.
 
-### Critical 2 — target platform + restore
+### Critical 2 — runtime migration + target restore
 
 **Output:** green target `fcm`.  
-**Done:** virtualization=True; WSL2 operational; Docker engine healthy; restore succeeds; hashes/invariants/health/smoke/restart PASS.  
-**Risk:** firmware/Windows-feature change and reboot.  
-**First step <30 min:** enable Intel virtualization (and VT-d if exposed) in BIOS/UEFI, reboot, then re-read virtualization and `wsl --status`; enable required Windows feature(s) from an elevated context if still missing.
+**Done:** source CURRENT manifest/image/volume/workspace/task captured; target virtualization/WSL/Docker green; restore hashes/invariants/health/smoke/restart/task PASS.  
+**Deadline:** within 72h after source engine and target platform gates are green.  
+**Risk:** firmware change/reboot and provider availability.  
+**First step <30 min:** after source capture, enable Intel virtualization/VT-d on target BIOS and re-read platform gates.
 
 ### Support 1 — workspace / ENV
 
-Restore to `C:\Users\Рафик\Documents\DEV\free-coding-models`. Preserve `.git`, dirty/untracked work, `.env`, `.env.coolify-sync`, Compose/Docker files and operational scripts. Hash secret-bearing files; never print values.
+Preserve `.git`, dirty/untracked work, `.env`, `.env.coolify-sync`, Compose/Docker files and operational scripts; hash secret-bearing files and never print values.
 
 ### Support 2 — automation
 
-Import source task XML only after target FCM is green. Adapt only target-specific principal/path if necessary. Manual task run must return `LastTaskResult=0` and must not mutate pinned membership.
+Import source task XML only after target FCM is green. Adapt only target-specific principal/path if necessary. Manual run must return `LastTaskResult=0` without mutating membership.
 
 ### Support 3 — observation / rollback
 
-Keep A55 image/container/volume/workspace untouched for ≥48h after cutover. No automatic cleanup/decommission.
+Keep A55 image/container/volume/workspace and protected VHD copy for ≥48h after cutover. No automatic cleanup/decommission.
 
 ## Migration DoD / anti-drift checklist
 
-### Identify / inventory
+### Source identity / protection
 
-- [x] Source hostname: `DESKTOP-A55K2JN`.
-- [x] Target hostname: `DESKTOP-49VP0KH`.
-- [x] Target checked for FCM collision — none found.
-- [x] Target Docker Desktop/CLI/Compose present.
-- [x] Target port 19280 free.
-- [x] Target staging directory prepared.
-- [x] Source container/image/volume/task identities captured historically.
+- [x] Source/target hostnames and LAN addresses resolved.
+- [x] Source dirty workspace HEAD/status captured CURRENT.
+- [x] `.env` / `.env.coolify-sync` hashes captured without values.
+- [x] Current Docker data-root path and VHD identity located.
+- [x] Data VHD visible inside WSL as ext4 with no observed I/O/ext4 error.
+- [ ] Docker Desktop/WSL stopped and CURRENT data VHD detached.
+- [ ] Fresh VHD copied to target over one-shot TLS.
+- [ ] Source/target VHD SHA-256 equal.
 
-### Source CURRENT
+### Source engine / FCM CURRENT
 
-- [ ] A55 host is actually command-reachable, not merely connector-advertised online.
-- [ ] Source Docker engine stable enough for a bounded snapshot pass.
+- [ ] One clean Docker start after protected recovery point.
+- [ ] Docker server Linux/amd64 responds.
 - [ ] Source `fcm` state/health re-read.
 - [ ] Fresh `/health`, `/sets`, `/v1/models`, `/api/models` captured.
 - [ ] Fresh critical live code/config SHA-256 captured.
-- [ ] Dirty workspace status/HEAD + `.env`/`.env.coolify-sync` hashes captured without values.
 
 ### Migration bundle
 
 - [ ] Commit actual live container to private migration image.
-- [ ] `docker image save` archive created + SHA-256.
-- [ ] Stop only `fcm` for final consistent volume snapshot.
-- [ ] Named volume archived separately + SHA-256.
-- [ ] Workspace/ENV archive created + SHA-256.
+- [ ] `docker image save` + SHA-256.
+- [ ] Stop only `fcm` for final consistent named-volume snapshot.
+- [ ] Named volume archive + SHA-256.
+- [ ] Workspace/ENV archive + SHA-256.
 - [ ] Task XML + redacted manifest included.
 - [ ] No secret values printed or committed to GitHub.
 
 ### Target platform
 
+- [x] Docker Desktop/CLI/Compose installed.
+- [x] Target staging and storage available.
 - [ ] Firmware virtualization enabled.
-- [ ] Required WSL2 / Virtual Machine Platform prerequisites enabled from an elevated context.
-- [ ] WSL2 operational.
-- [ ] Docker engine returns Linux/amd64 server version.
-- [ ] Compose v2 resolves source-equivalent config.
+- [ ] WSL2/Docker engine operational.
+- [ ] Compose resolves source-equivalent config.
 
 ### Restore / verification
 
 - [ ] Transfer hashes equal source ↔ target.
-- [ ] Target workspace restored and Git dirty state matches source intent.
-- [ ] Target named volume restored without destroying pre-existing state.
-- [ ] Target `fcm` created with equivalent mount/network/restart/loopback bind.
-- [ ] Source/target critical live hashes equal.
-- [ ] `fast-coding` count/order/Gonka #1/#2 match.
-- [ ] `outreach-quality` count/order/Gonka #1/#2 match.
-- [ ] Source/target relevant `maxRetries` match.
+- [ ] Workspace dirty state matches source intent.
+- [ ] Volume restored without destroying pre-existing target state.
+- [ ] `fcm` uses equivalent mount/network/restart/loopback bind.
+- [ ] Critical live code/config hashes equal.
+- [ ] `fast-coding` count/order/Gonka #1/#2/maxRetries match.
+- [ ] `outreach-quality` count/order/Gonka #1/#2/maxRetries match.
 - [ ] `/health`, `/sets`, `/v1/models` PASS.
-- [ ] OpenAI-compatible `fcm:outreach-quality` smoke PASS or provider outage is cleanly distinguished from local runtime failure.
+- [ ] OpenAI-compatible `fcm:outreach-quality` smoke PASS or provider outage is cleanly distinguished.
 - [ ] `docker restart fcm` persistence PASS.
 - [ ] Scheduled Task manual run `LastTaskResult=0`.
 - [ ] Real consumer reachability PASS.
@@ -275,41 +271,38 @@ Keep A55 image/container/volume/workspace untouched for ≥48h after cutover. No
 ### Cutover / rollback
 
 - [ ] Only after target green: stop source FCM and disable source task.
-- [ ] Do not delete source container/image/volume/workspace.
-- [ ] Rollback proven: target stop → source Docker/FCM/task restore → source health → consumer endpoint restore.
-- [ ] A55 retained ≥48h observation window.
+- [ ] Never delete source container/image/volume/workspace during observation.
+- [ ] Rollback exercised or mechanically proven.
+- [ ] A55 retained ≥48h.
 
 ## Edge-case guards
 
-- Source offline/unhealthy → no guessed snapshot and no Git rebuild substitution.
-- Connector says source online but direct ping/command times out → treat as unavailable.
-- Target already gains an FCM instance before restore → inventory/backup first; never overwrite blindly.
-- Hash mismatch → HALT restore for that artifact.
-- Port 19280 becomes occupied → identify owner; do not change bind silently.
+- Source engine unhealthy → do not infer runtime from Git or historical snapshots.
+- VHD copy while attached/mutating → invalid recovery point; detach first.
+- TLS/hash mismatch → HALT before recovery mutation.
+- Target gains an FCM instance before restore → inventory/backup first.
+- Port 19280 occupied → identify owner; never silently rebind.
 - Same-named target volume exists → backup/new timestamped volume first.
-- Volume snapshot while `fcm` is writing → invalid final snapshot; stop `fcm` first.
-- Task principal differs → adapt principal only; preserve action/cadence semantics.
-- Provider APIs fail → local health/routing/log evidence distinguishes provider outage from migration failure.
-- Consumer is remote → determine secure reachability separately; never broaden `127.0.0.1` to `0.0.0.0` automatically.
+- Provider APIs fail → distinguish external outage from local runtime via local health/routes/logs.
+- Consumer is remote → handle secure reachability separately; never auto-change `127.0.0.1` to `0.0.0.0`.
+- Do not factory-reset Docker, unregister `docker-desktop`, delete/compact VHD, `down -v`, or overwrite ENV secrets.
 
 ## Study
 
 ### Expected vs actual
 
-- **Expected:** recover Docker on A55, capture source manifest, prepare bundle.
-- **Actual:** first bounded recovery briefly succeeded; second Docker/WSL startup stalled and A55 became operationally unreachable.
-- **Target actual:** Docker is already installed, but firmware virtualization remains disabled; current shell is non-elevated.
-- **Variance:** source-host stability is worse than expected; repeated Docker restart is unsafe and target setup is closer to ready than initially believed.
-- **Lesson:** source capture is the first gate; target restore follows only after exact source evidence exists.
+- Expected: source engine recovery → manifest → migration.
+- Actual: WSL VM/data disk are healthy enough to attach/mount, but Docker bootstrap has remained stuck >11h and never creates guest-services sockets.
+- Variance: failure is narrower than a dead host or corrupt VHD and broader than an FCM-container failure.
+- Evidence: WSL shell works, `/dev/sdc` ext4 mounts without kernel errors, Windows virtualization services are green, Docker engine init IPC never becomes responsive.
+- Lesson: protect the data disk first, then reset process state; do not jump to Git rebuild, WSL upgrade, or factory reset.
 
 ## Act / current decision
 
-**CHANGE COURSE:** source command-reachability remains the active constraint. Do not rebuild FCM from Git, do not use the old Docker VHDX as primary, and do not loop Docker restarts on A55.
-
-On target, do not reinstall Docker. The remaining platform work is firmware virtualization + elevated Windows/WSL prerequisite completion + engine verification.
+**SELECTED:** protected clean process-state restart. Create a fresh target-side VHD recovery copy first; then one controlled Docker/WSL stop/start. If that fails, evaluate source WSL update as the next bounded hypothesis.
 
 ## Exact next 3 actions
 
-1. When A55 actually responds to a command, immediately perform one short read-only host/Docker/FCM check. If engine is already healthy, capture manifest/hashes and create the migration bundle in one bounded batch; if not, stop and recover host stability before touching runtime again.
-2. On target, enable firmware virtualization manually; after reboot, verify `VirtualizationFirmwareEnabled=True`, enable/verify WSL2 prerequisites from an elevated context, then start the already-installed Docker Desktop.
-3. Restore image + volume + dirty workspace/ENV + Scheduled Task to target, run equivalence/restore tests, then cut over with A55 retained as rollback.
+1. Establish one-shot TLS receiver on target; stop Docker Desktop/`docker-desktop` WSL cleanly; verify VHD detached; stream-copy and hash-verify the CURRENT `docker_data.vhdx` to target.
+2. Start Docker Desktop once with correct effective `ProgramData`; require server `_ping/version` before doing anything with `fcm`. If still stuck, do not loop restart — evaluate WSL update using the protected VHD rollback point.
+3. Once source engine is green, immediately capture FCM CURRENT hashes/routes/endpoints, build normal image+volume+workspace migration bundle, then move to the target BIOS/restore gate.
