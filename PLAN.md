@@ -172,4 +172,4 @@ Remaining work belongs to the next phase: target runtime activation and verifica
 
 ## Exact next move
 
-The migration itself is done. When activation is continued, work only on `DESKTOP-49VP0KH` from the already transferred workspace and Docker VHD. Do not return to source snapshot generation unless the user explicitly changes course.
+First, on `DESKTOP-A55K2JN`, selectively port only the verified plain-text continuation delta from the live `router-daemon.js` into the clean local source branch `fix/windows-fcm-broker-stability`, update the existing router integration tests in `test/test.js`, and run canonical `pnpm test` plus a non-conflicting source startup smoke. Do **not** copy the whole live file because source/runtime drift is material, and do not push/release/redeploy without explicit authorization. After that source gate is green, continue target activation on `DESKTOP-49VP0KH` from the already transferred payload and propagate/re-verify the accepted continuation delta there. Do not create another source Docker snapshot unless the user explicitly changes course.
