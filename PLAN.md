@@ -1,77 +1,53 @@
 # FCM Broker — Project Plan
 
-**Status:** In Progress — FCM payload transferred to `DESKTOP-49VP0KH`; activation/restore remains  
+**Status:** Transfer complete — FCM payload is on `DESKTOP-49VP0KH`; runtime activation is a separate next phase  
 **Last verified:** 2026-09-12  
 **Target repository:** `n0namer/free-coding-models`  
 **Canonical SoT:** this `PLAN.md` owns current state, decisions, DoD, anti-drift identities, migration evidence, rollback, and exact next move.
 
 ## North Star
 
-Make `DESKTOP-49VP0KH` the active owner of the actual FCM runtime while preserving the A55 source as rollback until target activation is proven.
+Make `DESKTOP-49VP0KH` the active owner of the actual FCM runtime while preserving A55 rollback.
 
-The immediate priority is **FCM transfer and restore**, not further investigation of firmware/BIOS unless it becomes strictly necessary to run Docker on the target.
+For the current cycle the user priority was **transfer FCM first**. That transfer is complete. Do not create another Docker data snapshot unless explicitly requested.
 
 ## Value → State → Gap → Constraint
 
 ### Value
 
-- Move FCM off `DESKTOP-A55K2JN` without losing dirty workspace, ENV, routing state, Docker state or host automation.
-- Reuse already transferred recovery artifacts instead of creating duplicate multi-GB snapshots.
+- Move FCM off `DESKTOP-A55K2JN` without losing dirty workspace, ENV, Docker recovery state, routing evidence or host automation.
+- Reuse the already copied Docker recovery snapshot instead of duplicating large artifacts.
 - Preserve rollback.
 
 ### State — FACTS
 
 #### Source `DESKTOP-A55K2JN`
 
-- Active workspace: `D:\Users\NIKITA\Documents\ChatGPT\AGENTS\free-coding-models`.
+- Workspace: `D:\Users\NIKITA\Documents\ChatGPT\AGENTS\free-coding-models`.
 - Remote: `https://github.com/vava-nessa/free-coding-models.git`.
 - Branch: `main`.
 - HEAD: `4e51bf9ce44456fd93814e7ca23333527d094b13`.
 - Dirty/untracked state captured and preserved.
-- Source workspace hashes:
+- Source hashes:
   - `.env`: `0044b753c9a091eaee23dcd559db7c13406e371e7bacccb28dece5041f19eac1`
   - `.env.coolify-sync`: `2c23424326786f05f514119ed5e7a5726b2fa73ee9931feada9db3c4379afc5a`
   - `docker-compose.yml`: `fcc39be57ef88298eb84aad5136b707f4fa72559e9bc4494b35e0ad55dd497c5`
-  - `Dockerfile`: `de1f814e9955b9505f1e9910ddf7934b582c1b86f9e0e3641039b9d920906513`
-- Workspace archive created excluding reconstructable caches/node_modules:
-  - source path: `D:\Users\NIKITA\Documents\DEV\.migration-to-49-20260911\fcm\free-coding-models-workspace.tar.gz`
-  - bytes: `101207924`
-  - SHA-256: `29a206ad9d3f47b6cb7c84d190894281f8ea61862f004341ded1c46328bb4ef5`.
-- Historical FCM runtime identity before Docker instability:
-  - container `fcm`
-  - image `free-coding-models:local`
-  - loopback bind `127.0.0.1:19280`
-  - named volume `free-coding-models_fcm-data -> /home/fcm`
-  - restart `unless-stopped`.
-- Docker Desktop engine on A55 is currently stuck in WSL bootstrap/userspace; no new Docker snapshot is required for this migration cycle.
+  - `Dockerfile`: `de1f814e9955b9505f1e9910ddf7934b582c1b86f9e0e3641039b9d920906513`.
+- Workspace archive:
+  - `D:\Users\NIKITA\Documents\DEV\.migration-to-49-20260911\fcm\free-coding-models-workspace.tar.gz`
+  - bytes `101207924`
+  - SHA-256 `29a206ad9d3f47b6cb7c84d190894281f8ea61862f004341ded1c46328bb4ef5`.
+- Source snapshot retained at `D:\docker-migration-snapshot-20260911\docker_data.vhdx`.
+- Source snapshot bytes `1594884096`; SHA-256 `25e7dbf5dfe73c9d4c0bf82270b8f59fd7e56a349f4b7837e989599411a37282`.
 
-#### Already copied Docker recovery snapshot — ACCEPTED MIGRATION PAYLOAD
+#### Target `DESKTOP-49VP0KH` — TRANSFER COMPLETE
 
-Per user direction, **do not create or transfer a fresh Docker data VHD**.
-
-Use the snapshot already copied to the target:
-
-- target path: `C:\DockerMigration\A55-20260911\docker_data.vhdx`
-- source snapshot path: `D:\docker-migration-snapshot-20260911\docker_data.vhdx`
-- bytes both sides: `1594884096`
-- SHA-256 both sides: `25e7dbf5dfe73c9d4c0bf82270b8f59fd7e56a349f4b7837e989599411a37282`
-- target `settings-store.json` SHA-256: `bc841bedd29ec0d6e98a4b054db557d547dff8d9baace48bdcd15df6bfc498ae`.
-
-This snapshot is the accepted Docker recovery payload for the current migration. It is **not** treated as proof of the latest live September runtime; current target restore verification must decide whether it is sufficient.
-
-#### Target `DESKTOP-49VP0KH`
-
-- DEV root: `C:\Users\Рафик\Documents\DEV`.
-- Docker Desktop already installed; Docker CLI/Compose present.
-- FCM workspace has now been transferred and extracted to:
-  - `C:\Users\Рафик\Documents\DEV\free-coding-models`
-- Target workspace verification matches A55:
-  - remote `https://github.com/vava-nessa/free-coding-models.git`
-  - branch `main`
-  - HEAD `4e51bf9ce44456fd93814e7ca23333527d094b13`
-  - modified/untracked file set matches source
-  - `.env`, `.env.coolify-sync`, Compose and Dockerfile hashes equal source.
-- Migration staging contains copied evidence and automation:
+- Working FCM checkout: `C:\Users\Рафик\Documents\DEV\free-coding-models`.
+- Target remote/branch/HEAD equal source.
+- Target modified/untracked file set equals source.
+- Target `.env`, `.env.coolify-sync`, Compose and Dockerfile hashes equal source.
+- Workspace archive arrived byte-for-byte and hash-for-hash identical.
+- Runtime evidence and automation copied to `C:\Users\Рафик\Documents\DEV\.migration-incoming-20260911\fcm`:
   - `container-inspect.json`
   - `image-inspect.json`
   - `volume-inspect.json`
@@ -81,33 +57,36 @@ This snapshot is the accepted Docker recovery payload for the current migration.
   - `v1-models.json`
   - `api-models.json`
   - `free-coding-models-workspace.tar.gz`.
-- Temporary TLS transport artifacts were removed after transfer.
+- No fresh VHD was created after user correction.
+- Already copied Docker recovery snapshot was verified against A55 source snapshot:
+  - original target location: `C:\DockerMigration\A55-20260911\docker_data.vhdx`
+  - bytes `1594884096`
+  - SHA-256 `25e7dbf5dfe73c9d4c0bf82270b8f59fd7e56a349f4b7837e989599411a37282`
+  - exact hash match with A55 source snapshot.
+- The same target VHD — not a duplicate — was moved into Docker's prepared WSL data layout:
+  - `C:\DockerMigration\A55-20260911\DockerDesktopWSL\disk\docker_data.vhdx`
+  - bytes and SHA-256 unchanged.
+- Docker settings were created in both user settings locations with:
+  - `CustomWslDistroDir=C:\DockerMigration\A55-20260911\DockerDesktopWSL`.
+- The migrated source `settings-store.json` remains preserved in `C:\DockerMigration\A55-20260911\settings-store.json`.
+- Temporary HTTP/TLS transfer artifacts were removed and the temporary source HTTP server was stopped.
 
 ### Gap
 
-1. Restore/attach the accepted Docker recovery payload on target without deleting it.
-2. Start target Docker and determine whether the accepted snapshot contains the required FCM image/container/volume state.
-3. If FCM state is present, restore/launch `fcm`, apply source-equivalent workspace/config as needed, then verify routing invariants and endpoints.
-4. Import host automation only after FCM is green.
+The **transfer gap is closed**.
 
-### ONE active constraint — CURRENT CYCLE
-
-**Target restore/activation of the already transferred FCM payload.**
-
-Do not spend the cycle creating another source VHD or repeating source Docker recovery work unless restore evidence proves the accepted snapshot is insufficient.
+Remaining work belongs to the next phase: target runtime activation and verification from the already transferred payload.
 
 ## BMad / anti-drift rules
 
-- Current target evidence wins over historical assumptions.
-- Do not create duplicate planning documents.
+- Do not generate another source VHD by default.
 - Do not rebuild from Git as a substitute for migrated dirty/runtime state.
-- Do not delete source or target recovery VHDs.
-- Do not use `docker down -v`, factory reset, unregister/delete Docker data, or overwrite a volume before an existing-state inventory.
-- After every material restore mutation: verify → update this PLAN → re-plan.
+- Do not delete the A55 source snapshot or target migrated VHD.
+- Do not use `docker down -v`, factory reset, unregister/delete Docker data, or blind volume overwrite.
+- Current target evidence wins over historical assumptions.
+- After every material activation mutation: verify → update this PLAN → re-plan.
 
-## Preserved acceptance invariants
-
-Fresh target restore readback wins; historical baseline remains the acceptance reference.
+## Preserved acceptance invariants for activation
 
 ### `fast-coding`
 
@@ -122,47 +101,44 @@ Fresh target restore readback wins; historical baseline remains the acceptance r
 - expected 116 credentialed routes
 - Gonka DeepSeek/MiniMax #1/#2
 - expected `maxRetries=115`
-- `outreach-judge` compatibility alias mirrors the same pool.
+- `outreach-judge` alias mirrors the same pool.
 
 ## Current DoD
 
 ### Transfer — COMPLETE
 
 - [x] Existing Docker recovery VHD located on target.
-- [x] Existing target VHD hash equals source snapshot hash.
+- [x] Target VHD hash equals source snapshot hash.
 - [x] No fresh VHD created/transferred after user correction.
+- [x] Existing target VHD moved into prepared Docker WSL data path without duplication.
+- [x] Docker `CustomWslDistroDir` adapted to target path.
 - [x] FCM workspace archive created and transferred.
 - [x] Workspace archive target SHA-256 equals source SHA-256.
 - [x] Workspace extracted to target DEV root.
 - [x] Target HEAD/branch/remote/dirty state match source.
-- [x] `.env` and `.env.coolify-sync` transferred; hashes match source; values not printed.
+- [x] `.env` and `.env.coolify-sync` transferred; hashes match source; values were never printed.
 - [x] Task XML and redacted runtime evidence transferred.
-- [x] Temporary transfer listener stopped and temporary TLS files removed.
+- [x] Temporary transport stopped/removed.
+- [x] A55 source snapshot/workspace retained as rollback.
 
-### Restore / activation — NEXT
+### Activation / verification — NEXT PHASE
 
-- [ ] Inventory accepted target Docker VHD/settings without destructive mutation.
-- [ ] Make target Docker use/restore accepted recovery state.
-- [ ] Confirm `fcm` container/image/volume exist or restore equivalent state.
+- [ ] Start target Docker against the migrated WSL data path.
+- [ ] Inventory for `fcm`, `free-coding-models:local`, and `free-coding-models_fcm-data` before any recreate.
 - [ ] Confirm loopback `127.0.0.1:19280`.
 - [ ] Verify `/health`, `/sets`, `/v1/models`, `/api/models`.
 - [ ] Verify `fast-coding` and outreach invariants.
-- [ ] Verify critical live code/config hashes or intentionally reconcile them with transferred workspace.
+- [ ] Reconcile critical live code/config hashes with transferred workspace only if required.
 - [ ] Restart persistence PASS.
-- [ ] Import/adjust Scheduled Task and manual run returns `LastTaskResult=0`.
+- [ ] Import/adjust Scheduled Task and verify manual `LastTaskResult=0`.
 - [ ] Real consumer smoke PASS.
 
 ## Rollback
 
-- Keep A55 source workspace and Docker state untouched.
-- Keep `C:\DockerMigration\A55-20260911\docker_data.vhdx` unchanged until target runtime is green.
-- If target restore fails, revert target-only changes and continue from the accepted snapshot; do not regenerate source VHD by default.
+- A55 source workspace and source snapshot remain intact.
+- Target migrated VHD remains the selected restore payload.
+- If target activation fails, revert only target-side activation changes and retry from the same migrated payload; do not create a new source VHD unless explicitly requested.
 
 ## Exact next move
 
-1. Work only on `DESKTOP-49VP0KH`.
-2. Inventory target Docker configuration and the accepted `C:\DockerMigration\A55-20260911` payload.
-3. Restore/activate that payload using the narrowest non-destructive method available.
-4. Immediately inspect for `fcm`, `free-coding-models:local`, and `free-coding-models_fcm-data`.
-5. If present, start FCM and run endpoint/invariant verification.
-6. If absent, use the transferred workspace/ENV plus available snapshot evidence to reconstruct only the missing layer; do not return to fresh-VHD copying unless the user explicitly changes course.
+The migration itself is done. When activation is continued, work only on `DESKTOP-49VP0KH` from the already transferred workspace and Docker VHD. Do not return to source snapshot generation unless the user explicitly changes course.
