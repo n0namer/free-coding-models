@@ -121,6 +121,21 @@ Remaining work belongs to the next phase: target runtime activation and verifica
 
 ## Current DoD
 
+### Plain-text continuation recovery — LIVE GREEN / SOURCE WRITE-BACK PENDING
+
+- [x] Existing live `fcm` container patched in place with backup and no rebuild/recreate.
+- [x] Normal non-stream response regression PASS.
+- [x] Normal streaming regression PASS with exactly one `[DONE]`.
+- [x] Explicit caller `max_tokens` cap is respected; no hidden continuation when the requested cap is actually reached.
+- [x] Bounded same-model continuation core PASS with deterministic overlap-safe merge.
+- [x] Abrupt/incomplete streaming recovery PASS on the real streaming proxy path with a synthetic upstream.
+- [x] If same-model streaming recovery cannot finish, accumulated partial text is available to the next routed model as continuation context rather than a restart-from-zero prompt.
+- [x] Feature stays disabled for structured `response_format`, tool calls, and multi-choice requests.
+- [ ] Selectively port the verified continuation delta to the clean local source branch without copying the drifted whole live file.
+- [ ] Replace/update the old partial-stream/Issue #137 expectations in existing `test/test.js` and add non-stream client-cap/early-truncation regression coverage.
+- [ ] Run canonical source `pnpm test` and a non-conflicting source startup smoke.
+- [ ] Propagate the verified source/runtime delta to `DESKTOP-49VP0KH` during target activation and re-run the same continuation gates there.
+
 ### Transfer — COMPLETE
 
 - [x] Existing Docker recovery VHD located on target.
