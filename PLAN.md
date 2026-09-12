@@ -71,6 +71,22 @@ For the current cycle the user priority was **transfer FCM first**. That transfe
 - The migrated source `settings-store.json` remains preserved in `C:\DockerMigration\A55-20260911\settings-store.json`.
 - Temporary HTTP/TLS transfer artifacts were removed and the temporary source HTTP server was stopped.
 
+#### A55 live text-continuation feature evidence — 2026-09-12
+
+- Development/runtime source remains `DESKTOP-A55K2JN`; this does **not** supersede the North Star that `DESKTOP-49VP0KH` becomes the active owner after target activation.
+- Same live container `fcm` was recovered without rebuild/recreate and returned healthy on version `0.5.81`.
+- Backup before the feature: `/home/fcm/router-daemon.js.bak-text-continuation-20260912`.
+- CURRENT live `/app/src/core/router-daemon.js` SHA-256 after accepted continuation changes: `2f9b07e740a69e08d8d697dceacc01e7949e1bd4de6d1a17a0f23fd12189d0ad`.
+- Plain-text continuation is bounded to two hidden same-model rounds. It is disabled for `response_format`, tool calls, and multi-choice requests. Explicit client output caps are respected: hitting `max_tokens`/`max_completion_tokens` does not trigger hidden continuation.
+- Non-streaming objectively early `finish_reason=length` can be recovered by the same candidate; overlap is removed deterministically and modified response length headers are recalculated.
+- Streaming tracks content, finish markers, and `[DONE]`; an abrupt/incomplete plain-text stream with useful output first attempts same-model continuation, then hands accumulated partial text to the next routed model as continuation context instead of restarting from scratch.
+- Deterministic checks PASS: two hidden fragments merged `alpha beta gamma delta` + `gamma delta epsilon` + `epsilon zeta` into `alpha beta gamma delta epsilon zeta`; client-cap recovery=false; early-provider recovery=true.
+- Synthetic real-path streaming check PASS: abrupt SSE preserved `hello world`, performed one hidden recovery, appended suffix, and emitted exactly one `[DONE]`; explicit client-cap streaming made zero hidden continuation calls and preserved `finish_reason=length` with exactly one `[DONE]`.
+- Live normal-path smokes PASS: non-streaming returned HTTP 200/`stop`; streaming returned valid SSE and exactly one `[DONE]`; explicit `max_tokens=4` returned HTTP 200/`length`, exactly four completion tokens, and no `x-fcm-continuation-rounds` header.
+- A pre-guard real-provider run proved hidden same-candidate transport requests (`-continue-1`/`-continue-2`) execute successfully; the final client-cap guard was then added so recovery is not triggered merely because the caller intentionally requested a short output.
+- SOURCE/DESIGN DRIFT: the structured JSON progressive-repair symbols/files discussed in this phase (`tryProgressiveStructuredRepair`, `createStructuredRepairPlan`, `collectRepairNeeds`, dedicated structured-output repair tests) are absent from the CURRENT live image, local FCM worktrees, canonical `n0namer/free-coding-models`, and checked upstream source. Do not claim that mechanism is currently present.
+- Source canonicalization is not complete: local clean candidate `D:\Users\NIKITA\Documents\ChatGPT\AGENTS\free-coding-models-canonicalize` is on branch `fix/windows-fcm-broker-stability`, HEAD `492f3e98176d8aa086103d2b39e3d819dec63131`, and differs materially from live router code. Whole-file copying is prohibited; only the verified continuation delta may be ported with existing `test/test.js` regressions. No source push/release/redeploy has been performed.
+
 ### Gap
 
 The **transfer gap is closed**.
